@@ -24,11 +24,11 @@ def create_app():
     app.secret_key = os.getenv('SECRET_KEY')
 
     # Run DB migrations on every startup so new columns are always present
-    try:
-        from init_db import create_vault_tables
-        create_vault_tables()
-    except Exception as _db_init_err:
-        print(f"[startup] DB migration warning: {_db_init_err}")
+    # try:
+    #     from init_db import create_vault_tables
+    #     create_vault_tables()
+    # except Exception as _db_init_err:
+    #     print(f"[startup] DB migration warning: {_db_init_err}")
 
     #The Welcome Screen (Default) Ryan Grimes 3/19/2026
     @app.route('/')
