@@ -20,6 +20,7 @@ def create_app():
                 template_folder='templates',
                 static_folder='static')
 
+    # James: removed exposed secret key for security reasons. Use environment variable instead.
     app.secret_key = os.getenv('SECRET_KEY')
 
     # Run DB migrations on every startup so new columns are always present
