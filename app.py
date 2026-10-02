@@ -38,7 +38,7 @@ def create_app():
     # Route to the main storefront page after login - Updated 3/22/2026
     @app.route('/storefront')
     def storefront():
-        return render_template('storefront.html')
+        return render_template('homepage.html')
 
     # Route to the "Create Storefront" form - Updated 3/22/2026
     @app.route('/create-storefront')

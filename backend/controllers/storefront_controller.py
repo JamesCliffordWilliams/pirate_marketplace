@@ -66,7 +66,7 @@ def get_current_user():
 
 @storefront_pages_bp.route("/storefronts")
 def storefront_home_page():
-    return render_template("storefront.html")
+    return render_template("homepage.html")
 
 
 @storefront_pages_bp.route("/storefronts/create")
@@ -76,7 +76,7 @@ def create_storefront_page():
 
 @storefront_pages_bp.route("/storefronts/my")
 def my_storefront_page():
-    return render_template("storefront.html")
+    return render_template("homepage.html")
 
 
 @storefront_pages_bp.route("/storefronts/<int:storefront_id>")

@@ -73,7 +73,7 @@ def signup():
 def listings():
     if 'user' not in session:
         return redirect(url_for('auth.login'))
-    return render_template('storefront.html')
+    return render_template('homepage.html')
 
 @auth_bp.route('/account')
 def account():
