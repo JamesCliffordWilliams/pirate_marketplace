@@ -6,6 +6,7 @@
     Created by Day Ekoi - Iteration 4
     3/18/2026-3/22/2026
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - removed hardcoded test card, added lightbox overlay element
+    Updated by James Williams - Iteration 2 - 10/1/26 
 
 
 Description of file (What it does, how it is used, etc):
@@ -57,25 +58,6 @@ Start of Code w/ comments
 <div id="navOverlay" class="nav-overlay"></div>
 
 <aside id="navPane" class="nav-pane">
-  
-
-  <!-- Top half button and actions -->
-
- 
- <!--  -- OLD VERSION --
-  
- <div class="nav-top">
-    -- <button class="create-btn">Create Storefront</button> --
-     <a href="{{ url_for('storefront_pages_bp.create_storefront_page') }}">
-  <button class="create-btn">Create Storefront</button>
-</a>
-     <a href="{{ url_for('create_listing') }}">
-  <button class="create-btn">Create Listing</button>
-</a>
-  </div>
--->
-
-<!-- UPDATED VERSION : Day E 4/9/26 -->
 
 <div class="nav-top">
     <a href="{{ url_for('storefront_pages_bp.create_storefront_page') }}">
@@ -236,9 +218,7 @@ Updated nav bar
   <!-- Brand name/Logo & Search Features -->
   <section class="logo-search-section">
 
-    <h1 class="brand-title">
-      <span class="gold">The</span> Vault
-    </h1>
+    <h1 class="brand-title"> Pirate Market </h1>
 
     <p class="brand-subtitle">Fashion Marketplace</p>
 
@@ -249,7 +229,7 @@ Updated nav bar
         type="text"
         id="searchInput"
         class="search-input"
-        placeholder="Explore The Vault"
+        placeholder="Search"
       />
     </div>
   </section>
