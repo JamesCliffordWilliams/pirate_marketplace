@@ -3,6 +3,7 @@
 # Created by Day Ekoi - Iteration 3
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added primary image JOIN to get_listings_by_storefront_id
 # Updated by James Williams - 10/26/26 - added category_id to listings and browse_public_listings
+# Updated by James Williams - 10/26/26 - Hot page: listing_ids / available_only filters, newest available listings
 
 """
 models/listing_model.py
@@ -23,7 +24,7 @@ It will:
 - Insert/retrieve/update/delete listing image records
 - Insert/retrieve/update/delete listing size inventory records
 - Return results as dictionaries
-- Browse public listings across storefronts (category pages; reusable by New Drops / Hot)
+- Browse public listings across storefronts (category pages and the Hot page)
 """
 
 from db import get_connection
@@ -37,6 +38,13 @@ PUBLIC_LISTING_VISIBILITY_SQL = "l.status IN ('ACTIVE', 'SOLD_OUT') AND s.is_act
 SOLD_OUT_SQL = (
     "(l.status = 'SOLD_OUT' OR (NOT COALESCE(l.is_made_to_order, FALSE)"
     " AND l.fulfillment_type = 'IN_STOCK' AND COALESCE(l.quantity_on_hand, 0) = 0))"
+)
+
+# Added by James Williams 10/26/26
+# Can be added to the cart right now (same rule as add_to_cart and the card)
+AVAILABLE_SQL = (
+    "(l.status <> 'SOLD_OUT' AND (COALESCE(l.is_made_to_order, FALSE)"
+    " OR l.quantity_on_hand IS NULL OR l.quantity_on_hand > 0))"
 )
 
 # Allowed sort orders
@@ -461,12 +469,17 @@ def restore_listings_after_storefront_reactivation(storefront_id):
 # Added by James Williams 10/26/26
 # ________________________________________________________
 
-def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0):
+def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0,
+                           listing_ids=None, available_only=False):
     """
     Returns (listings, total) for listings shoppers can see, from every storefront.
     Each listing includes its images, sizes, storefront and category,
     so the page doesn't need extra requests per card.
+    listing_ids: only these listings. available_only: skip sold out / out of stock.
     """
+    if listing_ids is not None and len(listing_ids) == 0:
+        return [], 0
+
     order_by = BROWSE_SORTS.get(sort, BROWSE_SORTS["newest"])
 
     where_clauses = [PUBLIC_LISTING_VISIBILITY_SQL]
@@ -474,6 +487,11 @@ def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0)
     if category_ids is not None:
         where_clauses.append("l.category_id = ANY(%s)")
         params.append(list(category_ids))
+    if listing_ids is not None:
+        where_clauses.append("l.id = ANY(%s)")
+        params.append([int(listing_id) for listing_id in listing_ids])
+    if available_only:
+        where_clauses.append(AVAILABLE_SQL)
     where_sql = " AND ".join(where_clauses)
 
     conn = get_connection()
@@ -565,6 +583,34 @@ def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0)
         })
 
     return listings, total
+
+
+# Added by James Williams 10/26/26
+def get_newest_available_listings(exclude_ids=(), per_storefront=2, limit=8):
+    """Newest visible, in-stock listings as [{id, storefront_id}], at most per_storefront from each store."""
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute(f"""
+        SELECT id, storefront_id
+        FROM (
+            SELECT l.id, l.storefront_id, l.created_at,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY l.storefront_id ORDER BY l.created_at DESC, l.id DESC
+                   ) AS store_rank
+            FROM listings l
+            JOIN storefronts s ON s.id = l.storefront_id
+            WHERE {PUBLIC_LISTING_VISIBILITY_SQL}
+              AND {AVAILABLE_SQL}
+              AND NOT (l.id = ANY(%s))
+        ) ranked
+        WHERE store_rank <= %s
+        ORDER BY created_at DESC, id DESC
+        LIMIT %s;
+    """, ([int(listing_id) for listing_id in exclude_ids], per_storefront, limit))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [{"id": row[0], "storefront_id": row[1]} for row in rows]
 
 
 # ________________________________________________________
