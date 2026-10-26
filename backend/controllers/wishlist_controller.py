@@ -12,7 +12,7 @@ This controller handles HTTP requests related to wishlist operations.
 It processes requests, calls service methods, and returns JSON responses.
 """
 
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session  # Updated by James Williams 10/26/26
 from services.wishlist_service import WishlistService
 from services.interest_service import track_interest  # Added by James Williams 10/26/26
 

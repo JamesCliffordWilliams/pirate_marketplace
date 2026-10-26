@@ -136,7 +136,7 @@ def add_to_cart():
             VALUES (%s, %s, %s, %s, %s, %s)
         """, (session['user_id'], item_id, item_name, price, quantity, size))
         conn.commit()
-        cart_saved = True
+        cart_saved = True  # Added by James Williams 10/26/26
         cur.close()
         conn.close()
     except Exception as e:

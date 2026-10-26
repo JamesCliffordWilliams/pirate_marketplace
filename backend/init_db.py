@@ -353,6 +353,7 @@ def create_vault_tables():
 
         conn.commit()
 
+        # Updated by James Williams 10/26/26 - added listing_interest to the list
         print("DATABASE INITIALIZED: users, storefronts, listings, product_categories, listing_images, listing_sizes, purchases, wishlist, orders, order_items, and listing_interest tables are ready.")
 
         cur.close()

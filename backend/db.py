@@ -6,7 +6,7 @@ load_dotenv()
 
 from config.db import get_connection
 
-def get_connection(connect_timeout=None):
+def get_connection(connect_timeout=None):  # Updated by James Williams 10/26/26
     """
     Creates and returns a new PostgreSQL connection
     using environment variables.
@@ -31,6 +31,7 @@ def get_connection(connect_timeout=None):
     if sslrootcert:
         conn_kwargs["sslrootcert"] = sslrootcert
 
+    # Added by James Williams 10/26/26
     if connect_timeout:
         conn_kwargs["connect_timeout"] = connect_timeout
 

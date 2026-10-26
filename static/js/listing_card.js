@@ -29,7 +29,7 @@ Works with:
         index: 0
     };
     let lightboxElements = null;
-    const trackedDetailViews = new Set();
+    const trackedDetailViews = new Set(); // Added by James Williams 10/26/26
 
     // ________________________________________________________
     // SMALL DOM HELPERS
@@ -487,7 +487,7 @@ Works with:
     // IMAGE CAROUSEL
     // ________________________________________________________
 
-    function createListingImageCarousel(images, title, onOpen) {
+    function createListingImageCarousel(images, title, onOpen) { // Updated by James Williams 10/26/26
         const shell = document.createElement("div");
         shell.className = "listing-image-shell";
 
@@ -515,7 +515,7 @@ Works with:
 
         image.addEventListener("click", () => {
             openLightbox(images, currentIndex);
-            if (onOpen) onOpen();
+            if (onOpen) onOpen(); // Added by James Williams 10/26/26
         });
         shell.classList.add("is-clickable");
         shell.appendChild(image);
@@ -730,6 +730,7 @@ Works with:
             card.appendChild(viewLink);
         }
 
+        // Updated by James Williams 10/26/26 - opening the image viewer counts as a detail_view
         const carousel = createListingImageCarousel(images, title, () => trackDetailView(listingId, currentUserId));
         card.prepend(carousel.shell);
         if (showStorefront) {
@@ -860,7 +861,7 @@ Works with:
         create,
         getCurrentSessionUser,
         getWishlistIdSet,
-        trackDetailView,
+        trackDetailView, // Added by James Williams 10/26/26
         showToast,
         escapeHtml,
         formatPrice,

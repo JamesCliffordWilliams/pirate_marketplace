@@ -31,7 +31,7 @@ def complete_checkout():
         result = complete_transaction_from_session(user_id, session_cart, data)
         session["cart"] = []
         session.modified = True
-        response = jsonify({
+        response = jsonify({  # Updated by James Williams 10/26/26
             "success": True,
             "confirmation_number": result["confirmation_number"],
             "order_id": result["order"]["id"],

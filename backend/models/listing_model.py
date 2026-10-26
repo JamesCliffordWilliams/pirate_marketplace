@@ -470,13 +470,14 @@ def restore_listings_after_storefront_reactivation(storefront_id):
 # ________________________________________________________
 
 def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0,
-                           listing_ids=None, available_only=False):
+                           listing_ids=None, available_only=False):  # Added by James Williams 10/26/26
     """
     Returns (listings, total) for listings shoppers can see, from every storefront.
     Each listing includes its images, sizes, storefront and category,
     so the page doesn't need extra requests per card.
     listing_ids: only these listings. available_only: skip sold out / out of stock.
     """
+    # Added by James Williams 10/26/26
     if listing_ids is not None and len(listing_ids) == 0:
         return [], 0
 
@@ -487,6 +488,7 @@ def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0,
     if category_ids is not None:
         where_clauses.append("l.category_id = ANY(%s)")
         params.append(list(category_ids))
+    # Added by James Williams 10/26/26
     if listing_ids is not None:
         where_clauses.append("l.id = ANY(%s)")
         params.append([int(listing_id) for listing_id in listing_ids])

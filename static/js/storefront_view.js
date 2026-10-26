@@ -47,7 +47,7 @@ function focusLinkedListing(currentUserId) {
     const card = document.getElementById(`listing-${linkedId}`);
     if (!card) return;
 
-    VaultListingCard.trackDetailView(linkedId, currentUserId);
+    VaultListingCard.trackDetailView(linkedId, currentUserId); // Added by James Williams 10/26/26
 
     const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     card.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });

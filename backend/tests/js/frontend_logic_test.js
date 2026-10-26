@@ -122,7 +122,7 @@ var document = {
     createElement: function (t) { return new FakeNode(t); },
     createTextNode: function (t) { var n = new FakeNode("#text"); n._text = String(t); return n; },
     querySelector: function () { return null; },
-    getElementById: function () { return null; },
+    getElementById: function () { return null; }, // Added by James Williams 10/26/26
     addEventListener: function () {}
 };
 var Event = function (type) { this.type = type; };
@@ -152,6 +152,7 @@ picker.setValue(9);
 same(hidden.value, "9", "Other via setValue");
 
 // ---------- detail_view tracking (listing_card.js) ----------
+// Added by James Williams 10/26/26
 var fetchCalls = [];
 window.fetch = function (url, options) {
     fetchCalls.push({ url: url, options: options });
@@ -173,6 +174,7 @@ check(C.trackDetailView(0, 7) === false, "zero id");
 same(fetchCalls.length, 2, "one request per listing per page load");
 
 // ---------- Hot page section states (hot.js) ----------
+// Added by James Williams 10/26/26
 load(root + "/static/js/hot.js");
 var H = window.VaultHot._internals;
 function items(n) { var list = []; for (var i = 0; i < n; i++) list.push({ id: i + 1 }); return list; }
