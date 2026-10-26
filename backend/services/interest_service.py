@@ -27,3 +27,13 @@ def track_interest(listing_id, user_id, kind):
     except Exception as e:
         print(f"[interest] not recorded ({kind}, listing {listing_id}): {e}")
         return False
+
+
+def track_order(user_id, order_items):
+    """Records 'order' for each listing in a saved order. Never raises."""
+    try:
+        listing_ids = dict.fromkeys(item.get("listing_id") for item in order_items or [])
+        for listing_id in listing_ids:
+            track_interest(listing_id, user_id, "order")
+    except Exception as e:
+        print(f"[interest] order not recorded: {e}")

@@ -2,6 +2,7 @@
 # CSC 405 Sp 26'
 # Created for Wishlist feature by Elali McNair 3/3/26
 # The frontend protion of this code is not finished or implemented yet. Therfore, this code is not oporational or properly implemented yet.
+# Updated by James Williams - 10/26/26 - records wishlist adds for the Hot page
 
 """
 controllers/wishlist_controller.py
@@ -11,8 +12,9 @@ This controller handles HTTP requests related to wishlist operations.
 It processes requests, calls service methods, and returns JSON responses.
 """
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from services.wishlist_service import WishlistService
+from services.interest_service import track_interest  # Added by James Williams 10/26/26
 
 wishlist_bp = Blueprint('wishlist', __name__, url_prefix="/api")
 wishlist_service = WishlistService()
@@ -61,6 +63,9 @@ def add_to_wishlist():
         success, result = wishlist_service.add_item_to_wishlist(current_user['id'], listing_id)
 
         if success:
+            # Added by James Williams 10/26/26 - Hot page; only when the logged-in user matches the header
+            if session.get("user_id") == current_user['id']:
+                track_interest(listing_id, current_user['id'], "wishlist")
             return jsonify({"message": result}), 201
         else:
             return jsonify({"error": result}), 400

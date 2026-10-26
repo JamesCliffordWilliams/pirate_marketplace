@@ -2,6 +2,7 @@
 from flask import Blueprint, request, session, redirect, url_for, render_template, flash, jsonify
 from services.auth_services import AuthService 
 from config.db import get_connection
+from services.interest_service import track_interest  # Added by James Williams 10/26/26
 
 auth_bp = Blueprint('auth', __name__)
 service = AuthService()
@@ -126,6 +127,7 @@ def add_to_cart():
         print(f"DB Error checking listing availability: {e}")
 
     # PERSIST TO DATABASE
+    cart_saved = False  # Added by James Williams 10/26/26
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -134,10 +136,15 @@ def add_to_cart():
             VALUES (%s, %s, %s, %s, %s, %s)
         """, (session['user_id'], item_id, item_name, price, quantity, size))
         conn.commit()
+        cart_saved = True
         cur.close()
         conn.close()
     except Exception as e:
         print(f"DB Error adding to cart: {e}")
+
+    # Added by James Williams 10/26/26 - Hot page, only once the cart row is saved
+    if cart_saved:
+        track_interest(item_id, session['user_id'], "cart")
 
     # Update session for immediate UI feedback
     if 'cart' not in session:

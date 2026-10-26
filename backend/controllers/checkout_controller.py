@@ -1,6 +1,7 @@
 # The Vault Campus Marketplace
 # CSC 405 Sp 26'
 # Updated by Day Ekoi - 4/22/26 - API-only blueprint
+# Updated by James Williams - 10/26/26 - records orders for the Hot page
 
 from flask import Blueprint, request, jsonify, session
 
@@ -9,6 +10,7 @@ from services.checkout_service import (
     get_order_summary_service,
     get_user_orders_service,
 )
+from services.interest_service import track_order  # Added by James Williams 10/26/26
 
 checkout_bp = Blueprint("checkout", __name__)
 
@@ -29,7 +31,7 @@ def complete_checkout():
         result = complete_transaction_from_session(user_id, session_cart, data)
         session["cart"] = []
         session.modified = True
-        return jsonify({
+        response = jsonify({
             "success": True,
             "confirmation_number": result["confirmation_number"],
             "order_id": result["order"]["id"],
@@ -37,6 +39,13 @@ def complete_checkout():
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 400
+
+    # Added by James Williams 10/26/26 - the order is saved; tracking can't change the response
+    try:
+        track_order(user_id, result["order_items"])
+    except Exception as e:
+        print(f"[checkout] interest tracking skipped: {e}")
+    return response
 
 
 @checkout_bp.route("/orders/by-confirmation/<confirmation_number>", methods=["GET"])
