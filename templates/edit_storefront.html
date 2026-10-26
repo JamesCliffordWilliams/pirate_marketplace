@@ -92,10 +92,10 @@ brand name, contact info, description, logo, and banner.
                     <img id="bannerPreviewImg" style="width:100%; max-height:160px; object-fit:cover; border-radius:8px;" alt="Current banner">
                     <p style="font-size:0.8rem; color:#888; margin-top:0.3rem;">Current banner — upload a new file to replace it</p>
                 </div>
-                <div class="drop-zone" id="bannerZone">
-                    <p>Drag & drop or <span class="drop-link">browse</span></p>
-                    <input type="file" id="bannerUpload" name="banner" accept="image/*" hidden>
-                </div>
+                <label class="drop-zone" id="bannerZone">
+                    <span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span>
+                    <input type="file" id="bannerUpload" name="banner" accept="image/jpeg,image/png,image/webp,image/gif">
+                </label>
                 <div class="image-preview-row" id="bannerPreview"></div>
             </section>
 
@@ -108,10 +108,10 @@ brand name, contact info, description, logo, and banner.
                         <img id="logoPreviewImg" style="width:80px; height:80px; object-fit:cover; border-radius:50%;" alt="Current logo">
                         <p style="font-size:0.8rem; color:#888; margin-top:0.3rem;">Current logo — upload a new file to replace it</p>
                     </div>
-                    <div class="drop-zone" id="logoZone">
-                        <p>Drag & drop or <span class="drop-link">browse</span></p>
-                        <input type="file" id="logoUpload" name="logo" accept="image/*" hidden>
-                    </div>
+                    <label class="drop-zone" id="logoZone">
+                        <span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span>
+                        <input type="file" id="logoUpload" name="logo" accept="image/jpeg,image/png,image/webp,image/gif">
+                    </label>
                     <div class="image-preview-row" id="logoPreview"></div>
                 </div>
 
@@ -168,25 +168,25 @@ brand name, contact info, description, logo, and banner.
                         <div class="preview-slot">
                             <p class="slot-label">Image 1</p>
                             <div id="existingPreview1" style="display:none; margin-bottom:0.5rem;"><img id="existingImg1" style="width:100%; max-height:100px; object-fit:cover; border-radius:6px;" alt=""><p style="font-size:0.75rem;color:#888;margin-top:3px;">Current — upload to replace</p></div>
-                            <div class="drop-zone" id="previewZone1"><p>Drag & drop or <span class="drop-link">browse</span></p><input type="file" id="previewImage1" accept="image/*" hidden></div>
+                            <label class="drop-zone" id="previewZone1"><span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span><input type="file" id="previewImage1" accept="image/jpeg,image/png,image/webp,image/gif"></label>
                             <div class="image-preview-row" id="previewPreview1"></div>
                         </div>
                         <div class="preview-slot">
                             <p class="slot-label">Image 2</p>
                             <div id="existingPreview2" style="display:none; margin-bottom:0.5rem;"><img id="existingImg2" style="width:100%; max-height:100px; object-fit:cover; border-radius:6px;" alt=""><p style="font-size:0.75rem;color:#888;margin-top:3px;">Current — upload to replace</p></div>
-                            <div class="drop-zone" id="previewZone2"><p>Drag & drop or <span class="drop-link">browse</span></p><input type="file" id="previewImage2" accept="image/*" hidden></div>
+                            <label class="drop-zone" id="previewZone2"><span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span><input type="file" id="previewImage2" accept="image/jpeg,image/png,image/webp,image/gif"></label>
                             <div class="image-preview-row" id="previewPreview2"></div>
                         </div>
                         <div class="preview-slot">
                             <p class="slot-label">Image 3</p>
                             <div id="existingPreview3" style="display:none; margin-bottom:0.5rem;"><img id="existingImg3" style="width:100%; max-height:100px; object-fit:cover; border-radius:6px;" alt=""><p style="font-size:0.75rem;color:#888;margin-top:3px;">Current — upload to replace</p></div>
-                            <div class="drop-zone" id="previewZone3"><p>Drag & drop or <span class="drop-link">browse</span></p><input type="file" id="previewImage3" accept="image/*" hidden></div>
+                            <label class="drop-zone" id="previewZone3"><span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span><input type="file" id="previewImage3" accept="image/jpeg,image/png,image/webp,image/gif"></label>
                             <div class="image-preview-row" id="previewPreview3"></div>
                         </div>
                         <div class="preview-slot">
                             <p class="slot-label">Image 4</p>
                             <div id="existingPreview4" style="display:none; margin-bottom:0.5rem;"><img id="existingImg4" style="width:100%; max-height:100px; object-fit:cover; border-radius:6px;" alt=""><p style="font-size:0.75rem;color:#888;margin-top:3px;">Current — upload to replace</p></div>
-                            <div class="drop-zone" id="previewZone4"><p>Drag & drop or <span class="drop-link">browse</span></p><input type="file" id="previewImage4" accept="image/*" hidden></div>
+                            <label class="drop-zone" id="previewZone4"><span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span><input type="file" id="previewImage4" accept="image/jpeg,image/png,image/webp,image/gif"></label>
                             <div class="image-preview-row" id="previewPreview4"></div>
                         </div>
                     </div>
@@ -222,6 +222,7 @@ brand name, contact info, description, logo, and banner.
         </form>
     </main>
 
+    <script src="{{ url_for('static', filename='js/image_uploader.js') }}"></script> <!-- Added by James Williams 10/26/26 -->
     <script src="{{ url_for('static', filename='js/edit_storefront.js') }}"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@
     Created by James Williams - 10/26/26
     Pure-logic tests for category_picker.js, listing_card.js and hot.js.
     Updated by James Williams - 10/26/26 - Hot page: detail_view tracking and section states
+    Updated by James Williams - 10/26/26 - photo picker type and GPS checks
     Run by tests/test_frontend_js.py with JavaScriptCore (`jsc`); no browser or DOM needed.
     Usage: jsc frontend_logic_test.js -- <repo root>
 */
@@ -190,5 +191,39 @@ same(H.sectionStates({ hot: items(4), rising: items(1), just_listed: [] }),
     { page: "content", hot: "cards", rising: "cards", just_listed: "hidden" }, "full page");
 same(H.sectionStates({ hot: [], rising: items(1) }),
     { page: "content", hot: "collapsed", rising: "cards", just_listed: "hidden" }, "missing just_listed key");
+
+// ---------- photo picker (image_uploader.js) ----------
+// Added by James Williams 10/26/26
+load(root + "/static/js/image_uploader.js");
+var U = window.ImageUploader._internals;
+same(U.imageType({ name: "a.jpg", type: "image/jpeg" }), "image/jpeg", "jpeg by type");
+same(U.imageType({ name: "a.PNG", type: "" }), "image/png", "png by extension when type is empty");
+same(U.imageType({ name: "a.webp", type: "image/webp" }), "image/webp", "webp");
+same(U.imageType({ name: "a.gif", type: "image/gif" }), "image/gif", "gif");
+same(U.imageType({ name: "IMG_1.HEIC", type: "image/heic" }), null, "heic refused");
+same(U.imageType({ name: "IMG_1.heic", type: "" }), null, "heic by extension refused");
+same(U.imageType({ name: "a.svg", type: "image/svg+xml" }), null, "svg refused");
+same(U.imageType({ name: "a.jpg", type: "application/pdf" }), null, "type wins over extension");
+
+// JPEG bytes: SOI, optional APP1 Exif with one IFD0 entry, then SOS
+function jpeg(tag, littleEndian) {
+    var b = [0xFF, 0xD8];
+    if (tag) {
+        var tiff = littleEndian
+            ? [0x49, 0x49, 0x2A, 0x00, 8, 0, 0, 0, 1, 0, tag & 0xFF, tag >> 8, 4, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            : [0x4D, 0x4D, 0x00, 0x2A, 0, 0, 0, 8, 0, 1, tag >> 8, tag & 0xFF, 0, 4, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+        var body = [0x45, 0x78, 0x69, 0x66, 0, 0].concat(tiff);
+        var len = body.length + 2;
+        b = b.concat([0xFF, 0xE1, len >> 8, len & 0xFF]).concat(body);
+    }
+    b = b.concat([0xFF, 0xDB, 0x00, 0x04, 0x00, 0x00, 0xFF, 0xDA, 0x00, 0x02]);
+    return new Uint8Array(b).buffer;
+}
+same(U.jpegHasGps(jpeg(0x8825, true)), true, "GPS tag found (little endian)");
+same(U.jpegHasGps(jpeg(0x8825, false)), true, "GPS tag found (big endian)");
+same(U.jpegHasGps(jpeg(0x0112, true)), false, "orientation only: no GPS");
+same(U.jpegHasGps(jpeg(0)), false, "no EXIF: no GPS");
+same(U.jpegHasGps(jpeg(0x0112, true).slice(0, 12)), true, "cut-off metadata is treated as GPS");
+same(U.jpegHasGps(new Uint8Array([0x89, 0x50]).buffer), true, "not a JPEG is treated as GPS");
 
 print("OK " + passed);

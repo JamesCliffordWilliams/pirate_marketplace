@@ -10,6 +10,7 @@
     Updated by Day E - April 22nd - multi-image edit management using existing S3 and listing image routes
     Updated by James Williams - 10/26/26 - added the category picker; saving no longer
     reactivates INACTIVE listings
+    Updated by James Williams - 10/26/26 - shared photo picker, one request per save
 */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -27,7 +28,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const imageStatusNote = document.getElementById("imageStatusNote");
 
     const previewInputs = [1, 2, 3, 4].map((index) => document.getElementById(`previewImage${index}`));
-    const selectedListingImages = [null, null, null, null];
 
     let currentUser = null;
     let existingImages = [];
@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function updateImageStatusNote() {
         if (!imageStatusNote) return;
-        const pendingCount = selectedListingImages.filter(Boolean).length;
+        const pendingCount = queuedFiles().length;
         const totalCount = existingImages.length + pendingCount;
         imageStatusNote.textContent = `${existingImages.length} saved image${existingImages.length === 1 ? "" : "s"} | ${pendingCount} queued upload${pendingCount === 1 ? "" : "s"} | ${totalCount}/4 total`;
     }
@@ -138,96 +138,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    function renderSinglePreview(previewContainer, file, zone, slotIndex) {
-        if (!previewContainer) return;
-
-        previewContainer.innerHTML = "";
-        if (!file) {
-            if (zone) {
-                zone.classList.remove("has-image");
-                zone.style.backgroundImage = "";
-                const existingBadge = zone.querySelector(".image-selected-badge");
-                if (existingBadge) existingBadge.remove();
-            }
-            updateImageStatusNote();
-            return;
-        }
-
-        const thumbWrap = document.createElement("div");
-        thumbWrap.className = "thumb-wrap";
-
-        const image = document.createElement("img");
-        image.src = URL.createObjectURL(file);
-        image.alt = file.name;
-        image.onload = () => URL.revokeObjectURL(image.src);
-
-        const fileName = document.createElement("p");
-        fileName.className = "thumb-name";
-        fileName.textContent = file.name;
-
-        thumbWrap.appendChild(image);
-        thumbWrap.appendChild(fileName);
-        previewContainer.appendChild(thumbWrap);
-
-        if (zone) {
-            const zoneImageUrl = URL.createObjectURL(file);
-            zone.style.backgroundImage = `url('${zoneImageUrl}')`;
-            zone.classList.add("has-image");
-
-            const existingBadge = zone.querySelector(".image-selected-badge");
-            if (existingBadge) existingBadge.remove();
-
-            const badge = document.createElement("span");
-            badge.className = "image-selected-badge";
-            badge.textContent = `Image ${slotIndex + 1} selected`;
-            zone.appendChild(badge);
-        }
-
-        updateImageStatusNote();
-    }
-
-    function wireDropZone(zone, input, previewContainer, slotIndex) {
-        if (!zone || !input) return;
-
-        const assignFile = (chosenFile) => {
-            const pendingCount = selectedListingImages.filter(Boolean).length;
-            const replacingExistingPending = selectedListingImages[slotIndex] ? 1 : 0;
-            const nextTotal = existingImages.length + pendingCount - replacingExistingPending + (chosenFile ? 1 : 0);
-
-            if (nextTotal > 4) {
-                alert("You can upload up to 4 listing images total.");
-                input.value = "";
+    // Added by James Williams 10/26/26 - shared picker (js/image_uploader.js)
+    const imagePickers = previewInputs.map((input, index) => window.ImageUploader.attach(input, {
+        preview: document.getElementById(`previewPreview${index + 1}`),
+        onChange: (file, picker) => {
+            if (file && existingImages.length + queuedFiles().length > 4) {
+                picker.clear();
+                picker.showError("You can upload up to 4 listing images total.");
                 return;
             }
+            updateImageStatusNote();
+        }
+    }));
 
-            selectedListingImages[slotIndex] = chosenFile;
-            renderSinglePreview(previewContainer, selectedListingImages[slotIndex], zone, slotIndex);
-        };
-
-        zone.addEventListener("click", () => input.click());
-
-        zone.addEventListener("dragover", (event) => {
-            event.preventDefault();
-            zone.classList.add("dragover");
-        });
-
-        zone.addEventListener("dragleave", () => {
-            zone.classList.remove("dragover");
-        });
-
-        zone.addEventListener("drop", (event) => {
-            event.preventDefault();
-            zone.classList.remove("dragover");
-            const droppedFile = event.dataTransfer?.files?.[0];
-            if (droppedFile && droppedFile.type.startsWith("image/")) {
-                assignFile(droppedFile);
-            }
-        });
-
-        input.addEventListener("change", () => {
-            const chosenFile = input.files?.[0];
-            assignFile(chosenFile && chosenFile.type.startsWith("image/") ? chosenFile : null);
-        });
+    function queuedFiles() {
+        return imagePickers.map((picker) => picker.file).filter(Boolean);
     }
 
     async function fetchListingImages() {
@@ -342,7 +267,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function saveQueuedImages() {
-        const queuedImages = selectedListingImages.filter(Boolean);
+        const queuedImages = queuedFiles();
         if (!queuedImages.length) return;
 
         if (existingImages.length + queuedImages.length > 4) {
@@ -370,13 +295,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
     }
-
-    [1, 2, 3, 4].forEach((index, arrayIndex) => {
-        const zone = document.getElementById(`previewZone${index}`);
-        const input = previewInputs[arrayIndex];
-        const preview = document.getElementById(`previewPreview${index}`);
-        wireDropZone(zone, input, preview, arrayIndex);
-    });
 
     try {
         const userRes = await fetch("/auth/api/auth/me");
@@ -459,14 +377,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
         }
 
-        form.addEventListener("submit", async (event) => {
-            event.preventDefault();
-
+        form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Saving…", async () => {
             const isOneSizeMode = oneSizeToggle && oneSizeToggle.checked;
             const isMadeToOrder = madeToOrderToggle && madeToOrderToggle.checked;
             const price = Number(document.getElementById("price").value);
             const title = document.getElementById("listingName").value.trim();
-            const queuedImages = selectedListingImages.filter(Boolean);
+            const queuedImages = queuedFiles();
 
             if (!title || price < 0) {
                 alert("Please enter valid listing details.");
@@ -586,9 +502,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                 });
             }
 
-            await saveQueuedImages();
+            try {
+                await saveQueuedImages();
+            } catch (error) {
+                alert(error.message || "Could not save the new images.");
+                return;
+            }
             window.location.href = "/storefronts/dashboard";
-        });
+            return true;
+        }));
     } catch (error) {
         console.error("Error loading edit listing page:", error);
         alert(error.message || "Something went wrong while loading this listing.");

@@ -7,6 +7,7 @@ Created by Elali McNair - Iteration 4
 Updated by Day Ekoi - Iteration 5 4/9/26
 Updated by Day Ekoi - Iteration 5 4/22/26 - One Size mode, per-size quantities, Made-to-Order
 Updated by James Williams - 10/26/26 - added the required category picker
+Updated by James Williams - 10/26/26 - shared photo picker, one request per submit
 
 Purpose:
 Handles form submission for Create Listing page. Supports:
@@ -46,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const cancelBtn = document.getElementById("cancelBtn");
   const storefrontSelect = document.getElementById("storefrontSelect");
   const previewInputs = [1, 2, 3, 4].map((index) => document.getElementById(`previewImage${index}`));
-  const selectedListingImages = [null, null, null, null];
+  let currentUser = null; // loaded once with the storefronts
 
   // ── Size mode elements ──────────────────────────────────────
   const oneSizeToggle = document.getElementById("oneSizeToggle");
@@ -120,93 +121,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // ── Image preview / drop zone ────────────────────────────────
-
-  function renderSinglePreview(previewContainer, file, zone, slotIndex) {
-    if (!previewContainer) return;
-
-    previewContainer.innerHTML = "";
-    if (!file) {
-      if (zone) {
-        zone.classList.remove("has-image");
-        zone.style.backgroundImage = "";
-        const existingBadge = zone.querySelector(".image-selected-badge");
-        if (existingBadge) existingBadge.remove();
-      }
-      return;
-    }
-
-    const thumbWrap = document.createElement("div");
-    thumbWrap.className = "thumb-wrap";
-
-    const image = document.createElement("img");
-    image.src = URL.createObjectURL(file);
-    image.alt = file.name;
-    image.onload = () => URL.revokeObjectURL(image.src);
-
-    const fileName = document.createElement("p");
-    fileName.className = "thumb-name";
-    fileName.textContent = file.name;
-
-    thumbWrap.appendChild(image);
-    thumbWrap.appendChild(fileName);
-    previewContainer.appendChild(thumbWrap);
-
-    if (zone) {
-      const zoneImageUrl = URL.createObjectURL(file);
-      zone.style.backgroundImage = `url('${zoneImageUrl}')`;
-      zone.classList.add("has-image");
-
-      const existingBadge = zone.querySelector(".image-selected-badge");
-      if (existingBadge) existingBadge.remove();
-
-      const badge = document.createElement("span");
-      badge.className = "image-selected-badge";
-      badge.textContent = `Image ${slotIndex + 1} selected`;
-      zone.appendChild(badge);
-    }
-  }
-
-  function wireDropZone(zone, input, previewContainer, slotIndex) {
-    if (!zone || !input) return;
-
-    zone.addEventListener("click", () => input.click());
-
-    zone.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      zone.classList.add("dragover");
-    });
-
-    zone.addEventListener("dragleave", () => {
-      zone.classList.remove("dragover");
-    });
-
-    zone.addEventListener("drop", (event) => {
-      event.preventDefault();
-      zone.classList.remove("dragover");
-
-      const droppedFile = event.dataTransfer?.files?.[0];
-      if (droppedFile && droppedFile.type.startsWith("image/")) {
-        selectedListingImages[slotIndex] = droppedFile;
-        renderSinglePreview(previewContainer, droppedFile, zone, slotIndex);
-      }
-    });
-
-    input.addEventListener("change", () => {
-      const chosenFile = input.files?.[0];
-      selectedListingImages[slotIndex] = chosenFile && chosenFile.type.startsWith("image/")
-        ? chosenFile
-        : null;
-      renderSinglePreview(previewContainer, selectedListingImages[slotIndex], zone, slotIndex);
-    });
-  }
-
-  [1, 2, 3, 4].forEach((index, arrayIndex) => {
-    const zone = document.getElementById(`previewZone${index}`);
-    const input = previewInputs[arrayIndex];
-    const preview = document.getElementById(`previewPreview${index}`);
-    wireDropZone(zone, input, preview, arrayIndex);
-  });
+  // ── Image pickers ────────────────────────────────────────────
+  // Added by James Williams 10/26/26 - shared picker (js/image_uploader.js)
+  const imagePickers = previewInputs.map((input, index) => window.ImageUploader.attach(input, {
+    preview: document.getElementById(`previewPreview${index + 1}`)
+  }));
 
   if (storefrontSelect) {
     loadUserStorefronts();
@@ -215,16 +134,14 @@ document.addEventListener('DOMContentLoaded', function() {
   // ── Form submission ──────────────────────────────────────────
 
   if (listingForm) {
-    listingForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const userRes = await fetch("/auth/api/auth/me");
-      if (!userRes.ok) {
+    // Updated by James Williams 10/26/26 - one request per submit; the user comes from page load
+    listingForm.addEventListener("submit", window.ImageUploader.guardSubmit(listingForm, "Publishing…", async () => {
+      const user = currentUser || await fetchCurrentUser();
+      if (!user) {
         alert("You must be logged in to create a listing.");
         window.location.href = "/auth/login";
-        return;
+        return true;
       }
-      const user = await userRes.json();
 
       const storefrontId = document.getElementById("storefrontSelect").value;
       const listingName = document.getElementById("listingName").value.trim();
@@ -284,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const totalQty = isMadeToOrder ? 0 : Object.values(sizeQuantities).reduce((a, b) => a + b, 0);
 
-      const listingImages = selectedListingImages.filter(Boolean);
+      const listingImages = imagePickers.map((picker) => picker.file).filter(Boolean);
       if (listingImages.length === 0) {
         alert("Please upload at least one listing image.");
         return;
@@ -303,7 +220,6 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append("size_quantities", JSON.stringify(sizeQuantities));
         formData.append("category_id", String(categoryId)); // Added by James Williams 10/26/26
         listingImages.forEach(file => formData.append("listing_images", file));
-        formData.append("listing_image", listingImages[0]);
 
         const response = await fetch("/api/listings/create", {
           method: "POST",
@@ -314,6 +230,10 @@ document.addEventListener('DOMContentLoaded', function() {
           body: formData,
         });
 
+        if (response.status === 401) {
+          window.location.href = "/auth/login";
+          return true;
+        }
         const result = await response.json();
 
         if (response.ok) {
@@ -321,6 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
           window.setTimeout(() => {
             window.location.href = "/my-storefront";
           }, 2500);
+          return true;
         } else if (CATEGORY_ERROR_MESSAGES.includes(result.error)) { // Added by James Williams 10/26/26
           categoryPicker.setError(result.error);
           categoryPicker.focus();
@@ -331,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Error submitting form:", error);
         alert("Error creating listing: " + error.message);
       }
-    });
+    }));
   }
 
   if (cancelBtn) {
@@ -340,14 +261,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  async function fetchCurrentUser() {
+    const userRes = await fetch("/auth/api/auth/me");
+    currentUser = userRes.ok ? await userRes.json() : null;
+    return currentUser;
+  }
+
   async function loadUserStorefronts() {
     try {
-      const userRes = await fetch("/auth/api/auth/me");
-      if (!userRes.ok) {
+      const user = await fetchCurrentUser();
+      if (!user) {
         window.location.href = "/auth/login";
         return;
       }
-      const user = await userRes.json();
 
       const response = await fetch("/api/storefronts/me", {
         method: "GET",

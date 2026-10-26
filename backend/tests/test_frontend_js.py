@@ -5,6 +5,7 @@
 # - Picker search/selection logic and card helpers (tests/js/frontend_logic_test.js)
 # - Static guards: the shared card never puts data into innerHTML; the nav toggle
 #   lives in nav_pane.js; templates reference static files that exist
+# Updated by James Williams - 10/26/26 - photo pickers use the shared uploader
 
 import glob
 import os
@@ -103,6 +104,22 @@ class TestFrontendStaticGuards(unittest.TestCase):
         source = read("static/js/hot.js")
         self.assertRegex(source, r'fetch\("/api/hot",\s*\{\s*cache:\s*"no-cache"\s*\}\)')
 
+
+    # Added by James Williams 10/26/26
+    def test_photo_pickers_use_the_shared_uploader(self):
+        for page in ("create_listing", "edit_listing", "create_storefront", "edit_storefront", "returns"):
+            with self.subTest(page=page):
+                html = read(f"templates/{page}.html")
+                self.assertLess(html.index("js/image_uploader.js"), html.index(f"js/{page}.js"))
+                # each zone is a <label> around its input, so a click opens exactly one dialog
+                self.assertNotIn('<div class="drop-zone"', html)
+                self.assertNotRegex(html, r'type="file"[^>]*\bhidden\b')
+                source = read(f"static/js/{page}.js")
+                self.assertIn("ImageUploader.attach(", source)
+                self.assertIn("ImageUploader.guardSubmit(", source)
+                self.assertNotIn(".click()", source)
+        self.assertNotRegex(read("static/css/create_storefront.css"), r'(?m)^input\[type="file"\]')
+        self.assertNotIn('formData.append("listing_image",', read("static/js/create_listing.js"))
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

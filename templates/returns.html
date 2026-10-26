@@ -152,10 +152,10 @@ Please still complete this form so The Vault can track the return request.
 
                 <div class="form-card preview-card">
                     <label class="section-label">Upload Damage Photo</label>
-                    <div class="drop-zone" id="damageZone">
-                        <p>Drag & drop or <span class="drop-link">browse</span></p>
-                        <input type="file" id="damageImage" name="damage_image" accept="image/*" hidden>
-                    </div>
+                    <label class="drop-zone" id="damageZone">
+                        <span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span>
+                        <input type="file" id="damageImage" name="damage_image" accept="image/jpeg,image/png,image/webp,image/gif">
+                    </label>
                     <div class="image-preview-row" id="damagePreview"></div>
                     <p class="helper-text">Optional, but supported when damage is present.</p>
                 </div>
@@ -170,6 +170,7 @@ Please still complete this form so The Vault can track the return request.
 
     <div class="returns-feedback" id="returnsFeedback"></div>
 
+    <script src="{{ url_for('static', filename='js/image_uploader.js') }}"></script> <!-- Added by James Williams 10/26/26 -->
     <script src="{{ url_for('static', filename='js/returns.js') }}"></script>
 </body>
 </html>

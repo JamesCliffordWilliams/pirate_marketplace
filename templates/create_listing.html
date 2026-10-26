@@ -60,30 +60,16 @@ This file acts as the UI structure (skeleton) of the Create Listing feature.
             border-color: #f0cc55;
         }
         .drop-zone.has-image {
+            background-image: var(--preview-image);
             background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
             background-color: rgba(255, 255, 255, 0.05);
             border-style: solid;
         }
-        .drop-zone.has-image p {
+        .drop-zone.has-image .drop-text {
             opacity: 0;
             pointer-events: none;
-        }
-        .drop-zone .image-selected-badge {
-            position: absolute;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.72);
-            border: 1px solid rgba(212, 175, 55, 0.75);
-            color: #f2d06c;
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.4px;
-            padding: 0.22rem 0.45rem;
-            border-radius: 999px;
-            text-transform: uppercase;
         }
         .drop-link { color: #d4af37; text-decoration: underline; cursor: pointer; }
         .image-preview-row {
@@ -229,22 +215,22 @@ This file acts as the UI structure (skeleton) of the Create Listing feature.
                 <div class="preview-grid-4">
                     <div class="preview-slot">
                         <p class="slot-label">Image 1</p>
-                        <div class="drop-zone" id="previewZone1"><p>Drag & drop or <span class="drop-link">browse</span></p><input type="file" id="previewImage1" accept="image/*" hidden></div>
+                        <label class="drop-zone" id="previewZone1"><span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span><input type="file" id="previewImage1" accept="image/jpeg,image/png,image/webp,image/gif"></label>
                         <div class="image-preview-row" id="previewPreview1"></div>
                     </div>
                     <div class="preview-slot">
                         <p class="slot-label">Image 2</p>
-                        <div class="drop-zone" id="previewZone2"><p>Drag & drop or <span class="drop-link">browse</span></p><input type="file" id="previewImage2" accept="image/*" hidden></div>
+                        <label class="drop-zone" id="previewZone2"><span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span><input type="file" id="previewImage2" accept="image/jpeg,image/png,image/webp,image/gif"></label>
                         <div class="image-preview-row" id="previewPreview2"></div>
                     </div>
                     <div class="preview-slot">
                         <p class="slot-label">Image 3</p>
-                        <div class="drop-zone" id="previewZone3"><p>Drag & drop or <span class="drop-link">browse</span></p><input type="file" id="previewImage3" accept="image/*" hidden></div>
+                        <label class="drop-zone" id="previewZone3"><span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span><input type="file" id="previewImage3" accept="image/jpeg,image/png,image/webp,image/gif"></label>
                         <div class="image-preview-row" id="previewPreview3"></div>
                     </div>
                     <div class="preview-slot">
                         <p class="slot-label">Image 4</p>
-                        <div class="drop-zone" id="previewZone4"><p>Drag & drop or <span class="drop-link">browse</span></p><input type="file" id="previewImage4" accept="image/*" hidden></div>
+                        <label class="drop-zone" id="previewZone4"><span class="drop-text">Drag & drop or <span class="drop-link">browse</span></span><input type="file" id="previewImage4" accept="image/jpeg,image/png,image/webp,image/gif"></label>
                         <div class="image-preview-row" id="previewPreview4"></div>
                     </div>
                 </div>
@@ -386,6 +372,7 @@ This file acts as the UI structure (skeleton) of the Create Listing feature.
 
     <!-- javascript -->
 <script src="{{ url_for('static', filename='js/category_picker.js') }}"></script> <!-- Added by James Williams 10/26/26 -->
+        <script src="{{ url_for('static', filename='js/image_uploader.js') }}"></script> <!-- Added by James Williams 10/26/26 -->
         <script src="{{ url_for('static', filename='js/create_listing.js') }}"></script>
 
 </body>

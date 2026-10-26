@@ -7,6 +7,7 @@
     Updated by Day Ekoi - Iteration 5 4/9/26
     Updated by Day Ekoi - Iteration 5 4/16/26 - S3 image upload integration
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - drag-drop zones, image preview thumbnails, preview_image_1-4 upload support
+    Updated by James Williams - 10/26/26 - shared photo picker, one request per submit
 */
 
 const form = document.getElementById("storefrontForm");
@@ -77,66 +78,19 @@ function setupCategoryLimitGuard() {
 })();
 
 
-// shows thumbnail + filename in a preview container
-function showPreview(containerId, files, max = 1) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = "";
-    Array.from(files).slice(0, max).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-            const wrap = document.createElement("div");
-            wrap.className = "thumb-wrap";
-
-            const img = document.createElement("img");
-            img.src = e.target.result;
-
-            const name = document.createElement("span");
-            name.className = "thumb-name";
-            name.textContent = file.name;
-
-            wrap.appendChild(img);
-            wrap.appendChild(name);
-            container.appendChild(wrap);
-        };
-        reader.readAsDataURL(file);
-    });
+// Added by James Williams 10/26/26 - shared picker (js/image_uploader.js)
+function setupImagePickers() {
+    const attach = (inputId, previewId) => window.ImageUploader.attach(
+        document.getElementById(inputId), { preview: document.getElementById(previewId) }
+    );
+    return {
+        logo: attach("logoUpload", "logoPreview"),
+        banner: attach("bannerUpload", "bannerPreview"),
+        previews: [1, 2, 3, 4].map((n) => attach(`previewImage${n}`, `previewPreview${n}`)),
+    };
 }
 
-
-// wires up a drop zone: click to browse, drag-and-drop to select, shows preview
-function setupDropZone(zoneId, inputId, previewId, max = 1) {
-    const zone = document.getElementById(zoneId);
-    const input = document.getElementById(inputId);
-
-    zone.addEventListener("click", () => input.click());
-
-    zone.addEventListener("dragover", e => {
-        e.preventDefault();
-        zone.classList.add("dragover");
-    });
-
-    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
-
-    zone.addEventListener("drop", e => {
-        e.preventDefault();
-        zone.classList.remove("dragover");
-        const dt = new DataTransfer();
-        Array.from(e.dataTransfer.files).slice(0, max).forEach(f => dt.items.add(f));
-        input.files = dt.files;
-        showPreview(previewId, dt.files, max);
-    });
-
-    input.addEventListener("change", () => showPreview(previewId, input.files, max));
-}
-
-
-// set up drop zones - Updated by Day Ekoi 4/20/26 - 4 individual preview slots
-setupDropZone("bannerZone", "bannerUpload", "bannerPreview", 1);
-setupDropZone("logoZone", "logoUpload", "logoPreview", 1);
-setupDropZone("previewZone1", "previewImage1", "previewPreview1", 1);
-setupDropZone("previewZone2", "previewImage2", "previewPreview2", 1);
-setupDropZone("previewZone3", "previewImage3", "previewPreview3", 1);
-setupDropZone("previewZone4", "previewImage4", "previewPreview4", 1);
+const imagePickers = setupImagePickers();
 setupCategoryLimitGuard();
 
 
@@ -158,8 +112,10 @@ async function uploadImageToS3(file, folder) {
 
 
 // form submission
-form.addEventListener("submit", async (event) => {
-    event.preventDefault();
+form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Creating…", async () => {
+    if (!validateCategoryLimit()) {
+        return;
+    }
 
     try {
         const userRes = await fetch("/auth/api/auth/me");
@@ -174,7 +130,7 @@ form.addEventListener("submit", async (event) => {
 
         // upload logo
         let logoUrl = null;
-        const logoFile = document.getElementById("logoUpload").files[0];
+        const logoFile = imagePickers.logo.file;
         if (logoFile) {
             try { logoUrl = await uploadImageToS3(logoFile, "storefronts/logos"); }
             catch (err) { alert("Failed to upload logo image. Please try again."); return; }
@@ -182,7 +138,7 @@ form.addEventListener("submit", async (event) => {
 
         // upload banner
         let bannerUrl = null;
-        const bannerFile = document.getElementById("bannerUpload").files[0];
+        const bannerFile = imagePickers.banner.file;
         if (bannerFile) {
             try { bannerUrl = await uploadImageToS3(bannerFile, "storefronts/banners"); }
             catch (err) { alert("Failed to upload banner image. Please try again."); return; }
@@ -191,7 +147,7 @@ form.addEventListener("submit", async (event) => {
         // upload 4 individual preview images - Updated by Day Ekoi 4/20/26
         const previewUrls = [null, null, null, null];
         for (let i = 0; i < 4; i++) {
-            const file = document.getElementById(`previewImage${i + 1}`).files[0];
+            const file = imagePickers.previews[i].file;
             if (file) {
                 try {
                     previewUrls[i] = await uploadImageToS3(file, "storefronts/previews");
@@ -203,9 +159,6 @@ form.addEventListener("submit", async (event) => {
         }
 
         const checkedCategories = Array.from(document.querySelectorAll('input[name="categories"]:checked')).map(cb => cb.value);
-        if (!validateCategoryLimit()) {
-            return;
-        }
 
         const payload = {
             brand_name: formData.get("brand_name"),
@@ -238,9 +191,10 @@ form.addEventListener("submit", async (event) => {
         }
 
         window.location.href = "/storefronts/dashboard";
+        return true;
 
     } catch (err) {
         console.error("Error creating storefront:", err);
         alert("Something went wrong. Please try again.");
     }
-});
+}));
