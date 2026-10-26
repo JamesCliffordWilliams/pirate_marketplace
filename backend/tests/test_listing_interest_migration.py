@@ -116,6 +116,24 @@ class TestListingInterestMigration(unittest.TestCase):
         self.db.execute("DELETE FROM listings WHERE id = %s;", (self.listing_id,))
         self.assertEqual(self.db.scalar("SELECT COUNT(*) FROM listing_interest;"), 0)
 
+    def test_live_writes_during_migration_do_not_fail_it(self):
+        # a shopper adds to cart while the migration runs (another connection, committed)
+        from migrations import add_listing_interest as migration
+        real_apply = migration.apply_listing_interest
+
+        def apply_with_concurrent_write(cur):
+            self.db.execute(
+                "INSERT INTO cart_items (user_id, item_id, item_name, price) VALUES (%s, %s, 'Item', 10);",
+                (self.shopper, self.listing_id),
+            )
+            return real_apply(cur)
+
+        from unittest.mock import patch
+        with patch.object(migration, "apply_listing_interest", side_effect=apply_with_concurrent_write):
+            summary = self._migrate()
+        self.assertEqual(summary["outcome"], "committed")
+        self.assertTrue(self._table_exists())
+
     def test_init_db_creates_the_table(self):
         from init_db import create_vault_tables
         import contextlib

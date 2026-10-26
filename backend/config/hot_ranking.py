@@ -55,6 +55,9 @@ JUST_LISTED_SHOW_BELOW = 4
 JUST_LISTED_MAX_PER_STOREFRONT = 2
 JUST_LISTED_LIMIT = 8
 
+# Tracking gives up after this long, so it can never hold up wishlist, cart or checkout
+TRACKING_TIMEOUT_SECONDS = 2
+
 # Caching
 CACHE_SECONDS = 120          # ranked ids, per app process
 API_MAX_AGE_SECONDS = 60     # Cache-Control on GET /api/hot

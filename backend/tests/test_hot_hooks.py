@@ -5,6 +5,7 @@
 
 import os
 import sys
+import time
 import unittest
 from unittest.mock import patch
 
@@ -18,6 +19,7 @@ for path in (PROJECT_ROOT, BACKEND_ROOT):
 from tests.db_test_guard import require_local_db
 from tests.hot_test_db import ThrowawaySchema
 from app import create_app
+from config import hot_ranking as cfg
 from services import interest_service
 
 BUYER = {
@@ -58,7 +60,11 @@ class HookTestCase(unittest.TestCase):
         return [row[2] for row in self.db.interest_rows()]
 
     def failing_tracker(self):
-        return patch.object(interest_service, "record_interest", side_effect=RuntimeError("db down"))
+        from contextlib import ExitStack
+        stack = ExitStack()
+        for name in ("record_interest", "record_interests"):
+            stack.enter_context(patch.object(interest_service, name, side_effect=RuntimeError("db down")))
+        return stack
 
 
 class TestWishlistHook(HookTestCase):
@@ -168,17 +174,17 @@ class TestCheckoutHook(HookTestCase):
     def test_order_recorded_only_after_order_saved(self):
         self.login(self.shopper, cart=self.cart())
         seen = []
-        real = interest_service.record_interest
+        real = interest_service.record_interests
 
-        def check_then_record(listing_id, user_id, kind):
+        def check_then_record(listing_ids, user_id, kind):
             # read from a separate connection: only committed rows are visible
             seen.append((
                 self.db.scalar("SELECT COUNT(*) FROM orders WHERE user_id = %s;", (user_id,)),
-                self.db.scalar("SELECT COUNT(*) FROM order_items WHERE listing_id = %s;", (listing_id,)),
+                self.db.scalar("SELECT COUNT(*) FROM order_items WHERE listing_id = ANY(%s);", (listing_ids,)),
             ))
-            return real(listing_id, user_id, kind)
+            return real(listing_ids, user_id, kind)
 
-        with patch.object(interest_service, "record_interest", side_effect=check_then_record):
+        with patch.object(interest_service, "record_interests", side_effect=check_then_record):
             response = self.checkout()
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.get_json()["success"])
@@ -223,6 +229,46 @@ class TestCheckoutHook(HookTestCase):
             response = self.checkout()
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.get_json()["success"])
+
+
+class TestTrackingTimeouts(HookTestCase):
+
+    def test_whole_order_uses_one_connection(self):
+        from models import interest_model
+        others = [self.db.add_listing(self.store, f"Item {i}") for i in range(2)]
+        real = interest_model.get_connection
+        calls = []
+
+        def counting(*args, **kwargs):
+            calls.append(kwargs)
+            return real(*args, **kwargs)
+
+        with patch.object(interest_model, "get_connection", side_effect=counting):
+            interest_service.track_order(self.shopper, [
+                {"listing_id": self.listing}, {"listing_id": others[0]}, {"listing_id": others[1]},
+                {"listing_id": self.listing},
+            ])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0].get("connect_timeout"), cfg.TRACKING_TIMEOUT_SECONDS)
+        self.assertEqual(sorted(r[0] for r in self.db.interest_rows()), sorted([self.listing] + others))
+
+    def test_stuck_tracking_cannot_hold_up_checkout(self):
+        # another session holds a lock on listing_interest, so tracking can't write
+        blocker = self.db.connect()
+        blocker.cursor().execute("LOCK TABLE listing_interest IN ACCESS EXCLUSIVE MODE;")
+        try:
+            self.login(self.shopper, cart=[{"id": self.listing, "name": "Hoodie", "price": 10.0,
+                                            "quantity": 1, "size": "M"}])
+            started = time.monotonic()
+            response = self.client.post("/api/checkout/complete", json=BUYER)
+            elapsed = time.monotonic() - started
+        finally:
+            blocker.rollback()
+            blocker.close()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.get_json()["success"])
+        self.assertLess(elapsed, cfg.TRACKING_TIMEOUT_SECONDS + 3)
+        self.assertEqual(self.kinds(), [])
 
 
 class TestInterestApi(HookTestCase):

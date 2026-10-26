@@ -6,11 +6,12 @@ load_dotenv()
 
 from config.db import get_connection
 
-def get_connection():
+def get_connection(connect_timeout=None):
     """
     Creates and returns a new PostgreSQL connection
     using environment variables.
     Supports AWS RDS SSL configuration if provided.
+    connect_timeout: optional seconds to wait (added by James Williams 10/26/26)
     """
 
     conn_kwargs = {
@@ -29,5 +30,8 @@ def get_connection():
 
     if sslrootcert:
         conn_kwargs["sslrootcert"] = sslrootcert
+
+    if connect_timeout:
+        conn_kwargs["connect_timeout"] = connect_timeout
 
     return psycopg2.connect(**conn_kwargs)

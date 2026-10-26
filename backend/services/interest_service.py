@@ -12,7 +12,7 @@ so tracking can't undo, slow down with an error, or change the action that calle
 
 from psycopg2 import errors
 
-from models.interest_model import record_interest
+from models.interest_model import record_interest, record_interests
 
 
 def track_interest(listing_id, user_id, kind):
@@ -30,10 +30,14 @@ def track_interest(listing_id, user_id, kind):
 
 
 def track_order(user_id, order_items):
-    """Records 'order' for each listing in a saved order. Never raises."""
+    """Records 'order' for every listing in a saved order, in one statement. Never raises."""
     try:
-        listing_ids = dict.fromkeys(item.get("listing_id") for item in order_items or [])
-        for listing_id in listing_ids:
-            track_interest(listing_id, user_id, "order")
+        listing_ids = [item.get("listing_id") for item in order_items or [] if item.get("listing_id")]
+        if not user_id or not listing_ids:
+            return 0
+        return record_interests(list(dict.fromkeys(listing_ids)), int(user_id), "order")
+    except errors.UndefinedTable:
+        return 0
     except Exception as e:
         print(f"[interest] order not recorded: {e}")
+        return 0

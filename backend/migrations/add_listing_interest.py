@@ -167,6 +167,8 @@ def run_migration(conn, dry_run=False):
     conn.autocommit = False
     cur = conn.cursor()
     try:
+        # one snapshot for the whole run, so shoppers' writes during it don't change the counts
+        cur.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;")
         cur.execute("SET LOCAL lock_timeout = '5s';")
         cur.execute("SELECT pg_advisory_xact_lock(%s);", (ADVISORY_LOCK_KEY,))
 

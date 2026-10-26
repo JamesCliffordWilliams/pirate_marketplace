@@ -17,7 +17,7 @@ Notes:
 from psycopg2 import errors
 
 from db import get_connection
-from config.hot_ranking import INTEREST_KINDS, MIN_ACCOUNT_AGE_HOURS
+from config.hot_ranking import INTEREST_KINDS, MIN_ACCOUNT_AGE_HOURS, TRACKING_TIMEOUT_SECONDS
 from models.listing_model import PUBLIC_LISTING_VISIBILITY_SQL, AVAILABLE_SQL
 
 
@@ -31,24 +31,35 @@ COUNTED_ENGAGER_SQL = """
 
 def record_interest(listing_id, user_id, kind):
     """Saves one engagement. Returns True if a new row was added."""
+    return record_interests([listing_id], user_id, kind) > 0
+
+
+def record_interests(listing_ids, user_id, kind):
+    """
+    Saves the same engagement for several listings with one connection.
+    Gives up after TRACKING_TIMEOUT_SECONDS. Returns how many rows were added.
+    """
     if kind not in INTEREST_KINDS:
         raise ValueError(f"Unknown interest kind: {kind!r}")
+    if not listing_ids:
+        return 0
 
-    conn = get_connection()
+    conn = get_connection(connect_timeout=TRACKING_TIMEOUT_SECONDS)
     try:
         cur = conn.cursor()
+        cur.execute("SET LOCAL statement_timeout = %s;", (TRACKING_TIMEOUT_SECONDS * 1000,))
         cur.execute(f"""
             INSERT INTO listing_interest (listing_id, user_id, kind)
             SELECT l.id, %s, %s
             FROM listings l
             JOIN storefronts s ON s.id = l.storefront_id
-            WHERE l.id = %s
+            WHERE l.id = ANY(%s)
               AND {PUBLIC_LISTING_VISIBILITY_SQL}
               AND s.owner_id <> %s
             ON CONFLICT (listing_id, user_id, kind, day) DO NOTHING
             RETURNING id;
-        """, (user_id, kind, listing_id, user_id))
-        inserted = cur.fetchone() is not None
+        """, (user_id, kind, [int(listing_id) for listing_id in listing_ids], user_id))
+        inserted = len(cur.fetchall())
         conn.commit()
         cur.close()
         return inserted
