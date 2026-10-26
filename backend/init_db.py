@@ -378,7 +378,15 @@ def create_vault_tables():
         cur.execute(create_wallet_transactions_table)
         conn.commit()
 
-        print("DATABASE INITIALIZED: users, storefronts, listings, listing_images, listing_sizes, purchases, wishlist, orders, and order_items tables are ready.")
+        cur.execute("""
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    ORDER BY table_name;
+                    """)
+        tables = [row[0] for row in cur.fetchall()]
+
+        print(f"DATABASE INITIALIZED: {', '.join(tables)} tables are ready.")
 
         cur.close()
         conn.close()
