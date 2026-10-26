@@ -90,7 +90,9 @@ def create_listing_from_form():
     - listing_image: image file upload
     """
     import json
+    from utils.perf import StageTimer, ENABLED as TIMING, upload_folder  # Added by James Williams 10/26/26 (perf branch)
 
+    timer = StageTimer()
     current_user = get_current_user()
     if current_user is None:
         return jsonify({"error": "Unauthorized: missing/invalid X-User-Id"}), 401
@@ -98,6 +100,7 @@ def create_listing_from_form():
     try:
         # Get user's storefront to validate ownership
         user_storefront = get_my_storefront_service(current_user)
+        timer.mark("storefront_lookup")
         if user_storefront is None:
             return jsonify({"error": "You must create a storefront before creating listings."}), 400
 
@@ -121,6 +124,7 @@ def create_listing_from_form():
             category = resolve_assignable_category(request.form.get("category_id"))
         except Exception as e:
             return jsonify({"error": str(e)}), 400
+        timer.mark("category")
 
         # Parse sizes
         try:
@@ -147,6 +151,7 @@ def create_listing_from_form():
             quantity_on_hand = 0
 
         # Handle file upload(s) - supports multiple images, first one is primary.
+        timer.mark("parse_form")
         upload_files = request.files.getlist("listing_images")
         upload_files = [f for f in upload_files if f and f.filename]
 
@@ -167,10 +172,11 @@ def create_listing_from_form():
                 if not file.filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp")):
                     return jsonify({"error": "Image must be PNG, JPG, JPEG, GIF, or WebP."}), 400
 
-                image_url = upload_image_to_s3(file, folder="listings")
+                image_url = upload_image_to_s3(file, folder=upload_folder("listings"))
                 if not image_url:
                     return jsonify({"error": "Failed to upload image to S3."}), 500
                 image_urls.append(image_url)
+                timer.mark(f"s3_upload_{len(image_urls)}")
         except Exception as e:
             return jsonify({"error": f"Error uploading image(s) to S3: {str(e)}"}), 500
 
@@ -189,6 +195,7 @@ def create_listing_from_form():
 
         # Create listing
         listing = create_listing_service(current_user, storefront_id, data)
+        timer.mark("insert_listing")
 
         # Add uploaded images to listing
         for index, image_url in enumerate(image_urls):
@@ -196,6 +203,7 @@ def create_listing_from_form():
                 add_listing_image_service(current_user, listing["id"], image_url, is_primary=(index == 0))
             except Exception as e:
                 print(f"Warning: Failed to add image to listing: {str(e)}")
+        timer.mark("insert_images")
 
         # Add sizes with individual quantities
         for size in sizes_available:
@@ -209,8 +217,13 @@ def create_listing_from_form():
                 upsert_listing_size_service(current_user, listing["id"], size, size_qty)
             except Exception as e:
                 print(f"Warning: Failed to add size {size} to listing: {str(e)}")
+        timer.mark("insert_sizes")
 
-        return jsonify(listing), 201
+        response = jsonify(listing)
+        if TIMING:
+            response.headers["Server-Timing"] = timer.header()
+            print("create-listing timing:", timer.header())
+        return response, 201
 
     except Exception as e:
         msg = str(e).lower()
