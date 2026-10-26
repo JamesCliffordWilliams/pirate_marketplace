@@ -21,6 +21,8 @@ from dotenv import load_dotenv
 
 # Added by James Williams 10/26/26 - same category setup the migration uses
 from migrations.add_product_categories import apply_product_categories
+# Added by James Williams 10/26/26 - engagement table for the Hot page
+from migrations.add_listing_interest import apply_listing_interest
 
 load_dotenv()
 
@@ -343,9 +345,15 @@ def create_vault_tables():
         """
         cur.execute(create_order_items_table)
 
+        # ________________________________________________________
+        # LISTING INTEREST (Hot page engagement)
+        # Added by James Williams 10/26/26
+        # ________________________________________________________
+        apply_listing_interest(cur)
+
         conn.commit()
 
-        print("DATABASE INITIALIZED: users, storefronts, listings, product_categories, listing_images, listing_sizes, purchases, wishlist, orders, and order_items tables are ready.")
+        print("DATABASE INITIALIZED: users, storefronts, listings, product_categories, listing_images, listing_sizes, purchases, wishlist, orders, order_items, and listing_interest tables are ready.")
 
         cur.close()
         conn.close()
