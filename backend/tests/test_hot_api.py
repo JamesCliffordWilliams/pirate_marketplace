@@ -190,11 +190,16 @@ class TestHotApiOffline(unittest.TestCase):
         self.assertEqual(data["hot"], [card(1)])
 
     def test_errors_are_json_500(self):
-        with patch.object(hot_service, "get_engagement_events", side_effect=RuntimeError("db down")):
-            response = self.client.get("/api/hot")
+        secret = 'could not connect to server "db.internal.example" port 5432'
+        with patch.object(hot_service, "get_engagement_events", side_effect=RuntimeError(secret)):
+            with self.assertLogs(self.app.logger, level="ERROR") as logs:
+                response = self.client.get("/api/hot")
         self.assertEqual(response.status_code, 500)
-        self.assertIn("error", response.get_json())
+        self.assertEqual(response.get_json(), {"error": "Couldn't load the Hot page. Please try again."})
+        self.assertNotIn("db.internal.example", response.get_data(as_text=True))
         self.assertIsNone(response.headers.get("Cache-Control"))
+        # the real error is kept in the server log
+        self.assertIn("db.internal.example", "\n".join(logs.output))
 
     def test_page_renders(self):
         response = self.client.get("/hot")
@@ -203,7 +208,8 @@ class TestHotApiOffline(unittest.TestCase):
         self.assertIn('<h1 class="cat-title">Hot</h1>', html)
         self.assertIn("How this works", html)
         self.assertIn("Hot Right Now", html)
-        self.assertIn("What shoppers are saving, carting, and buying this week.", html)
+        self.assertIn("What shoppers are saving, carting, and buying over the last two weeks.", html)
+        self.assertNotIn("this week", html)
         self.assertIn("Picking up momentum, with a boost for smaller storefronts.", html)
         self.assertIn("The newest products from storefronts across Pirate Marketplace.", html)
         for asset in ("css/storefront.css", "css/listing_card.css", "css/categories.css", "css/hot.css",

@@ -15,7 +15,7 @@ Pages:
 - GET /hot                         -> Hot page
 """
 
-from flask import Blueprint, request, jsonify, session, render_template
+from flask import Blueprint, request, jsonify, session, render_template, current_app
 
 from config.hot_ranking import API_MAX_AGE_SECONDS
 from models.interest_model import is_listing_public
@@ -33,6 +33,9 @@ hot_pages_bp = Blueprint("hot_pages_bp", __name__)
 # API Routes
 #_________________________________________________________
 
+MSG_HOT_UNAVAILABLE = "Couldn't load the Hot page. Please try again."
+
+
 # GET /api/hot
 @hot_bp.get("/hot")
 def get_hot_route():
@@ -40,8 +43,10 @@ def get_hot_route():
         response = jsonify(get_hot_page_data())
         response.headers["Cache-Control"] = f"public, max-age={API_MAX_AGE_SECONDS}"
         return response, 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        # full error stays in the server log; shoppers get a plain message
+        current_app.logger.exception("GET /api/hot failed")
+        return jsonify({"error": MSG_HOT_UNAVAILABLE}), 500
 
 
 # POST /api/listings/<id>/interest  {"kind": "detail_view"}
@@ -61,8 +66,9 @@ def record_listing_interest_route(listing_id):
     try:
         if not is_listing_public(listing_id):
             return jsonify({"error": "Listing not found"}), 404
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except Exception:
+        current_app.logger.exception("POST /api/listings/%s/interest failed", listing_id)
+        return jsonify({"error": "Something went wrong."}), 500
 
     track_interest(listing_id, user_id, "detail_view")
     return "", 204

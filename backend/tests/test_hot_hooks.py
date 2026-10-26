@@ -308,6 +308,15 @@ class TestInterestApi(HookTestCase):
         self.assertEqual(self.post(987654).status_code, 404)
         self.assertEqual(self.kinds(), [])
 
+    def test_errors_do_not_expose_internals(self):
+        from controllers import hot_controller
+        self.login(self.shopper)
+        with patch.object(hot_controller, "is_listing_public", side_effect=RuntimeError('host "db.internal.example"')):
+            with self.assertLogs(self.app.logger, level="ERROR"):
+                response = self.post()
+        self.assertEqual(response.status_code, 500)
+        self.assertNotIn("db.internal.example", response.get_data(as_text=True))
+
     def test_owner_gets_204_but_nothing_recorded(self):
         self.login(self.owner, "owner")
         self.assertEqual(self.post().status_code, 204)
