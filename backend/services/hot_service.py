@@ -17,8 +17,14 @@ Settings live in config/hot_ranking.py.
 """
 
 import math
+import os
+import threading
+import time
+from types import MappingProxyType
 
 from config import hot_ranking as cfg
+from models.interest_model import get_engagement_events, get_storefront_reach
+from models.listing_model import browse_public_listings, get_newest_available_listings
 
 
 # ________________________________________________________
@@ -164,3 +170,108 @@ def select_just_listed(newest, exclude_ids):
     return _pick_per_storefront(
         candidates, cfg.JUST_LISTED_MAX_PER_STOREFRONT, cfg.JUST_LISTED_LIMIT, exclude_ids
     )
+
+
+# ________________________________________________________
+# RANKING CACHE (per process)
+# ________________________________________________________
+
+class RankingCache:
+    """
+    Holds the ranked candidates for CACHE_SECONDS in this process only.
+    Each app process keeps its own copy; only ids and scores are kept,
+    never card data, so a stale entry can't show an unavailable listing.
+    """
+
+    def __init__(self, ttl_seconds):
+        self.ttl_seconds = ttl_seconds
+        self._lock = threading.Lock()
+        self._value = None
+        self._expires_at = 0.0
+
+    def get_or_compute(self, compute):
+        with self._lock:
+            if self._value is not None and time.monotonic() < self._expires_at:
+                return self._value
+        value = compute()   # outside the lock; a failure is never cached
+        with self._lock:
+            self._value = value
+            self._expires_at = time.monotonic() + self.ttl_seconds
+        return value
+
+    def peek(self):
+        return self._value
+
+    def clear(self):
+        with self._lock:
+            self._value = None
+            self._expires_at = 0.0
+
+    def reset_after_fork(self):
+        # a forked worker starts empty with a new lock
+        self._lock = threading.Lock()
+        self._value = None
+        self._expires_at = 0.0
+
+
+_ranking_cache = RankingCache(cfg.CACHE_SECONDS)
+
+if hasattr(os, "register_at_fork"):
+    os.register_at_fork(after_in_child=_ranking_cache.reset_after_fork)
+
+
+def clear_ranking_cache():
+    _ranking_cache.clear()
+
+
+def _frozen(candidates):
+    keys = ("listing_id", "storefront_id", "score", "latest_age_hours")
+    return tuple(MappingProxyType({key: c[key] for key in keys}) for c in candidates[:cfg.MAX_CANDIDATES])
+
+
+def _compute_ranked_candidates():
+    events = get_engagement_events(max(cfg.HOT_WINDOW_DAYS, cfg.RISING_WINDOW_DAYS) * 24)
+    reach = get_storefront_reach({e["storefront_id"] for e in events}, cfg.RISING_REACH_DAYS)
+    return MappingProxyType({
+        "hot": _frozen(rank_hot(events)),
+        "rising": _frozen(rank_rising(events, reach)),
+    })
+
+
+# ________________________________________________________
+# HOT PAGE
+# ________________________________________________________
+
+def _cards_by_id(listing_ids):
+    """Fresh card data for listings that are visible and in stock right now."""
+    if not listing_ids:
+        return {}
+    listings, _ = browse_public_listings(listing_ids=list(listing_ids), available_only=True,
+                                         limit=len(listing_ids))
+    return {listing["id"]: listing for listing in listings}
+
+
+def get_hot_page_data():
+    """Returns {"hot": [...], "rising": [...], "just_listed": [...]} in the category card shape."""
+    ranked = _ranking_cache.get_or_compute(_compute_ranked_candidates)
+
+    candidate_ids = list(dict.fromkeys(c["listing_id"] for c in ranked["hot"] + ranked["rising"]))
+    cards = _cards_by_id(candidate_ids)
+    sections = select_sections(ranked["hot"], ranked["rising"], available_ids=set(cards))
+
+    just_listed = []
+    if needs_just_listed(sections["hot"], sections["rising"]):
+        shown = sections["hot"] + sections["rising"]
+        newest = get_newest_available_listings(
+            exclude_ids=shown,
+            per_storefront=cfg.JUST_LISTED_MAX_PER_STOREFRONT,
+            limit=cfg.JUST_LISTED_LIMIT,
+        )
+        just_listed = select_just_listed(newest, exclude_ids=shown)
+        cards.update(_cards_by_id(just_listed))
+
+    return {
+        "hot": [cards[i] for i in sections["hot"] if i in cards],
+        "rising": [cards[i] for i in sections["rising"] if i in cards],
+        "just_listed": [cards[i] for i in just_listed if i in cards],
+    }

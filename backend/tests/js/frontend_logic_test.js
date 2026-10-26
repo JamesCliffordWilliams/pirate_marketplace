@@ -3,7 +3,8 @@
 
     The Vault Campus Marketplace
     Created by James Williams - 10/26/26
-    Pure-logic tests for category_picker.js and listing_card.js.
+    Pure-logic tests for category_picker.js, listing_card.js and hot.js.
+    Updated by James Williams - 10/26/26 - Hot page: detail_view tracking and section states
     Run by tests/test_frontend_js.py with JavaScriptCore (`jsc`); no browser or DOM needed.
     Usage: jsc frontend_logic_test.js -- <repo root>
 */
@@ -121,6 +122,7 @@ var document = {
     createElement: function (t) { return new FakeNode(t); },
     createTextNode: function (t) { var n = new FakeNode("#text"); n._text = String(t); return n; },
     querySelector: function () { return null; },
+    getElementById: function () { return null; },
     addEventListener: function () {}
 };
 var Event = function (type) { this.type = type; };
@@ -148,5 +150,43 @@ picker.setValue(1);
 check(!picker.hasValue() && hidden.value === "", "parent id via setValue is rejected");
 picker.setValue(9);
 same(hidden.value, "9", "Other via setValue");
+
+// ---------- detail_view tracking (listing_card.js) ----------
+var fetchCalls = [];
+window.fetch = function (url, options) {
+    fetchCalls.push({ url: url, options: options });
+    return Promise.resolve({ ok: true });
+};
+check(C.trackDetailView(5, null) === false, "logged out: no detail_view");
+same(fetchCalls.length, 0, "logged out: nothing sent");
+check(C.trackDetailView(5, 7) === true, "first lightbox open sends");
+same(fetchCalls[0].url, "/api/listings/5/interest", "interest url");
+same(fetchCalls[0].options.method, "POST", "POST");
+same(fetchCalls[0].options.keepalive, true, "keepalive");
+same(fetchCalls[0].options.headers["Content-Type"], "application/json", "JSON content type");
+same(JSON.parse(fetchCalls[0].options.body), { kind: "detail_view" }, "detail_view body");
+check(C.trackDetailView(5, 7) === false, "second open of the same listing is ignored");
+check(C.trackDetailView("5", 7) === false, "same listing as a string is ignored");
+check(C.trackDetailView(6, 7) === true, "a different listing sends");
+check(C.trackDetailView("abc", 7) === false, "bad id");
+check(C.trackDetailView(0, 7) === false, "zero id");
+same(fetchCalls.length, 2, "one request per listing per page load");
+
+// ---------- Hot page section states (hot.js) ----------
+load(root + "/static/js/hot.js");
+var H = window.VaultHot._internals;
+function items(n) { var list = []; for (var i = 0; i < n; i++) list.push({ id: i + 1 }); return list; }
+same(H.sectionStates({ hot: [], rising: [], just_listed: [] }),
+    { page: "empty", hot: "hidden", rising: "hidden", just_listed: "hidden" }, "everything empty");
+same(H.sectionStates(null),
+    { page: "empty", hot: "hidden", rising: "hidden", just_listed: "hidden" }, "no data counts as empty");
+same(H.sectionStates({ hot: items(2), rising: [], just_listed: items(3) }),
+    { page: "content", hot: "cards", rising: "collapsed", just_listed: "cards" }, "partial with Just Listed");
+same(H.sectionStates({ hot: [], rising: [], just_listed: items(2) }),
+    { page: "content", hot: "collapsed", rising: "collapsed", just_listed: "cards" }, "only Just Listed");
+same(H.sectionStates({ hot: items(4), rising: items(1), just_listed: [] }),
+    { page: "content", hot: "cards", rising: "cards", just_listed: "hidden" }, "full page");
+same(H.sectionStates({ hot: [], rising: items(1) }),
+    { page: "content", hot: "collapsed", rising: "cards", just_listed: "hidden" }, "missing just_listed key");
 
 print("OK " + passed);

@@ -13,7 +13,7 @@ from controllers.auth_controller import auth_bp # Updated 3/19/2026 by Ryan Grim
 from controllers.return_controller import returns_bp
 from controllers.checkout_controller import checkout_bp
 from controllers.category_controller import category_bp, category_pages_bp  # Added by James Williams 10/26/26
-from controllers.hot_controller import hot_bp  # Added by James Williams 10/26/26
+from controllers.hot_controller import hot_bp, hot_pages_bp  # Added by James Williams 10/26/26
 from init_db import create_vault_tables
 
 
@@ -91,6 +91,7 @@ def create_app():
     app.register_blueprint(category_bp)         # Added by James Williams 10/26/26
     app.register_blueprint(category_pages_bp)   # Added by James Williams 10/26/26
     app.register_blueprint(hot_bp)              # Added by James Williams 10/26/26
+    app.register_blueprint(hot_pages_bp)        # Added by James Williams 10/26/26
 
     @app.get("/health")
     def health():

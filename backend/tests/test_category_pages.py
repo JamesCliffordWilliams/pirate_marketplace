@@ -149,9 +149,10 @@ class TestCategoryPagesOffline(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertRegex(html, r'<a class="nav-item" href="/categories">All Categories <span>→</span></a>')
-        # the rest of the menu is unchanged
-        for item in ("Explore Brands", "New Drops", "Hot!"):
+        # the rest of the menu is unchanged (Hot! links to /hot - James Williams 10/26/26)
+        for item in ("Explore Brands", "New Drops"):
             self.assertIn(f'<div class="nav-item">{item} <span>→</span></div>', html)
+        self.assertIn('<a class="nav-item" href="/hot">Hot! <span>→</span></a>', html)
         self.assertIn("js/nav_pane.js", html)
         self.assertIn("js/storefront.js", html)
 

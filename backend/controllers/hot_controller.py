@@ -8,16 +8,40 @@ Purpose:
 Routes for the Hot page.
 
 API:
+- GET  /api/hot                    -> Hot, Rising and Just Listed cards
 - POST /api/listings/<id>/interest -> records a detail_view (logged-in shoppers only)
+
+Pages:
+- GET /hot                         -> Hot page
 """
 
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, render_template
 
+from config.hot_ranking import API_MAX_AGE_SECONDS
 from models.interest_model import is_listing_public
 from services.interest_service import track_interest
+from services.hot_service import get_hot_page_data
 
 # API blueprint
 hot_bp = Blueprint("hot_bp", __name__, url_prefix="/api")
+
+# Page blueprint
+hot_pages_bp = Blueprint("hot_pages_bp", __name__)
+
+
+#_________________________________________________________
+# API Routes
+#_________________________________________________________
+
+# GET /api/hot
+@hot_bp.get("/hot")
+def get_hot_route():
+    try:
+        response = jsonify(get_hot_page_data())
+        response.headers["Cache-Control"] = f"public, max-age={API_MAX_AGE_SECONDS}"
+        return response, 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # POST /api/listings/<id>/interest  {"kind": "detail_view"}
@@ -42,3 +66,12 @@ def record_listing_interest_route(listing_id):
 
     track_interest(listing_id, user_id, "detail_view")
     return "", 204
+
+
+#_________________________________________________________
+# Page Routing
+#_________________________________________________________
+
+@hot_pages_bp.route("/hot")
+def hot_page():
+    return render_template("hot.html", current_user_id=session.get("user_id"))
