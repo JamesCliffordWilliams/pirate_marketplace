@@ -346,8 +346,36 @@ def create_vault_tables():
             );
         """
 
-
         cur.execute(create_wallets_table)
+
+        create_wallet_transactions_table = """
+            CREATE TABLE IF NOT EXISTS wallet_transactions  (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                type VARCHAR(10) NOT NULL
+                    CHECK (type IN ('DEPOSIT', 'WITHDRAW', 'PURCHASE')),
+                amount NUMERIC(10,2) NOT NULL CHECK (amount > 0),
+                balance_after NUMERIC(10,2) NOT NULL,
+                description TEXT,
+                order_id INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+
+            CONSTRAINT fk_wallet_tx_user
+                    FOREIGN KEY(user_id)
+                    REFERENCES users(id)
+                    ON DELETE CASCADE,
+
+             CONSTRAINT fk_wallet_tx_order
+                    FOREIGN KEY(order_id)
+                    REFERENCES orders(id)
+                    ON DELETE SET NULL
+            );
+        """
+
+
+
+        cur.execute(create_wallet_transactions_table)
         conn.commit()
 
         print("DATABASE INITIALIZED: users, storefronts, listings, listing_images, listing_sizes, purchases, wishlist, orders, and order_items tables are ready.")
