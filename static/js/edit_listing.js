@@ -8,6 +8,8 @@
     - Per-size quantity inputs
     - Made-to-Order toggle
     Updated by Day E - April 22nd - multi-image edit management using existing S3 and listing image routes
+    Updated by James Williams - 10/26/26 - added the category picker; saving no longer
+    reactivates INACTIVE listings
 */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -30,6 +32,59 @@ document.addEventListener("DOMContentLoaded", async () => {
     let currentUser = null;
     let existingImages = [];
     let sizesArray = [];
+    let loadedListing = null;
+
+    // ── Category picker ─────────────────────────────────────────
+    // Added by James Williams 10/26/26
+    const CATEGORY_ERROR_MESSAGES = [
+        "Please choose a category.",
+        "Choose a specific subcategory, not a main category.",
+        "That category doesn't exist."
+    ];
+    const submitBtn = form ? form.querySelector("button[type='submit']") : null;
+    const categoryPickerRoot = document.getElementById("categoryPicker");
+    let categoriesReady = false;
+
+    function updateSubmitState() {
+        if (submitBtn) submitBtn.disabled = !categoriesReady || !loadedListing;
+    }
+
+    // If the listing's category was removed from the list, tell the seller (saving still keeps it)
+    function noteRetiredCategory() {
+        if (!categoriesReady || !loadedListing || !loadedListing.category_id || categoryPicker.hasValue()) return;
+        let note = document.getElementById("retiredCategoryNote");
+        if (!note) {
+            note = document.createElement("p");
+            note.id = "retiredCategoryNote";
+            note.className = "helper-note";
+            categoryPickerRoot.parentNode.appendChild(note);
+        }
+        const name = loadedListing.category?.name;
+        note.textContent = `${name ? `"${name}"` : "This listing's category"} is no longer offered. Choose a new category, or save to keep it.`;
+    }
+
+    const categoryPicker = window.CategoryPicker.mount(categoryPickerRoot, {
+        hiddenInput: document.getElementById("categoryId"),
+        onStatusChange: (status) => {
+            categoriesReady = status === "ready";
+            updateSubmitState();
+            noteRetiredCategory();
+        },
+        onChange: () => {
+            const note = document.getElementById("retiredCategoryNote");
+            if (note) note.remove();
+        }
+    });
+    updateSubmitState();
+
+    // Added by James Williams 10/26/26
+    // Don't send a status for INACTIVE/DELETED listings so saving never reactivates them
+    function computeSaveStatus(currentStatus, isMadeToOrder, totalQty) {
+        if (currentStatus !== "ACTIVE" && currentStatus !== "SOLD_OUT") {
+            return undefined; // server keeps the current status
+        }
+        return !isMadeToOrder && totalQty === 0 ? "SOLD_OUT" : "ACTIVE";
+    }
 
     if (cancelBtn) {
         cancelBtn.addEventListener("click", () => {
@@ -347,6 +402,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         const listing = await listingRes.json();
+        loadedListing = listing;
+        categoryPicker.setValue(listing.category_id); // Added by James Williams 10/26/26
+        updateSubmitState();
+        noteRetiredCategory();
         sizesArray = sizesRes.ok ? await sizesRes.json() : [];
         const myStorefront = myStorefrontRes.ok ? await myStorefrontRes.json() : null;
 
@@ -459,6 +518,27 @@ document.addEventListener("DOMContentLoaded", async () => {
                 ? 0
                 : Object.values(sizeQuantities).reduce((a, b) => a + b, 0);
 
+            // Added by James Williams 10/26/26
+            const categoryId = document.getElementById("categoryId").value.trim();
+            if (!categoryId && !loadedListing.category_id) {
+                categoryPicker.setError("Please choose a category.");
+                categoryPicker.focus();
+                return;
+            }
+
+            const updateBody = {
+                title,
+                price,
+                quantity_on_hand: totalQty,
+                fulfillment_type: "IN_STOCK",
+                sizes_available: checkedSizes,
+                is_made_to_order: isMadeToOrder,
+            };
+            const saveStatus = computeSaveStatus(loadedListing.status, isMadeToOrder, totalQty);
+            if (saveStatus) updateBody.status = saveStatus;
+            // No value means the old category was removed; leaving it out keeps it
+            if (categoryId) updateBody.category_id = /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId;
+
             const updateRes = await fetch(`/api/listings/${listingId}`, {
                 method: "PUT",
                 headers: {
@@ -466,20 +546,18 @@ document.addEventListener("DOMContentLoaded", async () => {
                     "X-User-Id": currentUser.id,
                     "X-User-Role": currentUser.role
                 },
-                body: JSON.stringify({
-                    title,
-                    price,
-                    quantity_on_hand: totalQty,
-                    fulfillment_type: "IN_STOCK",
-                    status: "ACTIVE",
-                    sizes_available: checkedSizes,
-                    is_made_to_order: isMadeToOrder,
-                })
+                body: JSON.stringify(updateBody)
             });
 
-            const updateData = await updateRes.json();
+            const updateData = await updateRes.json().catch(() => ({}));
             if (!updateRes.ok) {
-                throw new Error(updateData.error || "Failed to update listing.");
+                if (CATEGORY_ERROR_MESSAGES.includes(updateData.error)) {
+                    categoryPicker.setError(updateData.error);
+                    categoryPicker.focus();
+                } else {
+                    alert(updateData.error || "Failed to update listing.");
+                }
+                return;
             }
 
             const existingSizeSet = new Set((Array.isArray(sizesArray) ? sizesArray : []).map((s) => String(s.size)));

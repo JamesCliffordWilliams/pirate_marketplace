@@ -7,6 +7,7 @@
     Implemented & Updated by Day Ekoi - Iteration 5 - 4/9/2026
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - added deactivate storefront button handler
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - guarded optional dashboard buttons after layout cleanup
+    Updated by James Williams - 10/26/26 - listing cards show their category; banner for listings in "Other"
 
 Description:
 Fetches the current user's storefront from the API and renders
@@ -32,6 +33,53 @@ const deactivateStorefrontBtn = document.getElementById("deactivateStorefrontBtn
 
 let storefrontId = null;
 let currentUser = null;
+
+
+// Added by James Williams 10/26/26
+const OTHER_CATEGORY_SLUG = "other";
+
+
+// "Parent › Leaf", or just "Other" for the top-level Other category
+function categoryLabel(item) {
+    const category = item.category;
+    if (!category || !category.name) return "Other";
+    return category.parent_name ? `${category.parent_name} › ${category.name}` : category.name;
+}
+
+
+function isInOtherCategory(item) {
+    return !item.category || item.category.slug === OTHER_CATEGORY_SLUG;
+}
+
+
+// Shows a banner above the grid when any listing is still in "Other"
+function renderCategoryReminder(listings) {
+    let banner = document.getElementById("categoryReminderBanner");
+    const inOther = listings.filter((item) => item.status !== "DELETED" && isInOtherCategory(item));
+
+    if (!inOther.length) {
+        if (banner) banner.remove();
+        return;
+    }
+
+    if (!banner) {
+        banner = document.createElement("div");
+        banner.id = "categoryReminderBanner";
+        banner.className = "category-reminder-banner";
+        banner.setAttribute("role", "status");
+        listingGrid.parentNode.insertBefore(banner, listingGrid);
+    }
+
+    const count = inOther.length;
+    banner.textContent = "";
+    const message = document.createElement("span");
+    message.textContent = `${count} ${count === 1 ? "listing is" : "listings are"} in Other. Choose a specific category so buyers can find ${count === 1 ? "it" : "them"} in All Categories.`;
+    const link = document.createElement("a");
+    link.className = "category-reminder-link";
+    link.href = `/listings/${inOther[0].id}/edit`;
+    link.textContent = "Choose a category";
+    banner.append(message, link);
+}
 
 
 // renders empty state in listing grid
@@ -73,6 +121,7 @@ function createListingCard(item) {
             <p class="listing-card-title">${title}</p>
             <p class="listing-card-price">${price}</p>
             <p class="listing-card-meta">Status: ${status}</p>
+            <p class="listing-card-meta listing-card-category"></p>
             <div class="listing-menu-wrap">
                 <button type="button" class="listing-menu-trigger" aria-label="Open listing actions">...</button>
                 <div class="listing-menu-dropdown">
@@ -83,6 +132,9 @@ function createListingCard(item) {
             </div>
         </div>
     `;
+
+    // Added by James Williams 10/26/26
+    card.querySelector(".listing-card-category").textContent = `Category: ${categoryLabel(item)}`;
 
     const trigger = card.querySelector(".listing-menu-trigger");
     const dropdown = card.querySelector(".listing-menu-dropdown");
@@ -298,6 +350,7 @@ async function loadMyStorefront() {
             : [];
 
         listingGrid.innerHTML = "";
+        renderCategoryReminder(visibleListings); // Added by James Williams 10/26/26
         if (!visibleListings.length) {
             renderEmpty("No listings yet. Create your first listing!");
             return;

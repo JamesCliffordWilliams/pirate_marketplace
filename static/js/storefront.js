@@ -240,27 +240,7 @@ async function fetchStorefronts() {
   }
 }
 
-// Navigation pane functionality 
-
-const menuBtn = document.querySelector(".menu-btn");
-const navPane = document.getElementById("navPane");
-const navOverlay = document.getElementById("navOverlay");
-
-// open menu
-if (menuBtn) { // Updated by Day E 3/22/26
-  menuBtn.addEventListener("click", () => {
-    navPane.classList.toggle("active");
-    navOverlay.classList.toggle("active");
-  });
-}
-
-// close when clicking overlay
-if (navOverlay) { // Updated by Day E 3/22/26
-  navOverlay.addEventListener("click", () => {
-    navPane.classList.remove("active");
-    navOverlay.classList.remove("active");
-  });
-}
+// Navigation pane code moved to static/js/nav_pane.js - James Williams 10/26/26
 
 console.log(storefronts); // logs the storefronts array to the console for debugging purposes
 console.log(grid); // logs the storefront grid element to the console for debugging purposes

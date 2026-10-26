@@ -1,9 +1,11 @@
 # By Elali McNair 4/19/26
+# Updated by James Williams - 10/26/26 - sends a category, mocks S3, only runs on a local database
 import io
 import os
 import sys
 import unittest
 import uuid
+from unittest.mock import patch
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -12,10 +14,12 @@ for path in (PROJECT_ROOT, BACKEND_ROOT):
     if path not in sys.path:
         sys.path.append(path)
 
+from tests.db_test_guard import require_local_db
 from app import create_app
 from backend.config.db import get_connection
 
 
+@require_local_db
 class TestCreateListingFeature(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -26,6 +30,25 @@ class TestCreateListingFeature(unittest.TestCase):
 
         if cls.storefront_id is None or cls.user_id is None:
             raise unittest.SkipTest("No storefront owner data available for create listing tests.")
+
+        cls.category_id = cls._resolve_leaf_category()
+        if cls.category_id is None:
+            raise unittest.SkipTest("No product categories; run migrations/add_product_categories.py first.")
+
+    @staticmethod
+    def _resolve_leaf_category():
+        conn = get_connection()
+        if conn is None:
+            return None
+
+        cur = conn.cursor()
+        try:
+            cur.execute("SELECT id FROM product_categories WHERE slug = 'laptops-and-computers';")
+            row = cur.fetchone()
+            return row[0] if row else None
+        finally:
+            cur.close()
+            conn.close()
 
     @staticmethod
     def _resolve_storefront_owner():
@@ -48,6 +71,9 @@ class TestCreateListingFeature(unittest.TestCase):
 
     def setUp(self):
         self.created_listing_ids = []
+        upload = patch("utils.s3.upload_image_to_s3", return_value="https://s3.test/listing.png")
+        self.upload = upload.start()
+        self.addCleanup(upload.stop)
 
     def tearDown(self):
         self._cleanup_created_listings()
@@ -86,6 +112,7 @@ class TestCreateListingFeature(unittest.TestCase):
                 "fulfillment_type": "IN_STOCK",
                 "status": "ACTIVE",
                 "sizes_available": '["M", "L"]',
+                "category_id": str(self.category_id),
                 "listing_image": (io.BytesIO(b"fake image bytes"), "test_listing.png"),
             },
             headers=self._auth_headers(),
@@ -100,6 +127,7 @@ class TestCreateListingFeature(unittest.TestCase):
         self.assertEqual(payload["storefront_id"], self.storefront_id)
         self.assertEqual(payload["status"], "ACTIVE")
         self.assertEqual(payload["fulfillment_type"], "IN_STOCK")
+        self.assertEqual(payload["category_id"], self.category_id)
 
         listing_id = payload["id"]
         self.created_listing_ids.append(listing_id)
@@ -122,6 +150,7 @@ class TestCreateListingFeature(unittest.TestCase):
                 "fulfillment_type": "IN_STOCK",
                 "status": "ACTIVE",
                 "sizes_available": '["S"]',
+                "category_id": str(self.category_id),
             },
             headers=self._auth_headers(),
             content_type="multipart/form-data",
