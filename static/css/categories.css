@@ -1,0 +1,474 @@
+/*
+    categories.css
+
+    The Vault Campus Marketplace
+    CSC 405 Sp 26'
+    Created by James Williams - 10/26/26
+
+Description:
+Styles for the All Categories page and the category listing pages.
+Loaded after storefront.css, which has the shared colors, background, and menu.
+
+Works with:
+- categories.html, category_listings.html
+*/
+
+
+/* ---------- shared page frame ---------- */
+
+.cat-page {
+    width: min(1280px, calc(100% - 32px));   /* 16px gutters on small screens */
+    margin: 0 auto;
+    padding-bottom: 48px;
+}
+
+.cat-hero {
+    text-align: center;
+    margin: 0 16px 36px;
+}
+
+.cat-title {
+    font-size: clamp(2.2rem, 6vw, 4rem);
+    font-weight: 800;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+}
+
+.cat-subtitle {
+    margin-top: 10px;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.cat-notice {
+    margin: 0 auto 24px;
+    max-width: 640px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--vault-gold), 0.6);
+    background: rgba(var(--vault-navy), 0.85);
+    color: #f3ce73;
+    font-weight: 700;
+    text-align: center;
+}
+
+
+/* ---------- /categories grid ---------- */
+
+.cat-grid {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+@media (min-width: 768px) {
+    .cat-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+    }
+}
+
+@media (min-width: 1100px) {
+    .cat-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.cat-grid-item {
+    display: flex;
+    min-width: 0;
+}
+
+.cat-card {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 20px 18px 22px;
+    border-radius: 22px;
+    border: 1px solid rgba(var(--vault-gold), 0.32);
+    background: linear-gradient(
+        160deg,
+        rgba(var(--vault-navy), 0.9) 0%,
+        rgba(0, 0, 0, 0.8) 100%
+    );
+    color: white;
+    text-decoration: none;
+    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.cat-card:hover,
+.cat-card:focus-visible {
+    transform: translateY(-3px);
+    border-color: rgba(var(--vault-gold), 0.9);
+    box-shadow: 0 0 0 2px rgba(var(--vault-gold), 0.55), 0 10px 28px rgba(0, 0, 0, 0.45);
+    outline: none;
+}
+
+.cat-card-icon {
+    width: 56px;
+    height: 56px;
+    flex: 0 0 56px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #D4AF37;
+    background: radial-gradient(circle at 35% 30%, rgba(var(--vault-gold), 0.2), rgba(var(--vault-navy), 0.95) 70%);
+    border: 1px solid rgba(var(--vault-gold), 0.45);
+}
+
+.cat-icon {
+    width: 28px;
+    height: 28px;
+}
+
+.cat-card-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.cat-card-preview {
+    font-size: 0.88rem;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.66);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+@media (max-width: 420px) {
+    .cat-card {
+        padding: 16px 14px 18px;
+    }
+
+    .cat-card-name {
+        font-size: 1rem;
+    }
+
+    .cat-card-preview {
+        font-size: 0.8rem;
+    }
+}
+
+
+/* ---------- category listings page ---------- */
+
+/* clears the fixed pagination bar from storefront.css */
+.cat-listings-page {
+    padding-bottom: 140px;
+}
+
+.cat-breadcrumb ol {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.cat-breadcrumb li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.cat-breadcrumb li + li::before {
+    content: "›";
+    color: rgba(var(--vault-gold), 0.85);
+}
+
+.cat-breadcrumb a {
+    color: #D4AF37;
+    text-decoration: none;
+}
+
+.cat-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.cat-breadcrumb [aria-current="page"] {
+    color: white;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.cat-listings-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.cat-card-icon--small {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+}
+
+.cat-title--page {
+    font-size: clamp(1.8rem, 5vw, 3rem);
+}
+
+.cat-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.cat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    max-width: 100%;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--vault-gold), 0.45);
+    background: rgba(0, 0, 0, 0.55);
+    color: #f2f2f2;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.cat-chip:hover {
+    background: rgba(var(--vault-gold), 0.15);
+    color: #f0cc55;
+}
+
+.cat-chip:focus-visible,
+.cat-sort-select:focus-visible,
+.cat-state-message a:focus-visible,
+.cat-state-message button:focus-visible {
+    outline: 2px solid #D4AF37;
+    outline-offset: 2px;
+}
+
+.cat-chip.is-active {
+    background: #D4AF37;
+    border-color: #D4AF37;
+    color: #111111;
+}
+
+.cat-chip-count {
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.cat-chip.is-active .cat-chip-count {
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.cat-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    scroll-margin-top: 16px;
+}
+
+.cat-results-count {
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 700;
+}
+
+.cat-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cat-sort-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #D4AF37;
+}
+
+.cat-sort-select {
+    min-height: 40px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--vault-gold), 0.5);
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    font-size: 0.9rem;
+}
+
+
+/* Product grid: 4 / 3 / 2 / 1 columns at >=1280 / >=960 / >=640 / <640 */
+.cat-listing-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+}
+
+@media (min-width: 640px) {
+    .cat-listing-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 960px) {
+    .cat-listing-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .cat-listing-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+
+/* Loading skeletons: sized like a product card so nothing jumps when cards arrive */
+.cat-skeleton-card {
+    min-height: 520px;
+    padding: 1rem;
+    border-radius: 26px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cat-skeleton-block {
+    border-radius: 10px;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.06) 0%,
+        rgba(var(--vault-gold), 0.14) 50%,
+        rgba(255, 255, 255, 0.06) 100%
+    );
+    background-size: 200% 100%;
+    animation: cat-shimmer 1.4s ease-in-out infinite;
+}
+
+.cat-skeleton-block--image {
+    height: 270px;
+    border-radius: 18px;
+}
+
+.cat-skeleton-block--line {
+    height: 18px;
+    width: 80%;
+}
+
+.cat-skeleton-block--short {
+    height: 18px;
+    width: 40%;
+}
+
+.cat-skeleton-block--button {
+    margin-top: auto;
+    height: 40px;
+}
+
+@keyframes cat-shimmer {
+    from { background-position: 100% 0; }
+    to { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cat-skeleton-block {
+        animation: none;
+    }
+}
+
+@media (max-width: 900px) {
+    .cat-skeleton-block--image {
+        height: 220px;
+    }
+}
+
+
+/* Empty / end / error states */
+.cat-state-message {
+    grid-column: 1 / -1;
+    padding: 48px 16px;
+    text-align: center;
+    color: #c9c9c9;
+}
+
+.cat-state-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 14px;
+    overflow-wrap: anywhere;
+}
+
+.cat-state-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.cat-state-actions a,
+.cat-state-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 6px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(var(--vault-gold), 0.5);
+    background: rgba(0, 0, 0, 0.55);
+    color: #D4AF37;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.cat-state-actions a:hover,
+.cat-state-actions button:hover {
+    background: rgba(var(--vault-gold), 0.15);
+    color: #f0cc55;
+}
+
+
+/* .pagination sets display:flex in storefront.css, which would beat the hidden attribute */
+.pagination[hidden] {
+    display: none;
+}
+
+.page-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.page-btn:disabled:hover {
+    background: rgba(0, 0, 0, 0.55);
+    color: #d4af37;
+}
+
+.page-btn:focus-visible {
+    outline: 2px solid #D4AF37;
+    outline-offset: 2px;
+}

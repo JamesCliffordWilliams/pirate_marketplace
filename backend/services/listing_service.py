@@ -20,6 +20,8 @@ Rules enforced:
 - IN_STOCK listings must have quantity_on_hand
 - PREORDER listings ignore quantity_on_hand
 - Auto mark SOLD_OUT when inventory hits 0
+- Every listing needs a subcategory (or "Other") - added by James Williams 10/26/26
+- Saving an edit never reactivates an INACTIVE or DELETED listing - added by James Williams 10/26/26
 
 Image Notes:
 - Images are stored as URLs (typically AWS S3 links) in the database.
@@ -55,6 +57,7 @@ from models.listing_model import (
 )
 
 from models.storefront_model import get_storefront_by_id
+from services.category_service import resolve_assignable_category, is_same_category_id  # Added by James Williams 10/26/26
 
 # Updated by Day E - April 22nd
 # Listing state rules:
@@ -107,6 +110,7 @@ def create_listing_service(current_user, storefront_id, data):
     - User must own the storefront OR be admin
     - title, price, fulfillment_type are required
     - fulfillment rules enforced
+    - a category is required
     """
     if current_user is None:
         raise Exception("Error! Unauthorized User.")
@@ -172,6 +176,9 @@ def create_listing_service(current_user, storefront_id, data):
     if not is_made_to_order and fulfillment_type == "IN_STOCK" and quantity_on_hand == 0:
         status = "SOLD_OUT"
 
+    # Added by James Williams 10/26/26 - every listing needs a category
+    category = resolve_assignable_category(data.get("category_id"))
+
     return create_listing(
         storefront_id=storefront_id,
         title=str(title).strip(),
@@ -181,7 +188,8 @@ def create_listing_service(current_user, storefront_id, data):
         quantity_on_hand=quantity_on_hand,
         sizes_available=sizes_available,
         status=status,
-        is_made_to_order=is_made_to_order
+        is_made_to_order=is_made_to_order,
+        category_id=category["id"]
     )
 
 
@@ -217,6 +225,7 @@ def update_listing_service(current_user, listing_id, data):
     Enforces:
     - Only owner/admin can update
     - Fulfillment rules are rechecked if modified
+    - Category only changes if category_id is sent
     """
     if current_user is None:
         raise Exception("Error! Unauthorized User.")
@@ -280,12 +289,16 @@ def update_listing_service(current_user, listing_id, data):
         if price < 0:
             raise Exception("price cannot be negative.")
 
-    status = data.get("status")
-    if status is not None:
-        status = str(status).strip()
+    # Updated by James Williams 10/26/26 - status no longer forced back to ACTIVE
+    status = _resolve_edit_status(listing, data.get("status"), effective_mto, fulfillment_type, quantity_on_hand)
 
-    if status is None and not effective_mto and fulfillment_type == "IN_STOCK" and quantity_on_hand == 0:
-        status = "SOLD_OUT"
+    # Added by James Williams 10/26/26 - category only changes when a new one is sent
+    category_id = None
+    if "category_id" in data:
+        if is_same_category_id(data["category_id"], listing.get("category_id")):
+            category_id = None  # same category as before, nothing to change
+        else:
+            category_id = resolve_assignable_category(data["category_id"])["id"]
 
     return update_listing(
         listing_id=listing_id,
@@ -296,8 +309,29 @@ def update_listing_service(current_user, listing_id, data):
         quantity_on_hand=quantity_on_hand,
         sizes_available=sizes_available,
         status=status,
-        is_made_to_order=is_made_to_order
+        is_made_to_order=is_made_to_order,
+        category_id=category_id
     )
+
+
+# Added by James Williams 10/26/26
+def _resolve_edit_status(listing, requested_status, effective_mto, fulfillment_type, quantity_on_hand):
+    """
+    Picks the status to save when a listing is edited (None = keep it).
+    - INACTIVE and DELETED listings stay that way (use reactivate/restore instead)
+    - Otherwise: 0 in stock and not made-to-order -> SOLD_OUT, else ACTIVE
+    """
+    if listing.get("status") in ("INACTIVE", "DELETED"):
+        return None
+
+    if requested_status is not None:
+        requested_status = str(requested_status).strip()
+        if requested_status not in ("ACTIVE", "SOLD_OUT"):
+            return requested_status
+
+    if not effective_mto and fulfillment_type == "IN_STOCK" and quantity_on_hand == 0:
+        return "SOLD_OUT"
+    return "ACTIVE"
 
 
 def delete_listing_service(current_user, listing_id):

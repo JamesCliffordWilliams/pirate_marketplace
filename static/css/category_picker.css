@@ -1,0 +1,292 @@
+/*
+    category_picker.css
+
+    The Vault Campus Marketplace
+    CSC 405 Sp 26'
+    Created by James Williams - 10/26/26
+
+Description:
+Styles for the category picker on the Create and Edit Listing forms.
+
+Works with:
+- category_picker.js
+*/
+
+.cp {
+    position: relative;
+    width: 90%;
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+.cp-trigger {
+    width: 100%;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0.8rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(184, 134, 11, 0.5);
+    border-radius: 2px;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cp-trigger:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.cp-trigger:focus-visible,
+.cp--open .cp-trigger {
+    outline: none;
+    border-color: #f0cf5a;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25);
+}
+
+.cp-trigger:disabled {
+    cursor: progress;
+    opacity: 0.6;
+}
+
+.cp--failed .cp-trigger:disabled {
+    cursor: not-allowed;
+}
+
+.cp-trigger--placeholder .cp-trigger-text {
+    color: #bfbfbf;
+    font-weight: 400;
+}
+
+.cp-trigger-text {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.cp-chevron {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    color: #d4af37;
+    transition: transform 0.18s ease;
+}
+
+.cp--open .cp-trigger .cp-chevron {
+    transform: rotate(180deg);
+}
+
+.cp--invalid .cp-trigger {
+    border-color: #e05a5a;
+    box-shadow: 0 0 0 2px rgba(224, 90, 90, 0.2);
+}
+
+.cp-helper {
+    margin-top: 0.55rem;
+    font-size: 0.9rem;
+    line-height: 1.35;
+    color: #dddddd;
+}
+
+.cp-error {
+    margin-top: 0.55rem;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #ff8f8f;
+}
+
+.cp-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cp-status:empty {
+    display: none;
+}
+
+.cp--loading .cp-status,
+.cp--failed .cp-status {
+    margin-top: 0.55rem;
+}
+
+.cp-status-text {
+    font-size: 0.9rem;
+    color: #cfcfcf;
+}
+
+.cp-status-text--error {
+    color: #ff8f8f;
+    font-weight: 700;
+}
+
+.cp-retry {
+    min-height: 36px;
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid #d4af37;
+    background: transparent;
+    color: #d4af37;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cp-retry:hover {
+    background: rgba(212, 175, 55, 0.15);
+}
+
+/* ---------- popup ---------- */
+
+.cp-anchor {
+    position: relative;
+}
+
+.cp-popup {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: 50;
+    background: #0d0d0d;
+    border: 1px solid rgba(212, 175, 55, 0.7);
+    border-radius: 6px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
+}
+
+.cp-popup[hidden] {
+    display: none;
+}
+
+/* search box inside the picker */
+.cp input.cp-search {
+    display: block;
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 0;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 0.85rem 1rem;
+    min-height: 48px;
+    font-size: 1rem;
+    color: white;
+    box-shadow: none;
+}
+
+.cp input.cp-search:focus {
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 -2px 0 #d4af37;
+}
+
+.cp-list {
+    max-height: min(360px, 55vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 6px 0;
+}
+
+.cp-group + .cp-group,
+.cp-group + .cp-option--top {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cp-group-header {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0.5rem 1rem;
+    color: #d4af37;
+    font-size: 0.82rem;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+}
+
+.cp-group-header:hover {
+    background: rgba(212, 175, 55, 0.08);
+}
+
+.cp-group-name {
+    flex: 1;
+    min-width: 0;
+}
+
+.cp-group-count {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.cp-group-header[aria-expanded="true"] .cp-chevron {
+    transform: rotate(180deg);
+}
+
+.cp-group-options[hidden] {
+    display: none;
+}
+
+.cp-option {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0.55rem 1rem 0.55rem 1.75rem;
+    color: #f2f2f2;
+    font-size: 0.98rem;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+.cp-option--top {
+    padding-left: 1rem;
+    font-weight: 700;
+}
+
+.cp-option.is-active {
+    background: rgba(212, 175, 55, 0.18);
+    color: white;
+}
+
+.cp-option[aria-selected="true"] {
+    color: #f3ce73;
+    font-weight: 700;
+}
+
+.cp-option[aria-selected="true"]::after {
+    content: "✓";
+    margin-left: auto;
+    padding-left: 12px;
+    color: #d4af37;
+}
+
+.cp-mark {
+    background: rgba(212, 175, 55, 0.35);
+    color: inherit;
+    border-radius: 2px;
+    padding: 0 1px;
+}
+
+.cp-empty {
+    padding: 0.9rem 1rem;
+    color: #cfcfcf;
+    font-size: 0.92rem;
+    line-height: 1.35;
+}
+
+@media (max-width: 600px) {
+    .cp {
+        width: 100%;
+    }
+
+    .cp-option {
+        padding-left: 1.25rem;
+    }
+}

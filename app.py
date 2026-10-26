@@ -12,6 +12,7 @@ from controllers.admin_controller import admin_bp
 from controllers.auth_controller import auth_bp # Updated 3/19/2026 by Ryan Grimes
 from controllers.return_controller import returns_bp
 from controllers.checkout_controller import checkout_bp
+from controllers.category_controller import category_bp, category_pages_bp  # Added by James Williams 10/26/26
 from init_db import create_vault_tables
 
 
@@ -86,6 +87,8 @@ def create_app():
     app.register_blueprint(admin_bp) # Updated 3/19/2026 by Ryan Grimes
     app.register_blueprint(returns_bp)
     app.register_blueprint(checkout_bp, url_prefix='/api')
+    app.register_blueprint(category_bp)         # Added by James Williams 10/26/26
+    app.register_blueprint(category_pages_bp)   # Added by James Williams 10/26/26
 
     @app.get("/health")
     def health():
