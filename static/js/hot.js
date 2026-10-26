@@ -175,7 +175,8 @@ Works with:
         showLoading();
 
         try {
-            const [response, viewer] = await Promise.all([fetch("/api/hot"), getViewer()]);
+            // no-cache: never show a listing that sold out since the browser last asked
+            const [response, viewer] = await Promise.all([fetch("/api/hot", { cache: "no-cache" }), getViewer()]);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
