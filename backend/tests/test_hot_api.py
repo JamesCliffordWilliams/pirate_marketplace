@@ -217,8 +217,12 @@ class TestHotApiOffline(unittest.TestCase):
             self.assertIn(asset, html)
 
     def test_nav_hot_link_only_change(self):
-        for path in ("/hot", "/categories", "/storefront"):
-            html = self.client.get(path).get_data(as_text=True)
+        # Added by James Williams 10/26/26 - stub the category tree so this needs no database
+        from controllers import category_controller
+        with patch.object(category_controller, "get_category_tree_service", return_value=[]):
+            pages = {path: self.client.get(path).get_data(as_text=True)
+                     for path in ("/hot", "/categories", "/storefront")}
+        for path, html in pages.items():
             self.assertIn('<a class="nav-item" href="/hot">Hot! <span>→</span></a>', html, path)
             self.assertIn('<div class="nav-item">Explore Brands <span>→</span></div>', html, path)
             self.assertIn('<div class="nav-item">New Drops <span>→</span></div>', html, path)
