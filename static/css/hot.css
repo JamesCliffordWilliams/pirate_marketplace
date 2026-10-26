@@ -1,0 +1,199 @@
+/*
+    hot.css
+
+    The Vault Campus Marketplace
+    CSC 405 Sp 26'
+    Created by James Williams - 10/26/26
+
+Description:
+Styles for the Hot page. Loaded after storefront.css, listing_card.css and
+categories.css, and reuses their frame, skeleton and state styles.
+
+Works with:
+- hot.html, hot.js
+*/
+
+
+/* ---------- hero: "How this works" ---------- */
+
+.hot-how {
+    max-width: 560px;
+    margin: 14px auto 0;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.hot-how summary {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: #D4AF37;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.hot-how summary:hover {
+    color: #f0cc55;
+}
+
+.hot-how summary:focus-visible {
+    outline: 2px solid #D4AF37;
+    outline-offset: 2px;
+}
+
+.hot-how p {
+    margin-top: 8px;
+}
+
+
+/* ---------- sections ---------- */
+
+.hot-page {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.hot-section[hidden],
+.hot-page-state[hidden],
+.hot-rail[hidden],
+.hot-section-quiet[hidden] {
+    display: none;
+}
+
+.hot-section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+/* gold-on-navy icon tile */
+.hot-section-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #D4AF37;
+    background: rgba(var(--vault-navy), 0.95);
+    border: 1px solid rgba(var(--vault-gold), 0.45);
+}
+
+.hot-section-copy {
+    min-width: 0;
+}
+
+.hot-section-title {
+    font-size: clamp(1.35rem, 3.5vw, 1.75rem);
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.hot-section-desc {
+    margin-top: 4px;
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+/* Rising: its own band */
+.hot-section--rising {
+    padding: 22px 18px 24px;
+    border-radius: 26px;
+    border-top: 1px solid rgba(var(--vault-gold), 0.7);
+    background: rgba(var(--vault-navy), 0.55);
+}
+
+/* Empty Hot / Rising: one quiet line, no box */
+.hot-section.is-collapsed {
+    padding: 0;
+    border: 0;
+    background: none;
+}
+
+.hot-section.is-collapsed .hot-section-header {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.hot-section-quiet {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 0.92rem;
+    color: rgba(255, 255, 255, 0.66);
+}
+
+.hot-section-quiet strong {
+    color: #D4AF37;
+}
+
+
+/* ---------- product rails ---------- */
+
+/* Below 640px: a sideways scrolling rail with a peek of the next card */
+.hot-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 85%;
+    gap: 16px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+    border-radius: 26px;
+}
+
+.hot-rail > * {
+    scroll-snap-align: start;
+    min-width: 0;
+}
+
+.hot-rail:focus-visible {
+    outline: 2px solid #D4AF37;
+    outline-offset: 4px;
+}
+
+/* 2 / 3 / 4 columns at 640 / 960 / 1280px, like the category pages */
+@media (min-width: 640px) {
+    .hot-rail {
+        grid-auto-flow: row;
+        grid-auto-columns: auto;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+        overflow: visible;
+        scroll-snap-type: none;
+        padding-bottom: 0;
+    }
+}
+
+@media (min-width: 960px) {
+    .hot-rail {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1280px) {
+    .hot-rail {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 639px) {
+    .hot-section--rising {
+        padding: 18px 12px 20px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .hot-rail {
+        scroll-behavior: auto;
+    }
+}

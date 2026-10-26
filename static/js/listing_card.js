@@ -5,6 +5,7 @@
     CSC 405 Sp 26'
     Created by James Williams - 10/26/26
     Moved out of storefront_view.js (original card code by Day Ekoi, Iterations 4-5)
+    Updated by James Williams - 10/26/26 - sends a detail_view for the Hot page when the image viewer opens
 
 Description:
 The product card used on the storefront page and the category pages:
@@ -14,7 +15,7 @@ User text is always added as plain text so it can't run as code.
 
 Works with:
 - listing_card.css
-- storefront_view.js, category_listings.js
+- storefront_view.js, category_listings.js, hot.js
 */
 
 (function () {
@@ -28,6 +29,7 @@ Works with:
         index: 0
     };
     let lightboxElements = null;
+    const trackedDetailViews = new Set(); // Added by James Williams 10/26/26
 
     // ________________________________________________________
     // SMALL DOM HELPERS
@@ -316,6 +318,32 @@ Works with:
     }
 
     // ________________________________________________________
+    // DETAIL VIEW TRACKING (Hot page)
+    // Added by James Williams 10/26/26
+    // ________________________________________________________
+
+    // Once per listing per page load, logged-in shoppers only. Never shown to the shopper.
+    function trackDetailView(listingId, currentUserId) {
+        const id = Number(listingId);
+        if (!currentUserId || !Number.isInteger(id) || id <= 0 || trackedDetailViews.has(id)) {
+            return false;
+        }
+        trackedDetailViews.add(id);
+        try {
+            fetch(`/api/listings/${id}/interest`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ kind: "detail_view" }),
+                credentials: "same-origin",
+                keepalive: true
+            }).catch(() => {});
+        } catch (_error) {
+            // tracking never gets in the shopper's way
+        }
+        return true;
+    }
+
+    // ________________________________________________________
     // LIGHTBOX (full-size image viewer)
     // ________________________________________________________
 
@@ -459,7 +487,7 @@ Works with:
     // IMAGE CAROUSEL
     // ________________________________________________________
 
-    function createListingImageCarousel(images, title) {
+    function createListingImageCarousel(images, title, onOpen) { // Updated by James Williams 10/26/26
         const shell = document.createElement("div");
         shell.className = "listing-image-shell";
 
@@ -485,7 +513,10 @@ Works with:
             });
         };
 
-        image.addEventListener("click", () => openLightbox(images, currentIndex));
+        image.addEventListener("click", () => {
+            openLightbox(images, currentIndex);
+            if (onOpen) onOpen(); // Added by James Williams 10/26/26
+        });
         shell.classList.add("is-clickable");
         shell.appendChild(image);
 
@@ -699,7 +730,8 @@ Works with:
             card.appendChild(viewLink);
         }
 
-        const carousel = createListingImageCarousel(images, title);
+        // Updated by James Williams 10/26/26 - opening the image viewer counts as a detail_view
+        const carousel = createListingImageCarousel(images, title, () => trackDetailView(listingId, currentUserId));
         card.prepend(carousel.shell);
         if (showStorefront) {
             card.prepend(buildStorefrontRow(item));
@@ -829,6 +861,7 @@ Works with:
         create,
         getCurrentSessionUser,
         getWishlistIdSet,
+        trackDetailView, // Added by James Williams 10/26/26
         showToast,
         escapeHtml,
         formatPrice,

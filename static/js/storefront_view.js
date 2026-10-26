@@ -9,6 +9,7 @@
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - fixed wishlistIds undefined crash and isWishlisted undefined in createListingCard
     Updated by Day E - April 22nd - multi-image listing display, lightbox preview, and contain-based image handling
     Updated by James Williams - 10/26/26 - card code moved to listing_card.js; added ?listing= scroll and highlight
+    Updated by James Williams - 10/26/26 - a followed ?listing= link counts as a detail_view for the Hot page
 
 Description:
 This file handles the functionality for the public storefront view page.
@@ -39,12 +40,14 @@ function renderEmpty(message) {
 
 // Added by James Williams 10/26/26
 // "View in storefront" links here with ?listing=<id>: scroll to that card and highlight it
-function focusLinkedListing() {
+function focusLinkedListing(currentUserId) {
     const linkedId = new URLSearchParams(window.location.search).get("listing");
     if (!linkedId || !/^\d+$/.test(linkedId)) return;
 
     const card = document.getElementById(`listing-${linkedId}`);
     if (!card) return;
+
+    VaultListingCard.trackDetailView(linkedId, currentUserId); // Added by James Williams 10/26/26
 
     const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     card.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
@@ -109,7 +112,7 @@ async function loadStorefrontView() {
             }))
         );
         cards.forEach((card) => listingGrid.appendChild(card));
-        focusLinkedListing(); // Added by James Williams 10/26/26
+        focusLinkedListing(sessionUser?.id || null); // Added by James Williams 10/26/26
     } catch (error) {
         console.error("Error loading listings:", error);
         renderEmpty("Could not load listings. Please try again.");

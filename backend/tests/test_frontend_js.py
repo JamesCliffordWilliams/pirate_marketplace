@@ -97,6 +97,12 @@ class TestFrontendStaticGuards(unittest.TestCase):
         self.assertNotIn("placeholder-storefront.png", read("static/js/listing_card.js"))
         self.assertNotIn("placeholder-storefront.png", read("static/js/storefront_view.js"))
 
+    # Added by James Williams 10/26/26
+    def test_hot_page_never_renders_from_the_browser_cache(self):
+        # /api/hot is cacheable (max-age=60); the page itself always asks the server again
+        source = read("static/js/hot.js")
+        self.assertRegex(source, r'fetch\("/api/hot",\s*\{\s*cache:\s*"no-cache"\s*\}\)')
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
