@@ -345,12 +345,6 @@ def create_vault_tables():
         """
         cur.execute(create_order_items_table)
 
-        # ________________________________________________________
-        # LISTING INTEREST (Hot page engagement)
-        # Added by James Williams 10/26/26
-        # ________________________________________________________
-        apply_listing_interest(cur)
-
         ###_________________________________________________________
         # MESSAGES TABLE (buyer <-> seller messages)
         # Added by Miles Walker 10/25/26
@@ -378,6 +372,11 @@ def create_vault_tables():
         cur.execute(create_messages_table)
         cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);") #Helps with loading a conversation
+        # ________________________________________________________
+        # LISTING INTEREST (Hot page engagement)
+        # Added by James Williams 10/26/26
+        # ________________________________________________________
+        apply_listing_interest(cur)
 
         conn.commit()
 
