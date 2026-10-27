@@ -84,7 +84,7 @@ def create_app():
     app.register_blueprint(storefront_bp)
     app.register_blueprint(storefront_pages_bp)  # Updated by Day E 3/22/26
     app.register_blueprint(purchase_bp)
-    app.register_blueprint(messages_bp)
+    app.register_blueprint(messages_bp) # Added 10/26/2026 by Miles Walker
     app.register_blueprint(wishlist_bp)
     app.register_blueprint(admin_bp) # Updated 3/19/2026 by Ryan Grimes
     app.register_blueprint(returns_bp)
