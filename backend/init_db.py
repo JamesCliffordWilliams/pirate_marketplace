@@ -345,6 +345,34 @@ def create_vault_tables():
         """
         cur.execute(create_order_items_table)
 
+        #_________________________________________________________
+        # MESSAGES TABLE (buyer <-> seller messages)
+        # Added by Miles Walker 10/25/26
+        #___________________________________________________________
+        create_messages_table = """
+            CREATE TABLE IF NOT EXISTS messages (
+                id SERIAL PRIMARY KEY,
+                sender_id INTEGER NOT NULL, -- There is only one user and one reciever per conversation
+                receiver_id INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                listing_id INTEGER, -- Can be NULL so that messages don't need to be tied to a listing
+                body TEXT NOT NULL CHECK (char_length(body) >= 1 AND char_length(body) <= 2000), -- Character limit
+                is_read BOOLEAN NOT NULL DEFAULT FALSE, -- Every message starts as unread
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                CONSTRAINT fk_message_sender
+                    FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                CONSTRAINT fk_message_receiver
+                    FOREIGN KEY(receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+                CONSTRAINT fk_msg_listing
+                    FOREIGN KEY(listing_id) REFERENCES listings(id) ON DELETE SET NULL, -- Prevents messages from being deleted if the associated listing is deleted 
+                CONSTRAINT chk_not_self CHECK (sender_id <> receiver_id) -- Prevents users from messaging themselves 
+            );"""
+
+        cur.execute(create_messages_table)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);") #Helps with loading a conversatio
+
         # ________________________________________________________
         # LISTING INTEREST (Hot page engagement)
         # Added by James Williams 10/26/26
