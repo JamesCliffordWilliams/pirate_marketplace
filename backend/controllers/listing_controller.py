@@ -3,6 +3,8 @@
 # Created by Day Ekoi - Iteration 3 
 # Dates: 2/25-2/26
 # Updated by Day Ekoi - Iteration 5 4/10/26 - S3 image upload integration
+# Updated by James Williams - 10/26/26 - required categories; the form create checks everything before
+#   uploading and saves the listing, photos and sizes together, once per request key
 
 """
 controllers/listing_controller.py

@@ -14,6 +14,7 @@ Run this file manually when:
 # The Vault Campus Marketplace
 # CSC 405 Sp 26'
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added contact_info, preview_image_1-4, categories columns to storefronts; added ALTER TABLE migrations
+# Updated by James Williams - 10/26/26 - product categories, listing_interest (Hot) and listing_create_requests tables
 
 import psycopg2
 import os

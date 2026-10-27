@@ -1,6 +1,8 @@
 # The Vault Campus Marketplace
 # CSC 405 Sp 26'
 # Created by Day Ekoi - Iteration 3
+# Updated by James Williams - 10/26/26 - listings need a category; build_listing_fields() so the form create
+#   can check a listing before uploading its photos
 
 """
 services/listing_service.py

@@ -3,6 +3,7 @@
 # Created by Day Ekoi - Iteration 3
 # Updated by Day Ekoi - Iteration 4 3/25/26
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added edit storefront route, create listing route, S3 image upload endpoint, fixed session key
+# Updated by James Williams - 10/26/26 - product page route (/listings/<id>)
 
 """
 storefront_controller.py
