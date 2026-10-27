@@ -37,6 +37,8 @@ async function loadUsers() {
  * Calls: DELETE /admin/users/<id>
  */
 async function deleteUser(userId) {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+
     await fetch(`/admin/users/${userId}`, {
         method: 'DELETE'
     });
@@ -84,6 +86,8 @@ async function loadListings() {
  * Calls: DELETE /admin/listings/<id>
  */
 async function deleteListing(listingId) {
+    if (!confirm("Are you sure you want to delete this listing?")) return;
+
     await fetch(`/admin/listings/${listingId}`, {
         method: 'DELETE'
     });
@@ -127,6 +131,8 @@ async function loadStorefronts() {
  * Calls: DELETE /admin/storefronts/<id>
  */
 async function deleteStorefront(storeId) {
+    if (!confirm("Are you sure you want to delete this storefront?")) return;
+
     await fetch(`/admin/storefronts/${storeId}`, {
         method: 'DELETE'
     });
@@ -150,9 +156,9 @@ async function loadReturns() {
         row.innerHTML = `
             <td>${item.id}</td>
             <td>${item.username || ""}<br><small>${item.email || ""}</small></td>
-            <td>${item.order_number}</td>
-            <td>${item.has_damage ? "Yes" : "No"}</td>
-            <td>${item.damage_image_url ? `<a href="${item.damage_image_url}" target="_blank">View</a>` : "—"}</td>
+            <td>${item.order_id || item.order_number || ""}</td>
+            <td>${item.damage_status|| (item.has_damage ? "Yes" : "No") || ""}</td>
+            <td>${(item.image_s3_key || item.damage_image_url) ? `<a href="${item.image_s3_key || item.damage_image_url}" target="_blank">View</a>` : "—"}</td>
             <td>
                 <select data-return-id="${item.id}">
                     <option value="pending" ${item.status === "pending" ? "selected" : ""}>Pending</option>
@@ -186,3 +192,10 @@ async function saveReturnStatus(returnId) {
 
     loadReturns();
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadUsers();
+    loadListings();
+    loadStorefronts();
+    loadReturns();
+});
