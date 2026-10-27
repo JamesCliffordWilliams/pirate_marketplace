@@ -59,6 +59,8 @@ class TestCategoryPagesOffline(unittest.TestCase):
         cls.app = create_app()
         cls.app.config["TESTING"] = True
         cls.client = cls.app.test_client()
+        with cls.client.session_transaction() as sess:
+            sess["user"] = "shopper"  # Added by James Williams 10/27/26 - pages need a login
         cls.tree, cls.by_slug, cls.children_of = build_fake_db()
 
     def setUp(self):
@@ -173,9 +175,6 @@ class TestCategoryPagesOffline(unittest.TestCase):
         self.assertIn("css/listing_card.css", html)
 
     def test_listing_forms_include_picker(self):
-        # Updated by James Williams 10/27/26 - /create-listing now needs a logged-in user
-        with self.client.session_transaction() as sess:
-            sess["user"] = "tester"
         for path in ("/create-listing",):
             with self.subTest(path=path):
                 html = self.client.get(path).get_data(as_text=True)
@@ -195,6 +194,8 @@ class TestCategoryPagesOnDatabase(unittest.TestCase):
         cls.app = create_app()
         cls.app.config["TESTING"] = True
         cls.client = cls.app.test_client()
+        with cls.client.session_transaction() as sess:
+            sess["user"] = "shopper"  # Added by James Williams 10/27/26 - pages need a login
 
     def test_pages(self):
         self.assertEqual(self.client.get("/categories").status_code, 200)

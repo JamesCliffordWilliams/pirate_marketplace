@@ -71,6 +71,18 @@ class TestEntryPages(unittest.TestCase):
                 "username": "pat", "email": "pat@my.hamptonu.edu", "password": "secret1"}, follow_redirects=True)
         self.assertIn("Account created. Log in to start shopping.", response.get_data(as_text=True))
 
+    # Added by James Williams 10/27/26 - the site is only for logged-in users
+    def test_pages_need_a_login(self):
+        for path in ("/storefronts", "/storefronts/1", "/listings/1", "/categories", "/categories/other",
+                     "/hot", "/listings/create", "/storefronts/my", "/storefront", "/about", "/cart"):
+            with self.subTest(path=path):
+                response = self.client.get(path)
+                self.assertEqual(response.status_code, 302)
+                self.assertTrue(response.headers["Location"].endswith("/auth/login"))
+        for path in ("/", "/auth/login", "/auth/signup"):
+            with self.subTest(path=path):
+                self.assertEqual(self.client.get(path).status_code, 200)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

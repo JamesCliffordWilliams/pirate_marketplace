@@ -156,6 +156,8 @@ class TestHotApiOffline(unittest.TestCase):
         cls.app = create_app()
         cls.app.config["TESTING"] = True
         cls.client = cls.app.test_client()
+        with cls.client.session_transaction() as sess:
+            sess["user"] = "shopper"  # Added by James Williams 10/27/26 - pages need a login
 
     def setUp(self):
         hot_service.clear_ranking_cache()
@@ -234,6 +236,8 @@ class TestHotOnDatabase(unittest.TestCase):
         self.addCleanup(hot_service.clear_ranking_cache)
         self.db = ThrowawaySchema().create()
         self.client = self.app.test_client()
+        with self.client.session_transaction() as sess:
+            sess["user"] = "shopper"  # Added by James Williams 10/27/26 - pages need a login
         self.shoppers = [self.db.add_user(age_hours=500) for _ in range(4)]
         self.stores = [self.db.add_storefront(name=f"Store {i}") for i in range(4)]
         self.listings = [self.db.add_listing(store, f"Hot {i}") for i, store in enumerate(self.stores)]

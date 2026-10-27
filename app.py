@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta
 
-from flask import Flask, render_template, redirect, url_for, session
+from flask import Flask, render_template, redirect, request, url_for, session
 
 # Billy: Rewrite
 from controllers.admin_controller import admin_bp
@@ -36,6 +36,9 @@ PRIVATE_PAGES = [
     ("/order-confirmation", "order_confirmation", "order_confirmation.html"),
     ("/my-storefront", "my_storefront", "my_storefront.html"),
 ]
+
+# Added by James Williams 10/27/26 - storefront, product, category and Hot pages need a login too
+LOGIN_REQUIRED_BLUEPRINTS = ("storefront_pages_bp", "category_pages_bp", "hot_pages_bp")
 
 # Billy: Rewrite
 BLUEPRINTS = [
@@ -119,6 +122,12 @@ def create_app():
         @app.get("/dev/styleguide")
         def styleguide():
             return render_template("dev/styleguide.html")
+
+    # Added by James Williams 10/27/26 - same rule as PRIVATE_PAGES for the blueprint pages
+    @app.before_request
+    def require_login():
+        if request.blueprint in LOGIN_REQUIRED_BLUEPRINTS and not session.get("user"):
+            return redirect(url_for("auth.login"))
 
     register_pages(app)
 

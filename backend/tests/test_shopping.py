@@ -27,6 +27,8 @@ class TestShopping(unittest.TestCase):
         cls.app = create_app()
         cls.app.config["TESTING"] = True
         cls.client = cls.app.test_client()
+        with cls.client.session_transaction() as sess:
+            sess["user"] = "shopper"  # Added by James Williams 10/27/26 - pages need a login
 
     @classmethod
     def tearDownClass(cls):
