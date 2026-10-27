@@ -4,6 +4,8 @@ from datetime import timedelta
 
 from flask import Flask, render_template, redirect, url_for, session
 
+from controllers.wallet_controller import wallet_bp
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))) # Updated 3/19/2026 by Ryan Grimes
 
 from controllers.listing_controller import listing_bp
@@ -93,6 +95,8 @@ def create_app():
     app.register_blueprint(admin_bp) # Updated 3/19/2026 by Ryan Grimes
     app.register_blueprint(returns_bp)
     app.register_blueprint(checkout_bp, url_prefix='/api')
+
+    app.register_blueprint(wallet_bp)
 
     @app.get("/health")
     def health():
