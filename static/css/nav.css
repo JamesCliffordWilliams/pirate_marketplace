@@ -60,24 +60,11 @@ body:not(.pm) > .pm-header { margin-bottom: 28px; }
 
 .pm-header .pm-header__menu { display: none; margin-left: -8px; }
 
-.pm-header .pm-header__brand {
-    display: flex;
-    flex: none;
-    align-items: center;
-    gap: 10px;
-    color: var(--pm-sail);
-    font: 400 var(--pm-t20)/1 var(--pm-display);
-    text-decoration: none;
-    white-space: nowrap;
-}
-
-.pm-header .pm-header__brand img { width: 40px; height: 40px; }
-
 .pm-header .pm-header__search {
     position: relative;
     flex: 1;
     max-width: 480px;
-    margin: 0 auto 0 24px;
+    margin: 0; /* lines up with the first tab (Home) */
 }
 
 .pm-header .pm-header__search svg {
@@ -266,6 +253,11 @@ body.pm-scroll-locked { overflow: hidden; }
 
 /* ---------- footer ---------- */
 
+/* redesigned pages: the footer sits at the bottom of short pages, and the page's own bottom
+   padding is the only gap above it (no extra scrolling to reach it) */
+body.pm:not(.pm-entry) { display: flex; flex-direction: column; }
+body.pm > .pm-footer { margin-top: auto; }
+
 .pm-footer {
     margin-top: 64px;
     border-top: 1px solid var(--pm-rigging);
@@ -295,9 +287,8 @@ body.pm-scroll-locked { overflow: hidden; }
     .pm-header .pm-header__menu { display: inline-grid; }
     .pm-catbar { display: none; }
     .pm-header__bar { flex-wrap: wrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; }
-    .pm-header .pm-header__brand span { font-size: var(--pm-t16); }
-    .pm-header .pm-header__brand img { width: 32px; height: 32px; }
     .pm-header .pm-header__search { order: 10; flex-basis: 100%; max-width: none; margin: 0; }
+    .pm-header .pm-header__sell { display: none; }
     .pm-footer .pm-footer__inner { grid-template-columns: 1fr 1fr; }
     .pm-footer .pm-footer__inner > div:first-child { grid-column: 1 / -1; }
 }

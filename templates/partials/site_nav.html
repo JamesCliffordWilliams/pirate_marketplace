@@ -3,17 +3,15 @@
 
     Pirate Market
     Created by James Williams - 10/26/26 (moved out of homepage.html)
-    Updated by James Williams - 10/26/26 - new header: crest, storefront search, Bag, Account. The tabs are
-    the items from the old menu with Home first; on narrow screens they move into the drawer.
+    Updated by James Williams - 10/26/26 - new header: storefront search, Sell, Bag, Account. The tabs
+    are the old menu's browse items with Home first; seller pages sit under Sell on the right.
+    On narrow screens everything moves into the drawer.
     Needs css/theme.css, css/nav.css and js/nav_pane.js on the page; bag_count comes from app.py.
 #}
 {% set signed_in = session.get('user') %}
 {# label, link, pages that count as "here" #}
 {% set menu = [
     ("Home", url_for('storefront_pages_bp.storefront_home_page'), ['storefront_pages_bp.storefront_home_page', 'storefront']),
-    ("Create storefront", url_for('storefront_pages_bp.create_storefront_page'), ['storefront_pages_bp.create_storefront_page', 'create_storefront']),
-    ("Create listing", url_for('storefront_pages_bp.create_listing_page'), ['storefront_pages_bp.create_listing_page', 'create_listing']),
-    ("My storefront", url_for('my_storefront'), ['my_storefront', 'storefront_pages_bp.my_storefront_dashboard', 'storefront_pages_bp.my_storefront_page']),
     ("All categories", url_for('category_pages_bp.categories_page'), ['category_pages_bp.categories_page', 'category_pages_bp.category_listings_page']),
     ("Hot", url_for('hot_pages_bp.hot_page'), ['hot_pages_bp.hot_page']),
     ("Returns", url_for('returns_bp.returns_page'), ['returns_bp.returns_page']),
@@ -26,11 +24,6 @@
             <span class="pm-burger" aria-hidden="true"><span></span><span></span><span></span></span>
         </button>
 
-        <a class="pm-header__brand" href="{{ url_for('storefront_pages_bp.storefront_home_page') }}">
-            <img src="{{ url_for('static', filename='images/logo-96.png') }}" alt="" width="40" height="40">
-            <span>Pirate Market</span>
-        </a>
-
         <form class="pm-header__search" role="search" action="{{ url_for('storefront_pages_bp.storefront_home_page') }}">
             <label class="pm-visually-hidden" for="siteSearch">Search storefronts</label>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
@@ -39,6 +32,7 @@
         </form>
 
         <nav class="pm-header__actions" aria-label="Your account">
+            <a class="pm-header__link pm-header__sell" href="{{ url_for('my_storefront') }}">Sell</a>
             <a class="pm-icon-btn pm-header__bag" href="{{ url_for('auth.view_cart') }}"
                aria-label="Bag{% if bag_count %}, {{ bag_count }} item{{ 's' if bag_count != 1 }}{% endif %}">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
@@ -76,7 +70,14 @@
         <a href="{{ href }}" {% if request.endpoint in endpoints %}aria-current="page"{% endif %}>{{ label }}</a>
         {% endfor %}
     </nav>
+    <nav aria-label="Selling">
+        <p class="pm-drawer__heading">Selling</p>
+        <a href="{{ url_for('my_storefront') }}">My storefront</a>
+        <a href="{{ url_for('storefront_pages_bp.create_listing_page') }}">Create listing</a>
+        <a href="{{ url_for('storefront_pages_bp.create_storefront_page') }}">Create storefront</a>
+    </nav>
     <nav aria-label="Account">
+        <p class="pm-drawer__heading">Account</p>
         {% if signed_in %}
         <a href="{{ url_for('auth.account') }}">Account</a>
         <a href="{{ url_for('auth.logout') }}">Log out</a>
