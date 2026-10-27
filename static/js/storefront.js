@@ -7,8 +7,9 @@ storefront.js
   Date: 3/18/2026 - 3/22/2026
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - fetchStorefronts now maps preview_image_1-4 to card carousel; falls back to banner_url if no previews set
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - removed add-to-cart form from storefront cards (size, qty, add to bag); kept version history via comments
-
-Description: This file is responsible for the behavior of the storefront homepage. As of now, it stores sample storefront data, creates storefront cards using that data, 
+  
+  Updated by Cletus Hyacinth - Iteration 3 10/26/26 - added brandSearch input to filter storefronts by brand name in addition to searchInput
+  Description: This file is responsible for the behavior of the storefront homepage. As of now, it stores sample storefront data, creates storefront cards using that data, 
 inserts the cards into the storefront grid in storefront.html, and handles the image carousel functionality for each storefront cards. 
 
 This file works with:
@@ -250,7 +251,7 @@ console.log(grid); // logs the storefront grid element to the console for debugg
 // filters storefront cards in real time as the user types in the search bar
 
 const searchInput = document.getElementById("searchInput");
-
+const brandSearch = document.getElementById("brandSearch");
 // filters storefronts by name based on search input
 function filterStorefronts(query) {
     const filtered = storefronts.filter(store =>
@@ -272,7 +273,7 @@ function filterStorefronts(query) {
 }
 
 //  input changes
-if (searchInput) {
+/*if (searchInput) {
     searchInput.addEventListener("input", () => {
         const query = searchInput.value.trim();
         if (!query) {
@@ -282,6 +283,28 @@ if (searchInput) {
         }
     });
 }
+*/
+if(searchInput){
+    searchInput.addEventListener("input", () => {
+        const query = searchInput.value.trim();
+        if (!query) {
+            renderStorefronts(); // show all if search is cleared
+        } else {
+            filterStorefronts(query);
+        }
+    });
+
+  }
+  if(brandSearch) 
+  { brandSearch.addEventListener("input", () => {
+        const query = brandSearch.value.trim();
+        if (!query) {
+            renderStorefronts(); // show all if search is cleared
+        } else {
+            filterStorefronts(query);
+        }
+    });
+  }
 
 /* Initial render of the storefront cards. This will display the storefronts on the page when it is first loaded. */
 fetchStorefronts(); // Updated by Day E 4/9/26 - this will now fetch real storefront data from the Flask API and then render the storefronts. If the API route is not ready or fails, it will fallback to rendering the placeholder storefronts. */
