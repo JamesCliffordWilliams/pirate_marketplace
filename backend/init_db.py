@@ -2,7 +2,7 @@
 init_db.py
 
 Purpose:
-This file initializes the PostgreSQL database schema for The Vault.
+This file initializes the PostgreSQL database schema for Pirate Market.
 It creates all required database tables if they do not already exist.
 
 Run this file manually when:
@@ -11,9 +11,9 @@ Run this file manually when:
 - Ensuring the database schema is properly initialized
 """
 
-# The Vault Campus Marketplace
-# CSC 405 Sp 26'
-# Updated by Day Ekoi - Iteration 5 - 4/20/26 - added contact_info, preview_image_1-4, categories columns to storefronts; added ALTER TABLE migrations
+# Pirate Market Campus Marketplace
+# CSC 404 Fall 26'
+# Updated by Miles Walker - Iteration 3 - 10/25/26 - added messages table for buyer-seller communication
 
 import psycopg2
 import os
@@ -345,6 +345,33 @@ def create_vault_tables():
         """
         cur.execute(create_order_items_table)
 
+        ###_________________________________________________________
+        # MESSAGES TABLE (buyer <-> seller messages)
+        # Added by Miles Walker 10/25/26
+        #___________________________________________________________
+        create_messages_table = """
+            CREATE TABLE IF NOT EXISTS messages (
+                id SERIAL PRIMARY KEY,
+                sender_id INTEGER NOT NULL, -- There is only one user and one reciever per conversation
+                receiver_id INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                listing_id INTEGER, -- Can be NULL so that messages don't need to be tied to a listing
+                body TEXT NOT NULL CHECK (char_length(body) >= 1 AND char_length(body) <= 2000), -- Character limit
+                is_read BOOLEAN NOT NULL DEFAULT FALSE, -- Every message starts as unread
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                CONSTRAINT fk_message_sender
+                    FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                CONSTRAINT fk_message_receiver
+                    FOREIGN KEY(receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+                CONSTRAINT fk_msg_listing
+                    FOREIGN KEY(listing_id) REFERENCES listings(id) ON DELETE SET NULL, -- Prevents messages from being deleted if the associated listing is deleted 
+                CONSTRAINT chk_not_self CHECK (sender_id <> receiver_id) -- Prevents users from messaging themselves 
+            );"""
+
+        cur.execute(create_messages_table)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);") #Helps with loading a conversation
         # ________________________________________________________
         # LISTING INTEREST (Hot page engagement)
         # Added by James Williams 10/26/26

@@ -1,15 +1,17 @@
+#Updated 10/26/2026 by Miles Walker
 import sys
 import os
 from flask import Flask, render_template, redirect, url_for, session
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))) # Updated 3/19/2026 by Ryan Grimes
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))) 
 
 from controllers.listing_controller import listing_bp
-from controllers.storefront_controller import storefront_bp, storefront_pages_bp  # Updated by Day E 3/22/26
+from controllers.storefront_controller import storefront_bp, storefront_pages_bp  
 from controllers.purchase_controller import purchase_bp
 from controllers.wishlist_controller import wishlist_bp
 from controllers.admin_controller import admin_bp
-from controllers.auth_controller import auth_bp # Updated 3/19/2026 by Ryan Grimes
+from controllers.message_controller import messages_bp #Added 10/26/2026 by Miles Walker
+from controllers.auth_controller import auth_bp 
 from controllers.return_controller import returns_bp
 from controllers.checkout_controller import checkout_bp
 from controllers.category_controller import category_bp, category_pages_bp  # Added by James Williams 10/26/26
@@ -106,6 +108,7 @@ def create_app():
     app.register_blueprint(storefront_bp)
     app.register_blueprint(storefront_pages_bp)  # Updated by Day E 3/22/26
     app.register_blueprint(purchase_bp)
+    app.register_blueprint(messages_bp) # Added 10/26/2026 by Miles Walker
     app.register_blueprint(wishlist_bp)
     app.register_blueprint(admin_bp) # Updated 3/19/2026 by Ryan Grimes
     app.register_blueprint(returns_bp)
