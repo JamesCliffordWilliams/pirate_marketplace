@@ -16,6 +16,8 @@ from controllers.storefront_controller import storefront_bp, storefront_pages_bp
 from controllers.wallet_controller import wallet_bp # Billy
 from controllers.wishlist_controller import wishlist_bp
 
+LOGIN_TIMEOUT = 15
+
 # Billy
 PUBLIC_PAGES = [
     ("/", "index", "index.html"),
@@ -67,7 +69,7 @@ def create_app():
         raise RuntimeError("SECRET_KEY is not set.")
 
     # Billy: Session Timeout
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=LOGIN_TIMEOUT)
 
     # Billy: Session Timeout
     @app.before_request
