@@ -7,6 +7,7 @@
     - Displays items with size, qty, and subtotals
     - Submits buyer details to /api/checkout/complete
     - Redirects to order confirmation on success
+    Updated by James Williams - 10/26/26 - redesign: item rows built as text (no HTML strings), plain copy
 */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -36,11 +37,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (!Array.isArray(cart) || cart.length === 0) {
-        if (itemsList) itemsList.innerHTML = '<p class="helper-text">Your bag is currently empty.</p>';
+        if (itemsList) {
+            const empty = document.createElement("p");
+            empty.className = "pm-muted";
+            empty.textContent = "Your bag is empty. ";
+            const link = document.createElement("a");
+            link.href = "/storefronts";
+            link.textContent = "Browse storefronts";
+            empty.appendChild(link);
+            itemsList.replaceChildren(empty);
+        }
         if (totalDisplay) totalDisplay.textContent = "$0.00";
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.textContent = "Cart is Empty";
+            submitBtn.textContent = "Your bag is empty";
         }
         return;
     }
@@ -48,7 +58,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Render cart items in order summary
     let total = 0;
     if (itemsList) {
-        itemsList.innerHTML = "";
+        itemsList.replaceChildren();
         cart.forEach((item) => {
             const price = parseFloat(item.price || 0);
             const qty = parseInt(item.quantity || 1, 10);
@@ -56,16 +66,20 @@ document.addEventListener("DOMContentLoaded", async () => {
             total += subtotal;
 
             const row = document.createElement("div");
-            row.style.cssText = "display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid rgba(184,134,11,0.2); padding-bottom:8px;";
-            row.innerHTML = `
-                <div>
-                    <div style="font-weight:bold; color:#f0f0f0;">${item.name || "Item"}</div>
-                    <div style="color:#888; font-size:0.82rem; margin-top:2px;">
-                        ${item.size ? `Size: ${item.size} &nbsp;|&nbsp; ` : ""}Qty: ${qty}
-                    </div>
-                </div>
-                <span class="gold" style="white-space:nowrap; align-self:center;">$${subtotal.toFixed(2)}</span>
-            `;
+            row.className = "pm-summary__item";
+            const info = document.createElement("div");
+            const name = document.createElement("span");
+            name.className = "pm-summary__name";
+            name.textContent = item.name || "Item";
+            const meta = document.createElement("span");
+            meta.className = "pm-muted";
+            const size = item.size === "One Size" ? "One size" : (item.size ? `Size ${item.size}` : "");
+            meta.textContent = [size, `Qty ${qty}`].filter(Boolean).join(", ");
+            info.append(name, meta);
+            const amount = document.createElement("span");
+            amount.className = "pm-price";
+            amount.textContent = `$${subtotal.toFixed(2)}`;
+            row.append(info, amount);
             itemsList.appendChild(row);
         });
     }
@@ -76,8 +90,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     const form = document.getElementById("checkoutForm");
     if (!form) return;
 
+    let placing = false; // one order per click, even if submit fires twice
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
+        if (placing) return;
         hideError();
 
         const firstName = (document.getElementById("firstName")?.value || "").trim();
@@ -87,13 +103,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const meetingLocation = (document.getElementById("meetingLocation")?.value || "").trim();
 
         if (!firstName || !lastName || !email || !contact || !meetingLocation) {
-            showError("All fields are required to complete your transaction.");
+            showError("Fill in every field so the seller can reach you.");
             return;
         }
 
+        placing = true;
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.textContent = "Processing...";
+            submitBtn.textContent = "Placing order…";
         }
 
         try {
@@ -112,15 +129,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || "Transaction failed.");
+                throw new Error(data.error || "Your order wasn't placed. Try again.");
             }
 
             window.location.href = `/order-confirmation?conf=${encodeURIComponent(data.confirmation_number)}`;
         } catch (err) {
-            showError(err.message || "Something went wrong. Please try again.");
+            showError(err.message || "Your order wasn't placed. Try again.");
+            placing = false;
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = "Complete Transaction";
+                submitBtn.textContent = "Place order";
             }
         }
     });

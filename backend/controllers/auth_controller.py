@@ -91,7 +91,23 @@ def logout():
 def view_cart():
     if 'cart' not in session:
         session['cart'] = []
-    return render_template('cart.html')
+    # Added by James Williams 10/26/26 - each item's main photo, in one query
+    photos = {}
+    item_ids = [int(item['id']) for item in session['cart'] if str(item.get('id', '')).isdigit()]
+    if item_ids:
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT listing_id, image_url FROM listing_images WHERE is_primary = TRUE AND listing_id = ANY(%s);",
+                (item_ids,)
+            )
+            photos = {str(listing_id): url for listing_id, url in cur.fetchall()}
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"DB Error loading bag photos: {e}")
+    return render_template('cart.html', photos=photos)
 
 @auth_bp.route('/add_to_cart', methods=['POST'])
 def add_to_cart():
@@ -188,6 +204,49 @@ def remove_from_cart(index):
             session['cart'] = temp_cart
             session.modified = True
             flash(f"Removed {removed_item['name']} from bag.", "info")
+    return redirect(url_for('auth.view_cart'))
+
+# Added by James Williams 10/26/26 - the bag's quantity stepper (1 to what's in stock)
+@auth_bp.route('/update_cart/<int:index>', methods=['POST'])
+def update_cart(index):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    cart = session.get('cart') or []
+    try:
+        quantity = int(request.form.get('quantity', ''))
+    except ValueError:
+        return redirect(url_for('auth.view_cart'))
+    if not 0 <= index < len(cart) or quantity < 1:
+        return redirect(url_for('auth.view_cart'))
+
+    item = cart[index]
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT quantity_on_hand, is_made_to_order FROM listings WHERE id = %s", (item['id'],))
+        row = cur.fetchone()
+        if row and not row[1] and row[0] is not None:
+            quantity = min(quantity, max(int(row[0]), 1))
+        quantity = min(quantity, 99)
+        # same row that remove_from_cart deletes
+        cur.execute("""
+            UPDATE cart_items SET quantity = %s
+            WHERE id = (
+                SELECT id FROM cart_items
+                WHERE user_id = %s AND item_name = %s AND size = %s
+                LIMIT 1
+            )
+        """, (quantity, session['user_id'], item['name'], item['size']))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"DB Error updating bag quantity: {e}")
+        return redirect(url_for('auth.view_cart'))
+
+    item['quantity'] = quantity
+    session['cart'] = cart
+    session.modified = True
     return redirect(url_for('auth.view_cart'))
 
 # Added by Day E 4/9/26 - returns current session user info for frontend auth checks

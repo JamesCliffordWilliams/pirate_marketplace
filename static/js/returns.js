@@ -2,7 +2,7 @@
     returns.js
 
     Handles return form interactions and submission.
-    Updated by James Williams - 10/26/26 - shared photo picker, one request per submit
+    Updated by James Williams - 10/26/26 - shared photo picker, one request per submit; redesign copy
 */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -16,14 +16,14 @@ document.addEventListener("DOMContentLoaded", () => {
     function showFeedback(message, tone = "success") {
         if (!feedback) return;
         feedback.textContent = message;
-        feedback.classList.toggle("error", tone === "error");
+        feedback.classList.toggle("pm-notice--error", tone === "error");
         feedback.style.display = "block";
     }
 
     function clearFeedback() {
         if (!feedback) return;
         feedback.textContent = "";
-        feedback.classList.remove("error");
+        feedback.classList.remove("pm-notice--error");
         feedback.style.display = "none";
     }
 
@@ -77,10 +77,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
             form.reset();
             if (damagePicker) damagePicker.clear();
-            showFeedback("Return submitted successfully");
+            showFeedback("Return request sent. Keep talking with the seller to arrange it.");
         } catch (error) {
             console.error("Error submitting return:", error);
-            showFeedback(error.message || "Something went wrong while submitting your return.", "error");
+            showFeedback(error.message || "Your request wasn't sent. Try again.", "error");
         }
     }));
 });
