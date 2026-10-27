@@ -263,6 +263,16 @@ nav-divider { /* updated by Day E 4/9/2026 */
     color: #B8860B;
 }
 
+/* Added by James Williams 10/26/26 - All Categories is a link; make it look like the other menu items */
+a.nav-item {
+    text-decoration: none;
+}
+
+a.nav-item:focus-visible {
+    outline: 2px solid rgba(var(--vault-gold), 0.9);
+    outline-offset: 2px;
+}
+
 .nav-heading {
     color: rgba(204, 178, 128, 0.75); /* Updated by Day E 3/22/26 */
     font-size: 0.95rem; /* Updated by Day E 3/22/26 */

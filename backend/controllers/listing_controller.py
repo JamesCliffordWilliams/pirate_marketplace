@@ -42,6 +42,7 @@ from services.listing_service import (
     delete_listing_size_service
 )
 from services.storefront_service import get_my_storefront_service
+from services.category_service import resolve_assignable_category  # Added by James Williams 10/26/26
 
 listing_bp = Blueprint("listing_bp", __name__, url_prefix="/api")
 
@@ -85,6 +86,7 @@ def create_listing_from_form():
     - fulfillment_type: IN_STOCK or PREORDER
     - status: ACTIVE or INACTIVE
     - sizes_available: JSON string array of sizes ["S", "M", "L"]
+    - category_id: the listing's subcategory
     - listing_image: image file upload
     """
     import json
@@ -112,6 +114,13 @@ def create_listing_from_form():
         # Validate required fields
         if not title:
             return jsonify({"error": "title is required."}), 400
+
+        # Added by James Williams 10/26/26
+        # Check the category before uploading images, so a bad category doesn't leave images in S3
+        try:
+            category = resolve_assignable_category(request.form.get("category_id"))
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
 
         # Parse sizes
         try:
@@ -175,6 +184,7 @@ def create_listing_from_form():
             "description": "",
             "sizes_available": sizes_available,
             "is_made_to_order": is_made_to_order,
+            "category_id": category["id"],
         }
 
         # Create listing

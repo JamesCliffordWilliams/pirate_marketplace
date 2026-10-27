@@ -1,0 +1,72 @@
+{#
+    partials/category_icons.html
+
+    The Vault Campus Marketplace
+    Created by James Williams - 10/26/26
+
+    Icons for the 12 main categories.
+    Usage: {{ category_icon(category.icon) }}  (unknown names show the box icon)
+#}
+{% macro category_icon(key, class_name="category-icon") -%}
+<svg class="{{ class_name }}" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+{%- if key == "shirt" %}
+  <path d="M8.5 3.5c.8 1.4 2 2.1 3.5 2.1s2.7-.7 3.5-2.1L20 6l1.5 4-3.5 1.2v9.3H6v-9.3L2.5 10 4 6Z"/>
+{%- elif key == "shoe" %}
+  <path d="M2.5 9.5c0-.6.4-1 1-1h1.3c.9 0 1.7.5 2.1 1.3l.3.6c.5 1 1.5 1.6 2.6 1.6h1c.9 0 1.7.3 2.3.9l1.4 1.3c.5.4 1.1.7 1.8.8l3 .5c1.3.2 2.2 1.3 2.2 2.6v.4c0 .5-.4.9-.9.9H3.4c-.5 0-.9-.4-.9-.9Z"/>
+  <path d="M2.5 15.5h19"/>
+  <path d="m9.5 11.5 1-1.5"/>
+  <path d="m12.5 12.2 1-1.5"/>
+{%- elif key == "laptop" %}
+  <rect x="4" y="4.5" width="16" height="11" rx="1.5"/>
+  <path d="M2 19.5h20"/>
+  <path d="m4 15.5-1.5 4"/>
+  <path d="m20 15.5 1.5 4"/>
+{%- elif key == "lamp" %}
+  <path d="M8 3h8l3 7H5Z"/>
+  <path d="M12 10v9.5"/>
+  <path d="M8 21h8"/>
+  <path d="M14.5 10v2"/>
+{%- elif key == "book" %}
+  <path d="M12 7C10.2 5.4 7.7 4.7 5 5c-.6.1-1 .5-1 1.1v11.2c0 .6.5 1.1 1.1 1 2.6-.2 5 .5 6.9 2.2 1.9-1.7 4.3-2.4 6.9-2.2.6.1 1.1-.4 1.1-1V6.1c0-.6-.4-1-1-1.1-2.7-.3-5.2.4-7 2Z"/>
+  <path d="M12 7v13.5"/>
+{%- elif key == "gem" %}
+  <path d="M6.5 4h11L21 9l-9 11L3 9Z"/>
+  <path d="M3 9h18"/>
+  <path d="M10 4 8.5 9 12 20l3.5-11L14 4"/>
+{%- elif key == "gamepad" %}
+  <path d="M7 7h10c2.4 0 4.3 1.9 4.6 4.3l.4 4.3c.2 1.9-1.2 3.4-3 3.4-.9 0-1.7-.4-2.2-1.2L15.6 16H8.4l-1.2 1.8C6.7 18.6 5.9 19 5 19c-1.8 0-3.2-1.5-3-3.4l.4-4.3C2.7 8.9 4.6 7 7 7Z"/>
+  <path d="M7.5 10.5v4"/>
+  <path d="M5.5 12.5h4"/>
+  <circle cx="15.5" cy="11" r=".8"/>
+  <circle cx="17.8" cy="13.6" r=".8"/>
+{%- elif key == "dumbbell" %}
+  <path d="M7 12h10"/>
+  <rect x="3.75" y="7.5" width="3.25" height="9" rx="1"/>
+  <rect x="17" y="7.5" width="3.25" height="9" rx="1"/>
+  <path d="M2 10v4"/>
+  <path d="M22 10v4"/>
+{%- elif key == "palette" %}
+  <path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.9-.9 1.9-1.9 0-.5-.2-.9-.5-1.3-.3-.3-.5-.8-.5-1.3 0-1.1.9-1.9 1.9-1.9H17a4 4 0 0 0 4-4c0-4.1-4-7.6-9-7.6Z"/>
+  <circle cx="7.5" cy="11.5" r="1"/>
+  <circle cx="9.5" cy="7.5" r="1"/>
+  <circle cx="14.5" cy="7.5" r="1"/>
+{%- elif key == "sparkles" %}
+  <path d="M11 4.5 12.6 9 17 10.5l-4.4 1.6L11 16.5l-1.6-4.4L5 10.5 9.4 9Z"/>
+  <path d="M18.5 14.5v5"/>
+  <path d="M16 17h5"/>
+  <path d="M5.5 2.5v3"/>
+  <path d="M4 4h3"/>
+{%- elif key == "trophy" %}
+  <path d="M8 4h8v5a4 4 0 0 1-8 0Z"/>
+  <path d="M8 5.5H5.5a.5.5 0 0 0-.5.5v.5a3.5 3.5 0 0 0 3.2 3.5"/>
+  <path d="M16 5.5h2.5a.5.5 0 0 1 .5.5v.5a3.5 3.5 0 0 1-3.2 3.5"/>
+  <path d="M12 13v4"/>
+  <path d="M10 17h4l.5 3.5h-5Z"/>
+{%- else %}
+  <path d="M21 8 12 3 3 8v8l9 5 9-5Z"/>
+  <path d="m3 8 9 5 9-5"/>
+  <path d="M12 13v8"/>
+  <path d="m7.5 5.5 9 5"/>
+{%- endif %}
+</svg>
+{%- endmacro %}

@@ -1,0 +1,65 @@
+<!--
+    categories.html
+
+    The Vault Campus Marketplace
+    CSC 405 Sp 26'
+    Created by James Williams - 10/26/26
+
+Description:
+The All Categories page. Shows the 12 main categories; each card opens that category.
+-->
+{% from "partials/category_icons.html" import category_icon %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Vault | All Categories</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/categories.css') }}" />
+</head>
+
+<body>
+
+{% include 'partials/site_nav.html' %}
+
+  <!-- Page header, in the homepage's title style -->
+  <section class="cat-hero">
+    <h1 class="cat-title">All Categories</h1>
+    <p class="cat-subtitle">Shop products from every storefront.</p>
+  </section>
+
+  <main class="cat-page">
+
+    {% if not_found %}
+    <div class="cat-notice" role="alert">
+      Category not found. Choose one of the categories below.
+    </div>
+    {% endif %}
+
+    <nav aria-label="Product categories">
+      <ul class="cat-grid">
+        {% for category in categories %}
+        <li class="cat-grid-item">
+          <a class="cat-card" href="{{ url_for('category_pages_bp.category_listings_page', parent_slug=category.slug) }}">
+            <span class="cat-card-icon">{{ category_icon(category.icon, "cat-icon") }}</span>
+            <span class="cat-card-name">{{ category.name }}</span>
+            <span class="cat-card-preview">
+              {%- if category.children -%}
+                {{ category.children[:3] | map(attribute="name") | join(", ") }}{% if category.children | length > 3 %}…{% endif %}
+              {%- else -%}
+                Everything else.
+              {%- endif -%}
+            </span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </nav>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+</body>
+</html>
