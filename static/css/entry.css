@@ -1,0 +1,47 @@
+/*
+    entry.css
+
+    Pirate Market
+    Created by James Williams - 10/26/26
+    Landing, log in, sign up and admin log in. The crest is the hero; forms are a single
+    calm column. Components come from theme.css.
+*/
+
+body.pm.pm-entry {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: 32px 16px;
+    background:
+        linear-gradient(rgba(11, 27, 54, 0.86), rgba(11, 27, 54, 0.94)),
+        url("../images/background.jpg") center / cover no-repeat;
+}
+
+.pm .pm-entry__panel {
+    display: grid;
+    justify-items: center;
+    gap: 24px;
+    width: min(400px, 100%);
+    text-align: center;
+}
+
+.pm .pm-entry__crest { width: min(300px, 62vw); height: auto; filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.45)); }
+.pm .pm-entry__crest--small { width: 96px; }
+.pm .pm-entry__tagline { color: var(--pm-fog); font-size: var(--pm-t16); }
+.pm .pm-entry__actions { display: grid; gap: 12px; width: 100%; }
+.pm .pm-entry__actions .pm-btn { min-height: 48px; font-size: var(--pm-t16); }
+
+.pm .pm-entry__form {
+    display: grid;
+    width: 100%;
+    padding: 28px;
+    border-radius: var(--pm-r-sheet);
+    background: var(--pm-hull);
+    text-align: left;
+}
+
+.pm .pm-entry__form h1 { margin-bottom: 20px; font-size: var(--pm-t25); text-align: center; }
+.pm .pm-entry__form .pm-btn--primary { min-height: 48px; margin-top: 4px; font-size: var(--pm-t16); }
+.pm .pm-entry__links { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; font-size: var(--pm-t14); color: var(--pm-fog); }
+.pm .pm-entry__links a { color: var(--pm-sail); }
+.pm .pm-entry__message { margin-bottom: 16px; }

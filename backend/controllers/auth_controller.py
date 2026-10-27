@@ -15,7 +15,7 @@ def login():
 
         conn = get_connection()
         if conn is None:
-            return "Database connection failed. <a href='/auth/login'>Try again</a>"
+            return render_template('login.html', error="Pirate Market can't log you in right now. Try again in a minute.", username=user)
 
         success, role = service.validate_login(user, pw, conn)
         # conn.close()
@@ -45,8 +45,9 @@ def login():
             else:
                 return redirect(url_for('auth.listings'))
         
-        return "Invalid Credentials. <a href='/auth/login'>Try again</a>"
-    
+        # Updated by James Williams 10/26/26 - show the form again with a message instead of a bare text page
+        return render_template('login.html', error="That username and password don't match.", username=user)
+
     return render_template('login.html')
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
@@ -58,15 +59,21 @@ def signup():
 
         conn = get_connection()
         if conn is None:
-            return "Database connection failed. <a href='/auth/signup'>Try again</a>"
+            return render_template('signup.html', error="Pirate Market can't create accounts right now. Try again in a minute.",
+                                   username=user, email=email)
 
         success, message = service.register_user(user, pw, email, conn)
         conn.close()
 
         if success:
-            flash("Signup Successful! Please login with your new credentials.", "success")
+            flash("Account created. Log in to start shopping.", "success")
             return redirect(url_for('auth.login'))
-        return f"Signup Failed: {message} <a href='/auth/signup'>Try again</a>"
+        # Updated by James Williams 10/26/26 - show the form again with the reason
+        reasons = {
+            "You Must Use a Hampton University Associated Email": "Use your Hampton University email (ending in hamptonu.edu).",
+        }
+        return render_template('signup.html', error=reasons.get(message, "Your account wasn't created. That username or email may already be taken."),
+                               username=user, email=email)
     
     return render_template('signup.html')
 
