@@ -23,6 +23,7 @@ from dotenv import load_dotenv
 from migrations.add_product_categories import apply_product_categories
 # Added by James Williams 10/26/26 - engagement table for the Hot page
 from migrations.add_listing_interest import apply_listing_interest
+from migrations.add_listing_create_requests import apply_listing_create_requests  # Added by James Williams 10/26/26
 
 load_dotenv()
 
@@ -145,6 +146,7 @@ def create_vault_tables():
         # Creates product_categories and adds listings.category_id
         # ________________________________________________________
         apply_product_categories(cur)
+        apply_listing_create_requests(cur)  # Added by James Williams 10/26/26 - safe retries for create listing
 
         # ________________________________________________________
         # LISTING IMAGES TABLE (Multiple images per listing)

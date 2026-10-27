@@ -8,6 +8,7 @@ Updated by Day Ekoi - Iteration 5 4/9/26
 Updated by Day Ekoi - Iteration 5 4/22/26 - One Size mode, per-size quantities, Made-to-Order
 Updated by James Williams - 10/26/26 - added the required category picker
 Updated by James Williams - 10/26/26 - shared photo picker, one request per submit
+Updated by James Williams - 10/26/26 - request key so a retried create can't make a duplicate
 
 Purpose:
 Handles form submission for Create Listing page. Supports:
@@ -221,14 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append("category_id", String(categoryId)); // Added by James Williams 10/26/26
         listingImages.forEach(file => formData.append("listing_images", file));
 
-        const response = await fetch("/api/listings/create", {
-          method: "POST",
-          headers: {
-            "X-User-Id": user.id,
-            "X-User-Role": user.role
-          },
-          body: formData,
-        });
+        const response = await sendCreateRequest(formData, user);
 
         if (response.status === 401) {
           window.location.href = "/auth/login";
@@ -259,6 +253,35 @@ document.addEventListener('DOMContentLoaded', function() {
     cancelBtn.addEventListener("click", () => {
       window.location.href = "/storefronts";
     });
+  }
+
+  // Added by James Williams 10/26/26
+  // One key per submit. The same key is only reused to retry when no response arrived,
+  // or the server says this listing is still being created (409), so it can't be made twice.
+  function newRequestKey() {
+    if (window.crypto.randomUUID) return window.crypto.randomUUID();
+    const bytes = window.crypto.getRandomValues(new Uint8Array(16)); // randomUUID needs https
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  async function sendCreateRequest(formData, user) {
+    const key = newRequestKey();
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const response = await fetch("/api/listings/create", {
+          method: "POST",
+          headers: { "X-User-Id": user.id, "X-User-Role": user.role, "Idempotency-Key": key },
+          body: formData,
+        });
+        if (response.status !== 409 || attempt >= 5) return response;
+      } catch (error) {
+        if (attempt >= 3) throw error; // still offline
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    }
   }
 
   async function fetchCurrentUser() {

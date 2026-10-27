@@ -103,7 +103,16 @@ def _assert_can_manage_storefront(current_user, storefront):
 
 def create_listing_service(current_user, storefront_id, data):
     """
-    Creates a new listing under a storefront.
+    Creates a new listing under a storefront (rules in build_listing_fields).
+    """
+    return create_listing(**build_listing_fields(current_user, storefront_id, data))
+
+
+# Updated by James Williams 10/26/26 - split out of create_listing_service so the form
+# create can check everything before uploading images
+def build_listing_fields(current_user, storefront_id, data):
+    """
+    Validates a new listing and returns the create_listing() arguments.
 
     Enforces:
     - User must be logged in
@@ -179,7 +188,7 @@ def create_listing_service(current_user, storefront_id, data):
     # Added by James Williams 10/26/26 - every listing needs a category
     category = resolve_assignable_category(data.get("category_id"))
 
-    return create_listing(
+    return dict(
         storefront_id=storefront_id,
         title=str(title).strip(),
         description=data.get("description"),

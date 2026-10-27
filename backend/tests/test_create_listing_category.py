@@ -1,5 +1,6 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - category checks on create/update listing
+# Updated by James Williams - 10/26/26 - mocks the one-transaction create
 #
 # Runs without a database or S3: the storefront lookup, category lookup,
 # model writes and utils.s3.upload_image_to_s3 are all mocked.
@@ -55,6 +56,8 @@ class TestCreateListingRouteCategory(unittest.TestCase):
             patch.object(listing_service, "get_images_for_listing", return_value=[]),
             patch.object(listing_service, "add_listing_image", return_value={}),
             patch.object(listing_service, "upsert_listing_size", return_value={}),
+            # Updated by James Williams 10/26/26 - the form route saves through create_listing_once
+            patch.object(listing_controller, "create_listing_once", side_effect=self._fake_create_once),
         ]
         for p in patches:
             p.start()
@@ -67,6 +70,11 @@ class TestCreateListingRouteCategory(unittest.TestCase):
     def _fake_create(self, **kwargs):
         self.created.append(kwargs)
         return {"id": 101, **kwargs}
+
+    def _fake_create_once(self, user_id, key, fields, sizes, files):
+        for file in files:
+            utils.s3.upload_image_to_s3(file, folder="listings")
+        return self._fake_create(**fields), 201
 
     def _post(self, **fields):
         data = {

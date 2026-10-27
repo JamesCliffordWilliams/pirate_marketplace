@@ -4,6 +4,7 @@
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added primary image JOIN to get_listings_by_storefront_id
 # Updated by James Williams - 10/26/26 - added category_id to listings and browse_public_listings
 # Updated by James Williams - 10/26/26 - Hot page: listing_ids / available_only filters, newest available listings
+# Updated by James Williams - 10/26/26 - cursor inserts for the one-transaction create
 
 """
 models/listing_model.py
@@ -89,35 +90,31 @@ def create_listing(
     """
     conn = get_connection()
     cur = conn.cursor()
+    listing = insert_listing(cur, storefront_id, title, description, price, fulfillment_type,
+                             quantity_on_hand, sizes_available, status, is_made_to_order, category_id)
+    conn.commit()
 
-    query = """
+    cur.close()
+    conn.close()
+    return listing
+
+
+# Added by James Williams 10/26/26
+# Cursor versions of the inserts, so create listing can run them in one transaction.
+# The caller commits.
+def insert_listing(cur, storefront_id, title, description, price, fulfillment_type,
+                   quantity_on_hand=None, sizes_available=None, status="ACTIVE",
+                   is_made_to_order=False, category_id=None):
+    cur.execute("""
         INSERT INTO listings
         (storefront_id, title, description, price, fulfillment_type, quantity_on_hand, sizes_available, status, is_made_to_order, category_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id, storefront_id, title, description, price,
                   fulfillment_type, quantity_on_hand, sizes_available,
                   status, created_at, updated_at, is_made_to_order, category_id;
-    """
-
-    cur.execute(query, (
-        storefront_id,
-        title,
-        description,
-        price,
-        fulfillment_type,
-        quantity_on_hand,
-        sizes_available,
-        status,
-        bool(is_made_to_order),
-        category_id
-    ))
-
+    """, (storefront_id, title, description, price, fulfillment_type, quantity_on_hand,
+          sizes_available, status, bool(is_made_to_order), category_id))
     row = cur.fetchone()
-    conn.commit()
-
-    cur.close()
-    conn.close()
-
     return {
         "id": row[0],
         "storefront_id": row[1],
@@ -133,6 +130,30 @@ def create_listing(
         "is_made_to_order": row[11],
         "category_id": row[12],
     }
+
+
+def insert_listing_image(cur, listing_id, image_url, is_primary=False):
+    if is_primary:
+        cur.execute("UPDATE listing_images SET is_primary = FALSE WHERE listing_id = %s;", (listing_id,))
+    cur.execute("""
+        INSERT INTO listing_images (listing_id, image_url, is_primary)
+        VALUES (%s, %s, %s)
+        RETURNING id, listing_id, image_url, is_primary, created_at;
+    """, (listing_id, image_url, is_primary))
+    row = cur.fetchone()
+    return {"id": row[0], "listing_id": row[1], "image_url": row[2], "is_primary": row[3], "created_at": row[4]}
+
+
+def insert_listing_size(cur, listing_id, size, quantity):
+    cur.execute("""
+        INSERT INTO listing_sizes (listing_id, size, quantity)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (listing_id, size)
+        DO UPDATE SET quantity = EXCLUDED.quantity
+        RETURNING id, listing_id, size, quantity, created_at;
+    """, (listing_id, size, quantity))
+    row = cur.fetchone()
+    return {"id": row[0], "listing_id": row[1], "size": row[2], "quantity": row[3], "created_at": row[4]}
 
 
 def get_listing_by_id(listing_id):
@@ -626,32 +647,12 @@ def add_listing_image(listing_id, image_url, is_primary=False):
     """
     conn = get_connection()
     cur = conn.cursor()
-
-    if is_primary:
-        cur.execute(
-            "UPDATE listing_images SET is_primary = FALSE WHERE listing_id = %s;",
-            (listing_id,)
-        )
-
-    query = """
-        INSERT INTO listing_images (listing_id, image_url, is_primary)
-        VALUES (%s, %s, %s)
-        RETURNING id, listing_id, image_url, is_primary, created_at;
-    """
-    cur.execute(query, (listing_id, image_url, is_primary))
-    row = cur.fetchone()
+    image = insert_listing_image(cur, listing_id, image_url, is_primary)
     conn.commit()
 
     cur.close()
     conn.close()
-
-    return {
-        "id": row[0],
-        "listing_id": row[1],
-        "image_url": row[2],
-        "is_primary": row[3],
-        "created_at": row[4],
-    }
+    return image
 
 
 def get_images_for_listing(listing_id):
@@ -754,28 +755,12 @@ def upsert_listing_size(listing_id, size, quantity):
     """
     conn = get_connection()
     cur = conn.cursor()
-
-    query = """
-        INSERT INTO listing_sizes (listing_id, size, quantity)
-        VALUES (%s, %s, %s)
-        ON CONFLICT (listing_id, size)
-        DO UPDATE SET quantity = EXCLUDED.quantity
-        RETURNING id, listing_id, size, quantity, created_at;
-    """
-    cur.execute(query, (listing_id, size, quantity))
-    row = cur.fetchone()
+    row = insert_listing_size(cur, listing_id, size, quantity)
     conn.commit()
 
     cur.close()
     conn.close()
-
-    return {
-        "id": row[0],
-        "listing_id": row[1],
-        "size": row[2],
-        "quantity": row[3],
-        "created_at": row[4],
-    }
+    return row
 
 
 def get_sizes_for_listing(listing_id):

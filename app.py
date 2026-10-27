@@ -25,6 +25,13 @@ def create_app():
     # James: removed exposed secret key for security reasons. Use environment variable instead.
     app.secret_key = os.getenv('SECRET_KEY')
 
+    # Added by James Williams 10/26/26 - cap uploads with a clear message (4 photos fit easily)
+    app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
+
+    @app.errorhandler(413)
+    def upload_too_large(_error):
+        return {"error": "That upload is too large. Photos must add up to less than 32 MB."}, 413
+
     # Run DB migrations on every startup so new columns are always present
     # try:
     #     from init_db import create_vault_tables
