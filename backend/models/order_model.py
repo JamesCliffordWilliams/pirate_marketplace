@@ -167,7 +167,8 @@ def get_seller_orders(storefront_id):
         SELECT o.id, o.confirmation_number, o.buyer_first_name || ' ' || o.buyer_last_name,
                o.buyer_contact, o.buyer_meeting_location, o.order_status,
                TO_CHAR(o.expires_at, 'Mon DD, YYYY'),
-               oi.item_name, oi.selected_size, oi.quantity, oi.completed_at IS NOT NULL
+               oi.item_name, oi.selected_size, oi.quantity, oi.completed_at IS NOT NULL,
+               TO_CHAR(o.completed_at, 'Mon DD, YYYY')
         FROM orders o
         JOIN order_items oi ON oi.order_id = o.id
         JOIN listings l ON l.id = oi.listing_id
@@ -190,6 +191,7 @@ def get_seller_orders(storefront_id):
                 "order_status": r[5],
                 "pickup_by": r[6],
                 "items": [],
+                "completed_at": r[11]
             }
         orders[r[0]]["items"].append({
             "item_name": r[7],

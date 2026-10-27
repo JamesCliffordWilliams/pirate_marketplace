@@ -14,6 +14,7 @@ from controllers.return_controller import returns_bp
 from controllers.checkout_controller import checkout_bp
 from controllers.category_controller import category_bp, category_pages_bp  # Added by James Williams 10/26/26
 from controllers.hot_controller import hot_bp, hot_pages_bp  # Added by James Williams 10/26/26
+from controllers.order_controllers import orders_bp  # Added by Aniya Hopson 10/27/26
 from init_db import create_vault_tables
 
 
@@ -114,6 +115,7 @@ def create_app():
     app.register_blueprint(category_pages_bp)   # Added by James Williams 10/26/26
     app.register_blueprint(hot_bp)              # Added by James Williams 10/26/26
     app.register_blueprint(hot_pages_bp)        # Added by James Williams 10/26/26
+    app.register_blueprint(orders_bp, url_prefix='/api')  # Added by Aniya Hopson 10/27/26
     
     @app.get("/health")
     def health():

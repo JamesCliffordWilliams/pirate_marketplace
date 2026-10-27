@@ -182,7 +182,9 @@
 
     <div id="sales" class="tab-content">
         <h3>SALES HISTORY</h3>
-        <p class="empty-state">No items sold yet.</p>
+        <p id="salesEmptyState" class="empty-state">Loading your sales...</p>
+        <div id="salesContainer" class="purchase-items"></div>
+        
     </div>
 </div>
 
@@ -219,6 +221,7 @@
 
         if (tabName === "wishlist") loadWishlist();
         if (tabName === "purchases") loadPurchases();
+        if (tabName === "sales") loadSales();
     }
 
     function getLocalWishlistItems() {
@@ -538,6 +541,28 @@
             console.error("Error loading purchases:", error);
             if (emptyState) emptyState.textContent = "Unable to load orders right now.";
         }
+    }
+
+    // Sales History - Added by Aniya Hopson 10/27/26
+    // Shows finished (completed or expired) orders. Open orders stay in Incoming Orders.
+    async function loadSales() {
+        const emptyState = document.getElementById("salesEmptyState");
+        const container = document.getElementById("salesContainer");
+
+        const res = await fetch("/api/seller/orders");
+        const data = await res.json();
+        const sales = (data.orders || []).filter((order) => order.order_status !== "SUBMITTED");
+
+        container.innerHTML = "";
+        emptyState.textContent = sales.length ? "" : "No items sold yet.";
+
+        sales.forEach((order) => {
+            const row = document.createElement("div");
+            row.className = "purchase-row";
+            // textContent so buyer-typed text can't run as code
+            row.textContent = `Date: ${order.completed_at} | ${order.order_status}  |  ${order.confirmation_number}  |  Buyer: ${order.buyer_name}`;
+            container.appendChild(row);
+        });
     }
 
     document.addEventListener("DOMContentLoaded", loadMyListings);

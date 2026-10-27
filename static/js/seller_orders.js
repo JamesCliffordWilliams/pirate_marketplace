@@ -28,7 +28,7 @@ function makeEl(tag, className, text) {
 function showOrder(order) {
     const card = makeEl("div", "order-card", "");
 
-    card.appendChild(makeEl("p", "order-number", `${order.confirmation_number}  ·  ${order.order_status}`));
+    card.appendChild(makeEl("p", "order-number", order.confirmation_number));
     card.appendChild(makeEl("p", "order-line", `Buyer: ${order.buyer_name}  ·  ${order.buyer_contact}`));
     card.appendChild(makeEl("p", "order-line", `Meeting spot: ${order.buyer_meeting_location}`));
 
@@ -38,32 +38,36 @@ function showOrder(order) {
         card.appendChild(makeEl("p", "order-item", `${item.quantity} × ${item.item_name}${size}${done}`));
     });
 
-    // Only open orders where this seller still has items to hand over get a button
-    const waiting = order.items.some((item) => !item.picked_up);
-    if (order.order_status === "SUBMITTED" && waiting) {
-        card.appendChild(makeEl("p", "order-deadline", `Pick up by ${order.pickup_by}`));
+    card.appendChild(makeEl("p", "order-deadline", `Pick up by ${order.pickup_by}`));
 
-        const button = makeEl("button", "action-btn", "Mark as Picked Up");
-        button.addEventListener("click", () => markPickedUp(order));
-        card.appendChild(button);
-    }
+    const button = makeEl("button", "action-btn", "Mark as Picked Up");
+    button.addEventListener("click", () => markPickedUp(order));
+    card.appendChild(button);
 
     ordersList.appendChild(card);
 }
 
 
 async function loadOrders() {
-    const res = await fetch("/api/seller/orders");
-    const data = await res.json();
+    try{
+        const res = await fetch("/api/seller/orders");
+        const data = await res.json();
 
-    if (!res.ok) {
-        ordersMessage.textContent = data.error || "Unable to load orders.";
-        return;
+        if (!res.ok) {
+            ordersMessage.textContent = data.error || "Unable to load orders.";
+            return;
+        }
+
+        // Finished orders go to Sales History on the account page
+        const openOrders = data.orders.filter((order) => order.order_status === "SUBMITTED");
+        ordersList.innerHTML = "";
+        ordersMessage.textContent = openOrders.length ? "" : "No incoming orders.";
+        openOrders.forEach(showOrder);
+    } catch (error) {
+        // The server sent an error page instead of data; check the terminal running app.py
+        ordersMessage.textContent = "Unable to load orders. Check the server terminal for an error.";
+        console.error(error);
     }
-
-    ordersList.innerHTML = "";
-    ordersMessage.textContent = data.orders.length ? "" : "No orders yet.";
-    data.orders.forEach(showOrder);
 }
 
 
