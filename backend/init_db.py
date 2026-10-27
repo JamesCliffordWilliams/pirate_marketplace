@@ -2,7 +2,7 @@
 init_db.py
 
 Purpose:
-This file initializes the PostgreSQL database schema for The Vault.
+This file initializes the PostgreSQL database schema for Pirate Market.
 It creates all required database tables if they do not already exist.
 
 Run this file manually when:
@@ -11,9 +11,10 @@ Run this file manually when:
 - Ensuring the database schema is properly initialized
 """
 
-# The Vault Campus Marketplace
+# Pirate Market Campus Marketplace
 # CSC 405 Sp 26'
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added contact_info, preview_image_1-4, categories columns to storefronts; added ALTER TABLE migrations
+
 
 import psycopg2
 import os
@@ -23,7 +24,6 @@ from dotenv import load_dotenv
 from migrations.add_product_categories import apply_product_categories
 # Added by James Williams 10/26/26 - engagement table for the Hot page
 from migrations.add_listing_interest import apply_listing_interest
-
 load_dotenv()
 
 
@@ -321,7 +321,10 @@ def create_vault_tables():
                     ON DELETE CASCADE
             );
         """
+        #Added by Aniya Hopson 10/26/26
         cur.execute(create_orders_table)
+        cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days');")
+        cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;")
 
         # ________________________________________________________
         # ORDER ITEMS TABLE (Items per order)
@@ -344,6 +347,8 @@ def create_vault_tables():
             );
         """
         cur.execute(create_order_items_table)
+        #Added by Aniya Hopson 10/26/26
+        cur.execute("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;")
 
         # ________________________________________________________
         # LISTING INTEREST (Hot page engagement)
