@@ -2,8 +2,9 @@
 
 **A cloud-based fashion marketplace for Hampton University students**
 
-Designed & Built by David Jackson, Elali McNair, Day Ekoi, Ryan Grimes, Kaila Roberts, and Madison Boyd
-CSC 405 — Spring 26'
+Designed & Built by Aniya Hopson, Billy Anders, Cletus Hyacinth, Elisa Earls, James Williams, Madison Rickman, Miles Walker, and Terrance Wynn
+
+CSC 404 — Spring 26'
 
 ---
 
