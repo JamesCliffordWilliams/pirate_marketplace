@@ -43,10 +43,9 @@ def card(listing_id, storefront_id=1):
 class FakeModels:
     """Stands in for the database calls hot_service makes."""
 
-    def __init__(self, events, cards, newest=()):
+    def __init__(self, events, cards):
         self.events = events
         self.cards = {c["id"]: c for c in cards}
-        self.newest = list(newest)
         self.event_calls = 0
         self.browse_calls = []
 
@@ -62,12 +61,8 @@ class FakeModels:
         found = [self.cards[i] for i in sorted(listing_ids) if i in self.cards]   # not in ranked order
         return found, len(found)
 
-    def get_newest_available_listings(self, exclude_ids=(), per_storefront=2, limit=8):
-        return [n for n in self.newest if n["id"] not in set(exclude_ids)][:limit]
-
     def patch(self, test):
-        for name in ("get_engagement_events", "get_storefront_reach",
-                     "browse_public_listings", "get_newest_available_listings"):
+        for name in ("get_engagement_events", "get_storefront_reach", "browse_public_listings"):
             p = patch.object(hot_service, name, side_effect=getattr(self, name))
             p.start()
             test.addCleanup(p.stop)
@@ -89,7 +84,6 @@ class TestHotServiceOffline(unittest.TestCase):
 
         first = self.ids(hot_service.get_hot_page_data())
         self.assertEqual(first["hot"], [1, 4, 3, 2])
-        self.assertEqual(first["just_listed"], [])
 
         # listing 1 sells out: still in the cached ranking, gone from the fresh read
         del fake.cards[1]
@@ -141,23 +135,10 @@ class TestHotServiceOffline(unittest.TestCase):
         fake.patch(self)
         self.assertEqual(self.ids(hot_service.get_hot_page_data())["hot"], [9, 7, 5])
 
-    def test_just_listed_only_when_needed(self):
-        newest = [{"id": 40 + i, "storefront_id": 40 + i} for i in range(10)]
-        fake = FakeModels(hot_events(1, 1), [card(1)] + [card(n["id"], n["id"]) for n in newest], newest)
-        fake.patch(self)
-        data = self.ids(hot_service.get_hot_page_data())
-        self.assertEqual(data["hot"], [1])
-        self.assertEqual(data["just_listed"], [40, 41, 42, 43, 44, 45, 46, 47])
-
-        hot_service.clear_ranking_cache()
-        fake.events = sum((hot_events(i, i) for i in (1, 2, 3, 4)), [])
-        fake.cards.update({i: card(i, i) for i in (2, 3, 4)})
-        self.assertEqual(self.ids(hot_service.get_hot_page_data())["just_listed"], [])
-
     def test_nothing_anywhere(self):
         fake = FakeModels([], [])
         fake.patch(self)
-        self.assertEqual(self.ids(hot_service.get_hot_page_data()), {"hot": [], "rising": [], "just_listed": []})
+        self.assertEqual(self.ids(hot_service.get_hot_page_data()), {"hot": [], "rising": []})
 
     def test_fork_gets_a_fresh_cache(self):
         fake = FakeModels(hot_events(1, 1), [card(1)])
@@ -186,7 +167,7 @@ class TestHotApiOffline(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.headers.get("Cache-Control"), "public, max-age=60")
         data = response.get_json()
-        self.assertEqual(set(data), {"hot", "rising", "just_listed"})
+        self.assertEqual(set(data), {"hot", "rising"})
         self.assertEqual(data["hot"], [card(1)])
 
     def test_errors_are_json_500(self):
@@ -211,7 +192,7 @@ class TestHotApiOffline(unittest.TestCase):
         self.assertIn("What shoppers are saving, carting, and buying over the last two weeks.", html)
         self.assertNotIn("this week", html)
         self.assertIn("Picking up momentum, with a boost for smaller storefronts.", html)
-        self.assertIn("The newest products from storefronts across Pirate Market.", html)
+        self.assertNotIn("Just Listed", html)
         for asset in ("css/storefront.css", "css/listing_card.css", "css/categories.css", "css/hot.css",
                       "js/nav_pane.js", "js/listing_card.js", "js/hot.js"):
             self.assertIn(asset, html)
@@ -275,7 +256,6 @@ class TestHotOnDatabase(unittest.TestCase):
         data = self.api()
         self.assertEqual(sorted(c["id"] for c in data["hot"]), sorted(self.listings))
         self.assertEqual(set(data["hot"][0]), expected_keys)
-        self.assertEqual(data["just_listed"], [])
 
     def test_unavailable_listings_never_appear_even_from_cache(self):
         self.assertEqual(len(self.api()["hot"]), 4)     # warms the cache
@@ -295,18 +275,10 @@ class TestHotOnDatabase(unittest.TestCase):
         self.db.execute("UPDATE listings SET quantity_on_hand = 0 WHERE id = %s;", (self.listings[0],))
         self.assertNotIn(self.listings[0], [c["id"] for c in self.api()["hot"]])
 
-    def test_just_listed_fills_in_and_excludes_shown(self):
-        self.db.execute("DELETE FROM listing_interest WHERE listing_id <> %s;", (self.listings[0],))
-        data = self.api()
-        self.assertEqual([c["id"] for c in data["hot"]], [self.listings[0]])
-        just_listed = [c["id"] for c in data["just_listed"]]
-        self.assertEqual(sorted(just_listed), sorted(self.listings[1:]))
-
     def test_missing_table_falls_back(self):
         self.db.execute("DROP TABLE listing_interest;")
         data = self.api()
-        self.assertEqual((data["hot"], data["rising"]), ([], []))
-        self.assertEqual(sorted(c["id"] for c in data["just_listed"]), sorted(self.listings))
+        self.assertEqual(data, {"hot": [], "rising": []})
 
     def test_page_renders(self):
         self.assertEqual(self.client.get("/hot").status_code, 200)

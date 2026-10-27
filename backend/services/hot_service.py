@@ -5,7 +5,7 @@
 services/hot_service.py
 
 Purpose:
-Builds the Hot page: Hot Right Now, Rising, and (when those are nearly empty) Just Listed.
+Builds the Hot page: Hot Right Now and Rising.
 
 How it works:
 - The database returns each shopper's latest action of each kind per listing.
@@ -24,7 +24,7 @@ from types import MappingProxyType
 
 from config import hot_ranking as cfg
 from models.interest_model import get_engagement_events, get_storefront_reach
-from models.listing_model import browse_public_listings, get_newest_available_listings
+from models.listing_model import browse_public_listings
 
 
 # ________________________________________________________
@@ -160,18 +160,6 @@ def select_sections(hot_candidates, rising_candidates, available_ids):
     return {"hot": hot, "rising": rising}
 
 
-def needs_just_listed(hot_ids, rising_ids):
-    return len(hot_ids) + len(rising_ids) < cfg.JUST_LISTED_SHOW_BELOW
-
-
-def select_just_listed(newest, exclude_ids):
-    """newest: [{id, storefront_id}] newest first. Max 2 per storefront, limit 8."""
-    candidates = [{"listing_id": n["id"], "storefront_id": n["storefront_id"]} for n in newest]
-    return _pick_per_storefront(
-        candidates, cfg.JUST_LISTED_MAX_PER_STOREFRONT, cfg.JUST_LISTED_LIMIT, exclude_ids
-    )
-
-
 # ________________________________________________________
 # RANKING CACHE (per process)
 # ________________________________________________________
@@ -252,26 +240,14 @@ def _cards_by_id(listing_ids):
 
 
 def get_hot_page_data():
-    """Returns {"hot": [...], "rising": [...], "just_listed": [...]} in the category card shape."""
+    """Returns {"hot": [...], "rising": [...]} in the category card shape."""
     ranked = _ranking_cache.get_or_compute(_compute_ranked_candidates)
 
     candidate_ids = list(dict.fromkeys(c["listing_id"] for c in ranked["hot"] + ranked["rising"]))
     cards = _cards_by_id(candidate_ids)
     sections = select_sections(ranked["hot"], ranked["rising"], available_ids=set(cards))
 
-    just_listed = []
-    if needs_just_listed(sections["hot"], sections["rising"]):
-        shown = sections["hot"] + sections["rising"]
-        newest = get_newest_available_listings(
-            exclude_ids=shown,
-            per_storefront=cfg.JUST_LISTED_MAX_PER_STOREFRONT,
-            limit=cfg.JUST_LISTED_LIMIT,
-        )
-        just_listed = select_just_listed(newest, exclude_ids=shown)
-        cards.update(_cards_by_id(just_listed))
-
     return {
         "hot": [cards[i] for i in sections["hot"] if i in cards],
         "rising": [cards[i] for i in sections["rising"] if i in cards],
-        "just_listed": [cards[i] for i in just_listed if i in cards],
     }

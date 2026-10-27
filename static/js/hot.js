@@ -6,8 +6,8 @@
     Created by James Williams - 10/26/26
 
 Description:
-Loads the Hot page with one request and shows Hot Right Now, Rising,
-and Just Listed as product cards. Shows loading, empty, and error states.
+Loads the Hot page with one request and shows Hot Right Now and Rising
+as product cards. Shows loading, empty, and error states.
 
 Works with:
 - hot.html, hot.css
@@ -15,28 +15,27 @@ Works with:
 */
 
 (function () {
-    const SECTION_KEYS = ["hot", "rising", "just_listed"];
+    const SECTION_KEYS = ["hot", "rising"];
     const SKELETON_COUNT = 4;
 
     // ________________________________________________________
     // SECTION STATES
     // ________________________________________________________
 
-    // Hot and Rising collapse to one quiet line when empty; Just Listed only shows when it has items
+    // Hot and Rising collapse to one quiet line when empty
     function sectionStates(data) {
         const counts = {};
         SECTION_KEYS.forEach((key) => {
             counts[key] = data && Array.isArray(data[key]) ? data[key].length : 0;
         });
 
-        if (counts.hot + counts.rising + counts.just_listed === 0) {
-            return { page: "empty", hot: "hidden", rising: "hidden", just_listed: "hidden" };
+        if (counts.hot + counts.rising === 0) {
+            return { page: "empty", hot: "hidden", rising: "hidden" };
         }
         return {
             page: "content",
             hot: counts.hot ? "cards" : "collapsed",
-            rising: counts.rising ? "cards" : "collapsed",
-            just_listed: counts.just_listed ? "cards" : "hidden"
+            rising: counts.rising ? "cards" : "collapsed"
         };
     }
 
@@ -48,8 +47,7 @@ Works with:
     const pageState = document.getElementById("hotPageState");
     const sections = {
         hot: { section: document.getElementById("hotSection"), grid: document.getElementById("hotGrid") },
-        rising: { section: document.getElementById("risingSection"), grid: document.getElementById("risingGrid") },
-        just_listed: { section: document.getElementById("justListedSection"), grid: document.getElementById("justListedGrid") }
+        rising: { section: document.getElementById("risingSection"), grid: document.getElementById("risingGrid") }
     };
     const isLoggedIn = root.dataset.loggedIn === "true";
 
@@ -112,7 +110,6 @@ Works with:
         pageState.replaceChildren();
         setSectionState("hot", "loading", skeletonCards());
         setSectionState("rising", "loading", skeletonCards());
-        setSectionState("just_listed", "hidden");
     }
 
     function showPageMessage(title, actions) {

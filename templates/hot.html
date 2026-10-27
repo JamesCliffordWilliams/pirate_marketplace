@@ -7,7 +7,7 @@
     Updated by James Williams - 10/26/26 - redesign: product tiles in the shared grid
 
 Description:
-The Hot page: Hot Right Now, Rising, and Just Listed (only when the first two are nearly empty).
+The Hot page: Hot Right Now and Rising.
 The server builds the page layout, and hot.js loads the products.
 -->
 {% macro section_header(key, title, description, icon) -%}
@@ -85,11 +85,6 @@ The server builds the page layout, and hot.js loads the products.
       <div class="hot-rail pm-grid" id="risingGrid" role="region" tabindex="0" aria-label="Rising products" aria-busy="true">
         {{ skeletons() }}
       </div>
-    </section>
-
-    <section class="hot-section hot-section--just-listed" id="justListedSection" data-section="just_listed" aria-labelledby="just_listedHeading" hidden>
-      {{ section_header("just_listed", "Just Listed", "The newest products from storefronts across Pirate Market.", "clock") }}
-      <div class="hot-rail pm-grid" id="justListedGrid" role="region" tabindex="0" aria-label="Just Listed products"></div>
     </section>
 
     <noscript>

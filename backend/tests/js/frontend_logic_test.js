@@ -179,18 +179,16 @@ same(fetchCalls.length, 2, "one request per listing per page load");
 load(root + "/static/js/hot.js");
 var H = window.VaultHot._internals;
 function items(n) { var list = []; for (var i = 0; i < n; i++) list.push({ id: i + 1 }); return list; }
-same(H.sectionStates({ hot: [], rising: [], just_listed: [] }),
-    { page: "empty", hot: "hidden", rising: "hidden", just_listed: "hidden" }, "everything empty");
+same(H.sectionStates({ hot: [], rising: [] }),
+    { page: "empty", hot: "hidden", rising: "hidden" }, "everything empty");
 same(H.sectionStates(null),
-    { page: "empty", hot: "hidden", rising: "hidden", just_listed: "hidden" }, "no data counts as empty");
-same(H.sectionStates({ hot: items(2), rising: [], just_listed: items(3) }),
-    { page: "content", hot: "cards", rising: "collapsed", just_listed: "cards" }, "partial with Just Listed");
-same(H.sectionStates({ hot: [], rising: [], just_listed: items(2) }),
-    { page: "content", hot: "collapsed", rising: "collapsed", just_listed: "cards" }, "only Just Listed");
-same(H.sectionStates({ hot: items(4), rising: items(1), just_listed: [] }),
-    { page: "content", hot: "cards", rising: "cards", just_listed: "hidden" }, "full page");
+    { page: "empty", hot: "hidden", rising: "hidden" }, "no data counts as empty");
+same(H.sectionStates({ hot: items(2), rising: [] }),
+    { page: "content", hot: "cards", rising: "collapsed" }, "only Hot");
+same(H.sectionStates({ hot: items(4), rising: items(1) }),
+    { page: "content", hot: "cards", rising: "cards" }, "full page");
 same(H.sectionStates({ hot: [], rising: items(1) }),
-    { page: "content", hot: "collapsed", rising: "cards", just_listed: "hidden" }, "missing just_listed key");
+    { page: "content", hot: "collapsed", rising: "cards" }, "only Rising");
 
 // ---------- photo picker (image_uploader.js) ----------
 // Added by James Williams 10/26/26

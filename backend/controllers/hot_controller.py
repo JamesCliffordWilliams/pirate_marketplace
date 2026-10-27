@@ -8,7 +8,7 @@ Purpose:
 Routes for the Hot page.
 
 API:
-- GET  /api/hot                    -> Hot, Rising and Just Listed cards
+- GET  /api/hot                    -> Hot and Rising cards
 - POST /api/listings/<id>/interest -> records a detail_view (logged-in shoppers only)
 
 Pages:

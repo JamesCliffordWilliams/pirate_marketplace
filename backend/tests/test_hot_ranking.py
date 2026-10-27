@@ -23,8 +23,6 @@ from services.hot_service import (
     select_hot,
     select_rising,
     select_sections,
-    needs_just_listed,
-    select_just_listed,
 )
 
 _user_seq = [1000]
@@ -281,37 +279,6 @@ class TestSections(unittest.TestCase):
 
     def test_everything_empty(self):
         self.assertEqual(select_sections([], [], available_ids=set()), {"hot": [], "rising": []})
-
-
-class TestJustListed(unittest.TestCase):
-
-    NEWEST = [
-        {"id": 50, "storefront_id": 1},
-        {"id": 49, "storefront_id": 1},
-        {"id": 48, "storefront_id": 1},
-        {"id": 47, "storefront_id": 2},
-        {"id": 46, "storefront_id": 3},
-    ]
-
-    def test_shown_only_under_four_combined(self):
-        self.assertTrue(needs_just_listed([], []))
-        self.assertTrue(needs_just_listed([1, 2], [3]))
-        self.assertFalse(needs_just_listed([1, 2], [3, 4]))
-        self.assertFalse(needs_just_listed([1, 2, 3, 4, 5], []))
-
-    def test_storefront_cap_and_order(self):
-        self.assertEqual(select_just_listed(self.NEWEST, exclude_ids=[]), [50, 49, 47, 46])
-
-    def test_excludes_shown(self):
-        self.assertEqual(select_just_listed(self.NEWEST, exclude_ids=[50, 47]), [49, 48, 46])
-
-    def test_limit_eight(self):
-        newest = [{"id": i, "storefront_id": i} for i in range(20, 0, -1)]
-        self.assertEqual(select_just_listed(newest, exclude_ids=[]), list(range(20, 12, -1)))
-
-    def test_one_storefront(self):
-        newest = [{"id": i, "storefront_id": 1} for i in range(10, 0, -1)]
-        self.assertEqual(select_just_listed(newest, exclude_ids=[]), [10, 9])
 
 
 if __name__ == "__main__":
