@@ -1,16 +1,17 @@
-import sys
 import os
+
 from flask import Flask, render_template, redirect, url_for, session
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))) # Updated 3/19/2026 by Ryan Grimes
-
-from controllers.listing_controller import listing_bp
-from controllers.storefront_controller import storefront_bp, storefront_pages_bp  # Updated by Day E 3/22/26
-from controllers.purchase_controller import purchase_bp
-from controllers.wishlist_controller import wishlist_bp
+# Billy - Iteration 3
 from controllers.admin_controller import admin_bp
-from controllers.auth_controller import auth_bp # Updated 3/19/2026 by Ryan Grimes
+from controllers.auth_controller import auth_bp
+from controllers.checkout_controller import checkout_bp
+from controllers.listing_controller import listing_bp
+from controllers.purchase_controller import purchase_bp
 from controllers.return_controller import returns_bp
+from controllers.storefront_controller import storefront_bp, storefront_pages_bp
+from controllers.wallet_controller import wallet_bp
+from controllers.wishlist_controller import wishlist_bp
 from controllers.checkout_controller import checkout_bp
 from controllers.category_controller import category_bp, category_pages_bp  # Added by James Williams 10/26/26
 from controllers.hot_controller import hot_bp, hot_pages_bp  # Added by James Williams 10/26/26
@@ -18,12 +19,11 @@ from init_db import create_vault_tables
 
 
 def create_app():
-    app = Flask(__name__,
-                template_folder='templates',
-                static_folder='static')
-
     # James: removed exposed secret key for security reasons. Use environment variable instead.
+    app = Flask(__name__, template_folder='templates', static_folder='static')
     app.secret_key = os.getenv('SECRET_KEY')
+
+
 
     # Run DB migrations on every startup so new columns are always present
     # try:
@@ -110,6 +110,9 @@ def create_app():
     app.register_blueprint(admin_bp) # Updated 3/19/2026 by Ryan Grimes
     app.register_blueprint(returns_bp)
     app.register_blueprint(checkout_bp, url_prefix='/api')
+
+    app.register_blueprint(wallet_bp)
+
     app.register_blueprint(category_bp)         # Added by James Williams 10/26/26
     app.register_blueprint(category_pages_bp)   # Added by James Williams 10/26/26
     app.register_blueprint(hot_bp)              # Added by James Williams 10/26/26
