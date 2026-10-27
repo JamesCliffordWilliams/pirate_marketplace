@@ -4,471 +4,221 @@
     The Vault Campus Marketplace
     CSC 405 Sp 26'
     Created by James Williams - 10/26/26
+    Updated by James Williams - 10/26/26 - rewritten for the Pirate Market redesign (body.pm);
+    product tiles and the grid come from theme.css
 
 Description:
-Styles for the All Categories page and the category listing pages.
-Loaded after storefront.css, which has the shared colors, background, and menu.
+Styles for the All Categories page, the category listing pages and the frame of the Hot page.
 
 Works with:
-- categories.html, category_listings.html
+- categories.html, category_listings.html, hot.html
+- category_listings.js, hot.js
 */
 
+/* ---------- page frame ---------- */
 
-/* ---------- shared page frame ---------- */
-
-.cat-page {
-    width: min(1280px, calc(100% - 32px));   /* 16px gutters on small screens */
+.pm .cat-hero,
+.pm .cat-page {
+    width: 100%;
+    max-width: var(--pm-page);
     margin: 0 auto;
-    padding-bottom: 48px;
+    padding-left: var(--pm-gutter);
+    padding-right: var(--pm-gutter);
 }
 
-.cat-hero {
-    text-align: center;
-    margin: 0 16px 36px;
-}
+.pm .cat-hero { padding-top: 32px; }
+.pm .cat-page { padding-bottom: 64px; }
+.pm .cat-title { font: 400 var(--pm-t31)/1.15 var(--pm-display); }
+.pm .cat-subtitle { margin-top: 6px; color: var(--pm-fog); }
 
-.cat-title {
-    font-size: clamp(2.2rem, 6vw, 4rem);
-    font-weight: 800;
-    line-height: 1.05;
-    overflow-wrap: anywhere;
-}
-
-.cat-subtitle {
-    margin-top: 10px;
-    font-style: italic;
-    color: rgba(255, 255, 255, 0.86);
-}
-
-.cat-notice {
-    margin: 0 auto 24px;
-    max-width: 640px;
+.pm .cat-notice {
+    margin: 24px 0 0;
     padding: 12px 16px;
-    border-radius: 12px;
-    border: 1px solid rgba(var(--vault-gold), 0.6);
-    background: rgba(var(--vault-navy), 0.85);
-    color: #f3ce73;
-    font-weight: 700;
-    text-align: center;
+    border-left: 3px solid var(--pm-signal);
+    border-radius: var(--pm-r-control);
+    background: var(--pm-hull);
 }
 
+/* ---------- All Categories ---------- */
 
-/* ---------- /categories grid ---------- */
-
-.cat-grid {
-    list-style: none;
+.pm .cat-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 16px;
-}
-
-@media (min-width: 768px) {
-    .cat-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 20px;
-    }
-}
-
-@media (min-width: 1100px) {
-    .cat-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-}
-
-.cat-grid-item {
-    display: flex;
-    min-width: 0;
-}
-
-.cat-card {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 20px 18px 22px;
-    border-radius: 22px;
-    border: 1px solid rgba(var(--vault-gold), 0.32);
-    background: linear-gradient(
-        160deg,
-        rgba(var(--vault-navy), 0.9) 0%,
-        rgba(0, 0, 0, 0.8) 100%
-    );
-    color: white;
-    text-decoration: none;
-    transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
-}
-
-.cat-card:hover,
-.cat-card:focus-visible {
-    transform: translateY(-3px);
-    border-color: rgba(var(--vault-gold), 0.9);
-    box-shadow: 0 0 0 2px rgba(var(--vault-gold), 0.55), 0 10px 28px rgba(0, 0, 0, 0.45);
-    outline: none;
-}
-
-.cat-card-icon {
-    width: 56px;
-    height: 56px;
-    flex: 0 0 56px;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #D4AF37;
-    background: radial-gradient(circle at 35% 30%, rgba(var(--vault-gold), 0.2), rgba(var(--vault-navy), 0.95) 70%);
-    border: 1px solid rgba(var(--vault-gold), 0.45);
-}
-
-.cat-icon {
-    width: 28px;
-    height: 28px;
-}
-
-.cat-card-name {
-    font-size: 1.15rem;
-    font-weight: 800;
-    line-height: 1.2;
-    overflow-wrap: anywhere;
-}
-
-.cat-card-preview {
-    font-size: 0.88rem;
-    line-height: 1.35;
-    color: rgba(255, 255, 255, 0.66);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-@media (max-width: 420px) {
-    .cat-card {
-        padding: 16px 14px 18px;
-    }
-
-    .cat-card-name {
-        font-size: 1rem;
-    }
-
-    .cat-card-preview {
-        font-size: 0.8rem;
-    }
-}
-
-
-/* ---------- category listings page ---------- */
-
-/* clears the fixed pagination bar from storefront.css */
-.cat-listings-page {
-    padding-bottom: 140px;
-}
-
-.cat-breadcrumb ol {
+    margin: 24px 0 0;
+    padding: 0;
     list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 18px;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.72);
 }
 
-.cat-breadcrumb li {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-}
-
-.cat-breadcrumb li + li::before {
-    content: "›";
-    color: rgba(var(--vault-gold), 0.85);
-}
-
-.cat-breadcrumb a {
-    color: #D4AF37;
+.pm .cat-card {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 14px;
+    row-gap: 2px;
+    height: 100%;
+    padding: 16px;
+    border-radius: var(--pm-r-tile);
+    background: var(--pm-hull);
+    color: inherit;
     text-decoration: none;
+    transition: background-color 0.15s;
 }
 
-.cat-breadcrumb a:hover {
-    text-decoration: underline;
+.pm .cat-card:hover { background: var(--pm-hull-raised); }
+
+.pm .cat-card-icon {
+    display: grid;
+    place-items: center;
+    grid-row: span 2;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--pm-rigging);
+    border-radius: 50%;
+    color: var(--pm-brass);
 }
 
-.cat-breadcrumb [aria-current="page"] {
-    color: white;
-    font-weight: 700;
-    overflow-wrap: anywhere;
-}
+.pm .cat-card-icon--small { width: 40px; height: 40px; }
+.pm .cat-card-name { font-weight: 600; }
+.pm .cat-card-preview { font-size: var(--pm-t13); color: var(--pm-fog); }
 
-.cat-listings-header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 20px;
-}
+/* ---------- category listing page ---------- */
 
-.cat-card-icon--small {
-    width: 48px;
-    height: 48px;
-    flex-basis: 48px;
-}
+.pm .cat-listings-page { padding-top: 24px; }
 
-.cat-title--page {
-    font-size: clamp(1.8rem, 5vw, 3rem);
-}
-
-.cat-chips {
+.pm .cat-breadcrumb ol {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 0;
+    list-style: none;
+    font-size: var(--pm-t14);
+    color: var(--pm-fog);
 }
 
-.cat-chip {
+.pm .cat-breadcrumb li + li::before { content: "/"; margin-right: 8px; color: var(--pm-rigging); }
+.pm .cat-breadcrumb a { color: var(--pm-fog); }
+.pm .cat-breadcrumb a:hover { color: var(--pm-sail); }
+
+.pm .cat-listings-header { display: flex; align-items: center; gap: 14px; }
+
+.pm .cat-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+
+.pm .cat-chip {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 40px;
-    max-width: 100%;
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(var(--vault-gold), 0.45);
-    background: rgba(0, 0, 0, 0.55);
-    color: #f2f2f2;
-    font-size: 0.88rem;
-    font-weight: 700;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--pm-control-line);
+    border-radius: var(--pm-r-control);
+    color: var(--pm-sail);
+    font-size: var(--pm-t14);
+    font-weight: 500;
     text-decoration: none;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
-.cat-chip:hover {
-    background: rgba(var(--vault-gold), 0.15);
-    color: #f0cc55;
-}
+.pm .cat-chip:hover { border-color: var(--pm-fog); }
+.pm .cat-chip.is-active { border-color: var(--pm-brass); box-shadow: inset 0 0 0 1px var(--pm-brass); }
+.pm .cat-chip-count { font-size: var(--pm-t13); color: var(--pm-fog); font-variant-numeric: tabular-nums; }
 
-.cat-chip:focus-visible,
-.cat-sort-select:focus-visible,
-.cat-state-message a:focus-visible,
-.cat-state-message button:focus-visible {
-    outline: 2px solid #D4AF37;
-    outline-offset: 2px;
-}
-
-.cat-chip.is-active {
-    background: #D4AF37;
-    border-color: #D4AF37;
-    color: #111111;
-}
-
-.cat-chip-count {
-    min-width: 22px;
-    padding: 1px 7px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.12);
-    font-size: 0.75rem;
-    text-align: center;
-}
-
-.cat-chip.is-active .cat-chip-count {
-    background: rgba(0, 0, 0, 0.18);
-}
-
-.cat-toolbar {
+.pm .cat-toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 20px;
-    scroll-margin-top: 16px;
+    margin: 24px 0 20px;
 }
 
-.cat-results-count {
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 700;
-}
+.pm .cat-results-count { color: var(--pm-fog); font-size: var(--pm-t14); }
+.pm .cat-sort { display: inline-flex; align-items: center; gap: 8px; font-size: var(--pm-t14); color: var(--pm-fog); }
 
-.cat-sort {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.cat-sort-label {
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #D4AF37;
-}
-
-.cat-sort-select {
+.pm .cat-sort-select {
     min-height: 40px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(var(--vault-gold), 0.5);
-    background: rgba(0, 0, 0, 0.75);
-    color: white;
-    font-size: 0.9rem;
+    padding: 0 12px;
+    border: 1px solid var(--pm-control-line);
+    border-radius: var(--pm-r-control);
+    background: var(--pm-hull);
+    color: var(--pm-sail);
 }
 
+/* ---------- loading, empty and error states ---------- */
 
-/* Product grid: 4 / 3 / 2 / 1 columns at >=1280 / >=960 / >=640 / <640 */
-.cat-listing-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 20px;
-}
+.pm .cat-skeleton-card { display: grid; gap: 6px; }
 
-@media (min-width: 640px) {
-    .cat-listing-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 960px) {
-    .cat-listing-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media (min-width: 1280px) {
-    .cat-listing-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-}
-
-
-/* Loading skeletons: sized like a product card so nothing jumps when cards arrive */
-.cat-skeleton-card {
-    min-height: 520px;
-    padding: 1rem;
-    border-radius: 26px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: rgba(0, 0, 0, 0.7);
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.cat-skeleton-block {
-    border-radius: 10px;
-    background: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0.06) 0%,
-        rgba(var(--vault-gold), 0.14) 50%,
-        rgba(255, 255, 255, 0.06) 100%
-    );
+.pm .cat-skeleton-block {
+    border-radius: var(--pm-r-control);
+    background: linear-gradient(90deg, var(--pm-hull) 0%, var(--pm-hull-raised) 50%, var(--pm-hull) 100%);
     background-size: 200% 100%;
-    animation: cat-shimmer 1.4s ease-in-out infinite;
+    animation: pm-shimmer 1.4s linear infinite;
 }
 
-.cat-skeleton-block--image {
-    height: 270px;
-    border-radius: 18px;
-}
+.pm .cat-skeleton-block--image { aspect-ratio: 4 / 5; border-radius: var(--pm-r-tile); margin-bottom: 4px; }
+.pm .cat-skeleton-block--line { height: 12px; }
+.pm .cat-skeleton-block--short { width: 40%; height: 12px; }
+.pm .cat-skeleton-block--button { display: none; }
 
-.cat-skeleton-block--line {
-    height: 18px;
-    width: 80%;
-}
-
-.cat-skeleton-block--short {
-    height: 18px;
-    width: 40%;
-}
-
-.cat-skeleton-block--button {
-    margin-top: auto;
-    height: 40px;
-}
-
-@keyframes cat-shimmer {
-    from { background-position: 100% 0; }
-    to { background-position: -100% 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .cat-skeleton-block {
-        animation: none;
-    }
-}
-
-@media (max-width: 900px) {
-    .cat-skeleton-block--image {
-        height: 220px;
-    }
-}
-
-
-/* Empty / end / error states */
-.cat-state-message {
-    grid-column: 1 / -1;
-    padding: 48px 16px;
-    text-align: center;
-    color: #c9c9c9;
-}
-
-.cat-state-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: white;
-    margin-bottom: 14px;
-    overflow-wrap: anywhere;
-}
-
-.cat-state-actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+.pm .cat-state-message {
+    display: grid;
+    justify-items: start;
     gap: 12px;
+    grid-column: 1 / -1;
+    padding: 48px 0;
 }
 
-.cat-state-actions a,
-.cat-state-actions button {
+.pm .cat-state-title { font: 400 var(--pm-t25)/1.2 var(--pm-display); }
+.pm .cat-state-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.pm .cat-state-actions a,
+.pm .cat-state-actions button {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
     min-height: 40px;
-    padding: 6px 18px;
-    border-radius: 999px;
-    border: 1px solid rgba(var(--vault-gold), 0.5);
-    background: rgba(0, 0, 0, 0.55);
-    color: #D4AF37;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+    padding: 0 16px;
+    border: 1px solid var(--pm-control-line);
+    border-radius: var(--pm-r-control);
+    background: none;
+    color: var(--pm-sail);
+    font-size: var(--pm-t14);
+    font-weight: 600;
     text-decoration: none;
     cursor: pointer;
 }
 
-.cat-state-actions a:hover,
-.cat-state-actions button:hover {
-    background: rgba(var(--vault-gold), 0.15);
-    color: #f0cc55;
+/* ---------- pages ---------- */
+
+/* storefront.css pins .pagination to the bottom of the window; here it sits under the grid */
+.pm .pagination {
+    position: static;
+    padding: 0;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 32px;
+    color: var(--pm-fog);
+    font-size: var(--pm-t14);
 }
 
+.pm .pagination[hidden] { display: none; }
 
-/* .pagination sets display:flex in storefront.css, which would beat the hidden attribute */
-.pagination[hidden] {
-    display: none;
+.pm .pagination .page-btn {
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--pm-control-line);
+    border-radius: var(--pm-r-control);
+    background: none;
+    color: var(--pm-sail);
+    font-size: var(--pm-t14);
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+    transform: none;
+    cursor: pointer;
 }
 
-.page-btn:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-}
+.pm .pagination .page-indicator { font-size: var(--pm-t14); }
 
-.page-btn:disabled:hover {
-    background: rgba(0, 0, 0, 0.55);
-    color: #d4af37;
-}
-
-.page-btn:focus-visible {
-    outline: 2px solid #D4AF37;
-    outline-offset: 2px;
-}
+.pm .pagination .page-btn:disabled { opacity: 0.45; cursor: not-allowed; }

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<!-- Created by James Williams - 10/26/26 - product page: photos, size, quantity, add to bag, save -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ listing.title if listing else "Not available" }} | Pirate Market</title>
+    <link rel="preload" href="{{ url_for('static', filename='fonts/instrument-sans-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/product.css') }}">
+</head>
+<body class="pm">
+{% include 'partials/site_nav.html' %}
+
+{% if not listing %}
+<main class="pm-page">
+    <div class="pm-empty">
+        <h1>This listing isn't available</h1>
+        <p>It may have sold, or the seller took it down. Other storefronts have plenty more.</p>
+        <a class="pm-btn pm-btn--primary" href="{{ url_for('storefront_pages_bp.storefront_home_page') }}">Browse storefronts</a>
+    </div>
+</main>
+{% else %}
+{% set one_size = sizes|length == 1 and sizes[0].size == "One Size" %}
+<main class="pm-page pm-product" id="productPage"
+      data-listing-id="{{ listing.id }}"
+      data-title="{{ listing.title }}"
+      data-price="{{ '%.2f'|format(listing.price) }}"
+      data-image="{{ images[0] if images else '' }}"
+      data-store="{{ storefront.brand_name }}"
+      data-user-id="{{ viewer_id or '' }}"
+      data-made-to-order="{{ 'true' if made_to_order else 'false' }}"
+      data-max="{{ listing.quantity_on_hand or 0 }}">
+
+    {% if is_owner_preview %}
+    <p class="pm-product__notice">Only you can see this listing. Shoppers will see it once it's active.</p>
+    {% endif %}
+
+    <section class="pm-gallery" aria-label="Photos">
+        <div class="pm-gallery__main">
+            <img id="galleryMain" src="{{ images[0] if images else url_for('static', filename='images/listing-placeholder.svg') }}"
+                 alt="{{ listing.title }}" {% if not images %}class="is-placeholder"{% endif %}>
+        </div>
+        {% if images|length > 1 %}
+        <div class="pm-gallery__thumbs">
+            {% for url in images %}
+            <button type="button" class="pm-gallery__thumb" data-src="{{ url }}" aria-label="Photo {{ loop.index }} of {{ images|length }}"
+                    aria-pressed="{{ 'true' if loop.first else 'false' }}"><img src="{{ url }}" alt=""></button>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </section>
+
+    <section class="pm-product__info">
+        <h1 class="pm-product__title">{{ listing.title }}</h1>
+        <p class="pm-product__price pm-price">${{ '%.2f'|format(listing.price) }}</p>
+
+        <form class="pm-product__buy" id="buyForm" novalidate>
+            {% if sizes and not one_size %}
+            <fieldset class="pm-product__field">
+                <legend class="pm-label">Size</legend>
+                <div class="pm-chips">
+                    {% for row in sizes %}
+                    {% set out = not made_to_order and row.quantity <= 0 %}
+                    <label class="pm-chip"><input type="radio" name="size" value="{{ row.size }}" data-qty="{{ row.quantity }}" {{ 'disabled' if out }}>{{ row.size }}</label>
+                    {% endfor %}
+                </div>
+                <p class="pm-error" id="sizeError" role="alert"></p>
+            </fieldset>
+            {% else %}
+            <input type="hidden" name="size" value="One Size" data-qty="{{ sizes[0].quantity if sizes else (listing.quantity_on_hand or 0) }}">
+            <p class="pm-product__meta">One size</p>
+            {% endif %}
+
+            {% if sold_out %}
+            <p class="pm-product__soldout">Sold out</p>
+            {% else %}
+            <div class="pm-product__field">
+                <span class="pm-label" id="qtyLabel">Quantity</span>
+                <div class="pm-stepper" aria-labelledby="qtyLabel">
+                    <button type="button" data-step="-1" aria-label="Decrease quantity">−</button>
+                    <input type="number" id="qtyInput" value="1" min="1" inputmode="numeric" aria-labelledby="qtyLabel">
+                    <button type="button" data-step="1" aria-label="Increase quantity">+</button>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="pm-product__actions">
+                {% if not sold_out %}
+                <button type="submit" class="pm-btn pm-btn--primary pm-product__add">Add to bag</button>
+                {% endif %}
+                <button type="button" class="pm-btn pm-btn--secondary pm-product__save" id="saveBtn" aria-pressed="false">Save</button>
+            </div>
+            {% if made_to_order %}<p class="pm-hint">Made to order. The seller makes it after you buy.</p>{% endif %}
+        </form>
+
+        <a class="pm-product__store" href="{{ url_for('storefront_pages_bp.storefront_view_page', storefront_id=storefront.id) }}">
+            <span class="pm-medallion">{% if storefront.logo_url %}<img src="{{ storefront.logo_url }}" alt="">{% else %}{{ storefront.brand_name[:1]|upper }}{% endif %}</span>
+            <span>
+                <span class="pm-product__store-name">{{ storefront.brand_name }}</span>
+                <span class="pm-muted">Visit store</span>
+            </span>
+        </a>
+
+        <dl class="pm-product__details">
+            {% if listing.category %}
+            <dt>Category</dt>
+            <dd><a href="{{ url_for('category_pages_bp.category_listings_page', parent_slug=listing.category.parent_slug or listing.category.slug, sub_slug=listing.category.slug if listing.category.parent_slug else None) }}">{{ listing.category.name }}</a></dd>
+            {% endif %}
+            {% if listing.description %}
+            <dt>Description</dt>
+            <dd class="pm-product__description">{{ listing.description }}</dd>
+            {% endif %}
+        </dl>
+    </section>
+</main>
+{% endif %}
+
+{% include 'partials/site_footer.html' %}
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+{% if listing %}
+<script src="{{ url_for('static', filename='js/listing_card.js') }}"></script>
+<script src="{{ url_for('static', filename='js/product.js') }}"></script>
+{% endif %}
+</body>
+</html>

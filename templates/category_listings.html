@@ -26,7 +26,7 @@ and category_listings.js loads the products.
     <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 
-<body>
+<body class="pm">
 
 {% include 'partials/site_nav.html' %}
 
@@ -46,7 +46,7 @@ and category_listings.js loads the products.
     <!-- Breadcrumb: All Categories › Parent [› Sub] -->
     <nav class="cat-breadcrumb" aria-label="Breadcrumb">
       <ol>
-        <li><a href="{{ url_for('category_pages_bp.categories_page') }}">All Categories</a></li>
+        <li><a href="{{ url_for('category_pages_bp.categories_page') }}">All categories</a></li>
         {% if active_sub %}
         <li><a href="{{ parent_url }}{{ sort_qs }}">{{ parent.name }}</a></li>
         <li><span aria-current="page">{{ active_sub.name }}</span></li>
@@ -97,7 +97,7 @@ and category_listings.js loads the products.
     </div>
 
     <!-- Products (placeholders show while loading) -->
-    <section class="cat-listing-grid" id="categoryGrid" aria-busy="true" aria-label="{{ current.name }} products">
+    <section class="cat-listing-grid pm-grid" id="categoryGrid" aria-busy="true" aria-label="{{ current.name }} products">
       {% for _ in range(8) %}
       <div class="cat-skeleton-card" aria-hidden="true">
         <div class="cat-skeleton-block cat-skeleton-block--image"></div>

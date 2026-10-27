@@ -78,7 +78,7 @@ class TestFrontendStaticGuards(unittest.TestCase):
         source = read("static/js/storefront_view.js")
         self.assertIn("VaultListingCard.create(", source)
         self.assertNotIn("function createListingCard", source)
-        self.assertIn("focusLinkedListing", source)
+        self.assertIn("window.location.replace(`/listings/${linkedId}`)", source)  # Updated by James Williams 10/26/26
 
     def test_edit_page_no_longer_forces_active(self):
         source = read("static/js/edit_listing.js")

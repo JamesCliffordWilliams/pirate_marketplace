@@ -1,95 +1,82 @@
 <!---
-    storefront.html
+    homepage.html (storefront directory)
 
-    The Vault Campus Marketplace 
+    The Vault Campus Marketplace
     CSC 405 Sp 26'
     Created by Day Ekoi - Iteration 4
     3/18/2026-3/22/2026
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - removed hardcoded test card, added lightbox overlay element
-    Updated by James Williams - Iteration 2 - 10/1/26 
-
-
-Description of file (What it does, how it is used, etc):
-This file holds the main UI strucutre for the storefront homepage of the Vault. It includes the top navigation bar, logo and search section, 
-and the main content area where storefront cards will be displayed. The storefront cards are generated dynamically using storefront.js. This page serves as the entry point for users to explore different storefronts available on the website.
-It is simply the skeleton/template of the storefront page, all styling is handled by storefront.css
-The cards are not hardcoded into HTML, but there is a grid container that the javascript file added dynamically as users create storefronts.
-This page will connect to the Flask backend and database by requesting storefront data from the created API routes and displaying them once created.
-
-Purpose simplified: Creates page structure:
-Top bar: menu button on left, cart and profile icons on right
-Logo/Title and search section: The Vault logo/title and a search bar for users to search for storefronts
-Main content: where storefront cards will be displayed, along with pagination controls at bottom of page
-Script connection: Links and loads JS file that actually creates the storefront cards dynamically
-
-
-
-
-
-Start of Code w/ comments
+    Updated by James Williams - Iteration 2 - 10/1/26
+    Updated by James Williams - 10/26/26 - Pirate Market redesign: storefront facades, Hot rail,
+    shop by category, inline pagination. Cards are built by storefront.js.
 --->
-
-<!DOCTYPE html> 
-<!-- needed for any HTML file -->
-
-<html lang="en"> 
-<!-- This line tells the browser that all content on the page is in english. There arent any other language considerations at the moment -->
-
-<head> 
-<!-- stores info that isnt actually shown on the page itself. Includes metadata, browser tab title, and links to the css file -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- ensures the screensize is consistent on different types of devices -->
-  <title>Storefronts | Pirate Market</title> 
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" /> <!-- Updated by Day E 3/22/26 -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
-</head> <!-- end of head -->
-
-
-
-<!-- MAIN "BODY" CODE: This section holds what will actually be seen and interacted with on the storefront page -->
-
-<body>
-
-<!-- Top bar and side menu moved to partials/site_nav.html - James Williams 10/26/26 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Storefronts | Pirate Market</title>
+  <link rel="preload" href="{{ url_for('static', filename='fonts/instrument-sans-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
+</head>
+<body class="pm">
 {% include 'partials/site_nav.html' %}
 
-
-  <!-- Brand name/Logo & Search Features -->
-  <section class="logo-search-section">
-
-    <h1 class="brand-title"> Pirate Market </h1>
-
-    <p class="brand-subtitle">The campus marketplace</p>
-    <!-- Search moved to the header ("Search storefronts") - James Williams 10/26/26 -->
-  </section>
-
-  <!-- Main page content: Holds the storefrotn cards and pagination -->
-  <main class="page-content">
-
-    <section class="storefront-grid" id="storefrontGrid">
-    </section>
-
-    <!-- Page controls that live at the bottom of the page under the grids where users can go back and forth from page to page. 
-     Currently only placeholders as page buttons are not functional-->
-    <div class="pagination">
-      <button class="page-btn">Previous</button> <!-- Previous button -->
-      <span class="page-indicator">Page 1</span> <!-- displays page number  -->
-      <button class="page-btn">Next</button> <!-- Next button -->
-    </div> <!-- end pagination class -->
-
-  </main> <!-- end of main page content -->
-
-  <!-- Lightbox overlay - Added by Day Ekoi 4/20/26 -->
-  <div id="lightboxOverlay" class="lightbox-overlay">
-    <img id="lightboxImg" class="lightbox-img" src="" alt="Preview">
+<main class="pm-page pm-directory" id="storefrontDirectory" data-user-id="{{ session.get('user_id') or '' }}">
+  <div class="pm-toolbar">
+    <div>
+      <h1>Storefronts</h1>
+      <p class="pm-muted" id="storefrontCount" aria-live="polite"></p>
+    </div>
+    <label class="pm-sort">
+      <span>Sort</span>
+      <select id="storefrontSort" class="pm-select">
+        <option value="items">Most items</option>
+        <option value="newest">Newest</option>
+        <option value="name">Name, A to Z</option>
+      </select>
+    </label>
   </div>
 
-  <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script> <!-- Added by James Williams 10/26/26 -->
-  <script src="{{ url_for('static', filename='js/storefront.js') }}"></script> <!-- Updated by Day E 3/22/26 -->
-  <!-- This line links this file to storefront.js 
-   Placed at the bottom so that all HTML loads correctly first and then JS. This ensures everything runs correctly -->
+  <section class="pm-facades" id="storefrontGrid" aria-label="Storefronts" aria-busy="true">
+    {% for _ in range(6) %}
+    <div class="pm-facade" aria-hidden="true">
+      <div class="pm-skeleton" style="aspect-ratio:16/9;border-radius:0"></div>
+      <div style="padding:16px"><div class="pm-skeleton pm-skeleton--line"></div><div class="pm-skeleton pm-skeleton--line pm-skeleton--short"></div></div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <nav class="pm-pager" id="storefrontPager" aria-label="Storefront pages" hidden>
+    <button type="button" class="pm-btn pm-btn--secondary" id="prevPageBtn">Previous</button>
+    <span id="pageIndicator"></span>
+    <button type="button" class="pm-btn pm-btn--secondary" id="nextPageBtn">Next</button>
+  </nav>
+
+  <section class="pm-section" id="hotRail" aria-labelledby="hotRailHeading" hidden>
+    <div class="pm-section-head">
+      <h2 id="hotRailHeading">Hot right now</h2>
+      <a href="{{ url_for('hot_pages_bp.hot_page') }}">See all</a>
+    </div>
+    <div class="pm-grid pm-rail" id="hotRailGrid"></div>
+  </section>
+
+  <section class="pm-section" aria-labelledby="shopByCategory">
+    <div class="pm-section-head"><h2 id="shopByCategory">Shop by category</h2></div>
+    <nav class="pm-chips" aria-labelledby="shopByCategory">
+      {% for slug, label in nav_categories %}
+      <a class="pm-chip" href="{{ url_for('category_pages_bp.category_listings_page', parent_slug=slug) }}">{{ label }}</a>
+      {% endfor %}
+      <a class="pm-chip" href="{{ url_for('category_pages_bp.categories_page') }}">All categories</a>
+    </nav>
+  </section>
+</main>
+
 {% include 'partials/site_footer.html' %}
-</body> <!-- end of body -->
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/listing_card.js') }}"></script>
+<script src="{{ url_for('static', filename='js/storefront.js') }}"></script>
+</body>
 </html>

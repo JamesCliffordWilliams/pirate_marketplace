@@ -9,114 +9,136 @@
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - fixed wishlistIds undefined crash and isWishlisted undefined in createListingCard
     Updated by Day E - April 22nd - multi-image listing display, lightbox preview, and contain-based image handling
     Updated by James Williams - 10/26/26 - card code moved to listing_card.js; added ?listing= scroll and highlight
-    Updated by James Williams - 10/26/26 - a followed ?listing= link counts as a detail_view for the Hot page
+    Updated by James Williams - 10/26/26 - redesign: cover (banner, else the store's product photos),
+    medallion, sortable product tiles; old ?listing= links open the product page
 
 Description:
-This file handles the functionality for the public storefront view page.
-Fetches real storefront and listing data from the Flask API using the
-storefront ID from the URL. Renders storefront banner, logo, description,
-and listing cards dynamically.
-
-Works with:
-- storefront_view.html
-- storefront_view.css
-- listing_card.js / listing_card.css
+The public storefront page. Loads the storefront and its listings from the API.
+All store text is set with textContent.
 */
 
-const storefrontId = window.location.pathname.split("/").pop();
+(function () {
+    const page = document.getElementById("storefrontPage");
+    if (!page) return;
 
-const pageTitle = document.getElementById("pageTitle");
-const contactInfo = document.getElementById("contactInfo");
-const storeDescription = document.getElementById("storeDescription");
-const storefrontLogo = document.getElementById("storefrontLogo");
-const logoFallback = document.getElementById("logoFallback");
-const listingGrid = document.getElementById("listingGrid");
+    const storefrontId = Number(page.dataset.storefrontId);
+    const userId = Number(page.dataset.userId) || null;
+    const grid = document.getElementById("listingGrid");
+    const sortSelect = document.getElementById("listingSort");
+    let listings = [];
+    let viewer = { wishlistIds: new Set(), currentUserId: userId };
 
-const LISTING_HIGHLIGHT_MS = 2000;
-
-function renderEmpty(message) {
-    listingGrid.innerHTML = `<p style="color:#c9c9c9; font-style:italic; text-align:center; grid-column: 1/-1;">${message}</p>`;
-}
-
-// Added by James Williams 10/26/26
-// "View in storefront" links here with ?listing=<id>: scroll to that card and highlight it
-function focusLinkedListing(currentUserId) {
+    // Links from before the product page existed pointed here with ?listing=<id>
     const linkedId = new URLSearchParams(window.location.search).get("listing");
-    if (!linkedId || !/^\d+$/.test(linkedId)) return;
-
-    const card = document.getElementById(`listing-${linkedId}`);
-    if (!card) return;
-
-    VaultListingCard.trackDetailView(linkedId, currentUserId); // Added by James Williams 10/26/26
-
-    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    card.scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" });
-    card.classList.add("listing-card--highlight");
-    window.setTimeout(() => card.classList.remove("listing-card--highlight"), LISTING_HIGHLIGHT_MS);
-}
-
-async function loadStorefrontView() {
-    let storefront;
-    try {
-        const sfRes = await fetch(`/api/storefronts/${storefrontId}`);
-        if (!sfRes.ok) throw new Error("Storefront not found");
-        storefront = await sfRes.json();
-    } catch (error) {
-        console.error("Error loading storefront:", error);
-        if (pageTitle) pageTitle.textContent = "Storefront Unavailable";
-        storeDescription.textContent = "Could not load storefront details. Please try again.";
-        renderEmpty("Could not load listings.");
+    if (linkedId && /^\d+$/.test(linkedId)) {
+        window.location.replace(`/listings/${linkedId}`);
         return;
     }
 
-    if (pageTitle) pageTitle.textContent = storefront.brand_name || "Unnamed Storefront";
-    storeDescription.textContent = storefront.bio || storefront.description || "No description provided.";
-    contactInfo.textContent = storefront.contact_info || "";
-
-    if (storefront.logo_url) {
-        storefrontLogo.src = storefront.logo_url;
-        storefrontLogo.style.display = "block";
-        logoFallback.style.display = "none";
+    function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
     }
 
-    if (storefront.banner_url) {
-        document.getElementById("storefrontBanner").style.backgroundImage = `url('${storefront.banner_url}')`;
-        document.getElementById("storefrontBanner").style.backgroundSize = "cover";
-        document.getElementById("storefrontBanner").style.backgroundPosition = "center";
+    function showMessage(title, body) {
+        const box = el("div", "pm-empty");
+        box.append(el("h2", null, title), el("p", null, body));
+        grid.setAttribute("aria-busy", "false");
+        grid.replaceChildren(box);
     }
 
-    const brandName = storefront.brand_name || "Unnamed Storefront";
-    const sessionUser = await VaultListingCard.getCurrentSessionUser();
-    const wishlistIds = await VaultListingCard.getWishlistIdSet(sessionUser?.id || null, brandName);
+    function fillCover(storefront) {
+        const cover = document.getElementById("storeCover");
+        const photos = storefront.banner_url
+            ? [storefront.banner_url]
+            : listings.map((item) => item.image_url).filter(Boolean).slice(0, 3);
+        cover.dataset.count = storefront.banner_url ? "banner" : String(photos.length);
+        photos.forEach((url) => {
+            const img = el("img");
+            img.src = url;
+            img.alt = "";
+            img.addEventListener("error", () => img.remove(), { once: true });
+            cover.appendChild(img);
+        });
+    }
 
-    try {
-        const listRes = await fetch(`/api/storefronts/${storefrontId}/listings`);
-        if (!listRes.ok) throw new Error("Could not load listings");
-        const listings = await listRes.json();
+    function fillHead(storefront) {
+        const name = storefront.brand_name || "Unnamed storefront";
+        document.title = `${name} | Pirate Market`;
+        document.getElementById("pageTitle").textContent = name;
+        const count = listings.length;
+        document.getElementById("storeMeta").textContent = count ? `${count} item${count === 1 ? "" : "s"}` : "No items yet";
+        document.getElementById("storeDescription").textContent = storefront.bio || "";
+        document.getElementById("contactInfo").textContent = storefront.contact_info ? `Contact: ${storefront.contact_info}` : "";
 
-        listingGrid.innerHTML = "";
-        const activeListings = Array.isArray(listings)
-            ? listings.filter((item) => item.status !== "DELETED" && item.status !== "INACTIVE")
-            : [];
+        const medallion = document.getElementById("storeMedallion");
+        medallion.textContent = (name.trim()[0] || "?").toUpperCase();
+        if (storefront.logo_url) {
+            const logo = el("img");
+            logo.alt = "";
+            logo.addEventListener("load", () => medallion.replaceChildren(logo), { once: true });
+            logo.src = storefront.logo_url;
+        }
+    }
 
-        if (!activeListings.length) {
-            renderEmpty("No listings available for this storefront yet.");
+    async function renderGrid() {
+        const sorted = listings.slice();
+        if (sortSelect.value === "price_asc") sorted.sort((a, b) => Number(a.price) - Number(b.price));
+        if (sortSelect.value === "price_desc") sorted.sort((a, b) => Number(b.price) - Number(a.price));
+        const tiles = await Promise.all(sorted.map((item) => VaultListingCard.create(item, { ...viewer, showStorefront: false })));
+        grid.setAttribute("aria-busy", "false");
+        grid.replaceChildren(...tiles);
+    }
+
+    async function load() {
+        let storefront;
+        try {
+            const [storeResponse, listResponse, wishlistIds] = await Promise.all([
+                fetch(`/api/storefronts/${storefrontId}`),
+                fetch(`/api/storefronts/${storefrontId}/listings`),
+                VaultListingCard.getWishlistIdSet(userId)
+            ]);
+            if (!storeResponse.ok) {
+                document.getElementById("pageTitle").textContent = "Storefront not found";
+                showMessage("This storefront isn't available", "It may have closed. Browse the other storefronts instead.");
+                return;
+            }
+            storefront = await storeResponse.json();
+            const data = listResponse.ok ? await listResponse.json() : [];
+            listings = (Array.isArray(data) ? data : []).filter((item) => item.status === "ACTIVE" || item.status === "SOLD_OUT");
+            viewer = { wishlistIds, currentUserId: userId };
+        } catch (error) {
+            console.error("Error loading storefront:", error);
+            showMessage("Couldn't load this storefront", "Check your connection and refresh the page.");
             return;
         }
 
-        const cards = await Promise.all(
-            activeListings.map((item) => VaultListingCard.create(item, {
-                wishlistIds,
-                currentUserId: sessionUser?.id || null,
-                storefrontName: brandName
-            }))
-        );
-        cards.forEach((card) => listingGrid.appendChild(card));
-        focusLinkedListing(sessionUser?.id || null); // Added by James Williams 10/26/26
-    } catch (error) {
-        console.error("Error loading listings:", error);
-        renderEmpty("Could not load listings. Please try again.");
+        fillHead(storefront);
+        fillCover(storefront);
+        if (!listings.length) {
+            showMessage("No products yet", "This store hasn't listed anything. Check back soon.");
+            return;
+        }
+        renderGrid();
     }
-}
 
-loadStorefrontView();
+    sortSelect.addEventListener("change", renderGrid);
+
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+        const url = window.location.origin + window.location.pathname;
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: document.title, url });
+            } else {
+                await navigator.clipboard.writeText(url);
+                VaultListingCard.showToast("Link copied");
+            }
+        } catch (_error) {
+            // the shopper closed the share sheet
+        }
+    });
+
+    load();
+})();

@@ -144,7 +144,7 @@ Works with:
 
     function showEmpty() {
         showPageMessage("Nothing's trending yet.", [
-            linkAction("All Categories", "/categories"),
+            linkAction("All categories", "/categories"),
             linkAction("Storefronts", "/storefronts")
         ]);
     }

@@ -7,15 +7,17 @@
     Moved out of storefront_view.js (original card code by Day Ekoi, Iterations 4-5)
     Updated by James Williams - 10/26/26 - sends a detail_view for the Hot page when the image viewer opens
 
+    Updated by James Williams - 10/26/26 - compact product tile (photo, title, price, store, save);
+    buying moved to the product page, which shares addToBag() and setSaved() from here
+
 Description:
-The product card used on the storefront page and the category pages:
-images, size, count, add to cart, wishlist, and sold out.
-Use VaultListingCard.create(item, options) to build a card.
+The product tile used on the storefront, category, Hot and storefront directory pages.
+Use VaultListingCard.create(item, options) to build a tile; it links to /listings/<id>.
 User text is always added as plain text so it can't run as code.
 
 Works with:
-- listing_card.css
-- storefront_view.js, category_listings.js, hot.js
+- theme.css (.pm-tile), listing_card.css
+- storefront_view.js, category_listings.js, hot.js, storefront.js, product.js
 */
 
 (function () {
@@ -23,12 +25,6 @@ Works with:
     const PLACEHOLDER_IMAGE = "/static/images/listing-placeholder.svg";
     const LOCAL_WISHLIST_IMAGE = "/static/images/logo.png";
 
-    const listingImagesCache = new Map();
-    const lightboxState = {
-        images: [],
-        index: 0
-    };
-    let lightboxElements = null;
     const trackedDetailViews = new Set(); // Added by James Williams 10/26/26
 
     // ________________________________________________________
@@ -52,51 +48,9 @@ Works with:
         return node;
     }
 
-    function useFallbackImageOnError(img) {
-        img.addEventListener("error", () => {
-            if (img.dataset.fallbackApplied === "1") return;
-            img.dataset.fallbackApplied = "1";
-            img.src = PLACEHOLDER_IMAGE;
-        });
-    }
-
-    function setImageSource(img, url) {
-        img.dataset.fallbackApplied = "0";
-        img.src = url || PLACEHOLDER_IMAGE;
-    }
 
     // ________________________________________________________
-    // TOAST
-    // ________________________________________________________
-
-    function ensureToastRoot() {
-        let root = document.getElementById("cartToastRoot");
-        if (!root) {
-            root = document.createElement("div");
-            root.id = "cartToastRoot";
-            root.className = "cart-toast-root";
-            root.setAttribute("role", "status");
-            root.setAttribute("aria-live", "polite");
-            document.body.appendChild(root);
-        }
-        return root;
-    }
-
-    function showToast(message, tone = "success") {
-        const root = ensureToastRoot();
-        const toast = document.createElement("div");
-        toast.className = `cart-toast ${tone === "error" ? "error" : "success"}`;
-        toast.textContent = message;
-        root.appendChild(toast);
-
-        window.setTimeout(() => {
-            toast.classList.add("fade-out");
-            window.setTimeout(() => toast.remove(), 220);
-        }, 2200);
-    }
-
-    // ________________________________________________________
-    // PRICE + SIZES
+    // PRICE
     // ________________________________________________________
 
     function toNumericPrice(priceValue) {
@@ -114,113 +68,6 @@ Works with:
             return priceValue;
         }
         return `$${toNumericPrice(priceValue).toFixed(2)}`;
-    }
-
-    function parseSizesFromListing(item) {
-        const source = item.sizes_available;
-
-        if (Array.isArray(source)) {
-            return source.map((size) => String(size).trim()).filter(Boolean);
-        }
-
-        if (typeof source === "string" && source.trim()) {
-            try {
-                const parsed = JSON.parse(source);
-                if (Array.isArray(parsed)) {
-                    return parsed.map((size) => String(size).trim()).filter(Boolean);
-                }
-            } catch (_error) {
-                return source
-                    .split(",")
-                    .map((size) => size.trim())
-                    .filter(Boolean);
-            }
-        }
-
-        return [];
-    }
-
-    function sizesFromEntries(entries) {
-        return entries
-            .map((entry) => String((entry && entry.size) || "").trim())
-            .filter(Boolean);
-    }
-
-    async function getListingSizeOptions(listingId, item) {
-        const inlineSizes = parseSizesFromListing(item);
-        if (inlineSizes.length > 0) {
-            return inlineSizes;
-        }
-
-        // Category pages already include the sizes
-        if (Array.isArray(item.sizes)) {
-            return sizesFromEntries(item.sizes);
-        }
-
-        try {
-            const response = await fetch(`/api/listings/${listingId}/sizes`);
-            if (!response.ok) {
-                return [];
-            }
-
-            const data = await response.json();
-            if (!Array.isArray(data)) {
-                return [];
-            }
-
-            return sizesFromEntries(data);
-        } catch (error) {
-            console.error("Unable to load listing sizes:", error);
-            return [];
-        }
-    }
-
-    // ________________________________________________________
-    // IMAGES
-    // ________________________________________________________
-
-    async function fetchListingImages(listingId, fallbackImageUrl) {
-        if (listingImagesCache.has(listingId)) {
-            return listingImagesCache.get(listingId);
-        }
-
-        try {
-            const response = await fetch(`/api/listings/${listingId}/images`);
-            if (!response.ok) {
-                throw new Error("Unable to load listing images.");
-            }
-
-            const images = await response.json();
-            const normalized = Array.isArray(images)
-                ? images
-                    .map((image) => String(image.image_url || "").trim())
-                    .filter(Boolean)
-                    .slice(0, 4)
-                : [];
-
-            if (normalized.length > 0) {
-                listingImagesCache.set(listingId, normalized);
-                return normalized;
-            }
-        } catch (error) {
-            console.error(`Unable to load images for listing ${listingId}:`, error);
-        }
-
-        const fallback = [fallbackImageUrl || PLACEHOLDER_IMAGE];
-        listingImagesCache.set(listingId, fallback);
-        return fallback;
-    }
-
-    async function getListingImages(listingId, item) {
-        // Category pages already include the images
-        if (Array.isArray(item.images)) {
-            const inline = item.images
-                .map((url) => String(url || "").trim())
-                .filter(Boolean)
-                .slice(0, 4);
-            return inline.length > 0 ? inline : [PLACEHOLDER_IMAGE];
-        }
-        return fetchListingImages(listingId, item.image_url);
     }
 
     // ________________________________________________________
@@ -344,521 +191,195 @@ Works with:
     }
 
     // ________________________________________________________
-    // LIGHTBOX (full-size image viewer)
+    // SHARED ACTIONS (tile heart, product page)
     // ________________________________________________________
 
-    function buildLightboxMarkup() {
-        const lightbox = el("div", "listing-lightbox");
-        lightbox.id = "listingLightbox";
+    // Same request the old card's "Add to Cart" sent. Resolves, or throws an Error with a message.
+    async function addToBag({ listingId, title, price, size, quantity }) {
+        const formData = new FormData();
+        formData.append("item_id", String(listingId));
+        formData.append("item_name", title);
+        formData.append("price", String(toNumericPrice(price)));
+        formData.append("quantity", String(quantity));
+        formData.append("size", size);
 
-        const close = el("button", "lightbox-close");
-        close.id = "lightboxClose";
-        close.type = "button";
-        close.setAttribute("aria-label", "Close image preview");
-        close.innerHTML = "&times;";
+        const response = await fetch("/auth/add_to_cart", { method: "POST", body: formData, redirect: "follow" });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || "Couldn't add this to your bag. Try again.");
+        }
 
-        const prev = el("button", "lightbox-nav lightbox-nav--left");
-        prev.id = "lightboxPrev";
-        prev.type = "button";
-        prev.setAttribute("aria-label", "Previous image");
-        prev.innerHTML = "&#10094;";
-
-        const stage = el("div", "lightbox-stage");
-        const image = el("img", "lightbox-image");
-        image.id = "lightboxImage";
-        image.alt = "Listing preview";
-        const dots = el("div", "lightbox-dots");
-        dots.id = "lightboxDots";
-        stage.append(image, dots);
-
-        const next = el("button", "lightbox-nav lightbox-nav--right");
-        next.id = "lightboxNext";
-        next.type = "button";
-        next.setAttribute("aria-label", "Next image");
-        next.innerHTML = "&#10095;";
-
-        lightbox.append(close, prev, stage, next);
-        document.body.appendChild(lightbox);
-        return lightbox;
-    }
-
-    function getLightbox() {
-        if (lightboxElements) return lightboxElements;
-
-        const lightbox = document.getElementById("listingLightbox") || buildLightboxMarkup();
-        lightboxElements = {
-            lightbox,
-            image: document.getElementById("lightboxImage"),
-            dots: document.getElementById("lightboxDots"),
-            close: document.getElementById("lightboxClose"),
-            prev: document.getElementById("lightboxPrev"),
-            next: document.getElementById("lightboxNext")
-        };
-
-        if (lightboxElements.image) useFallbackImageOnError(lightboxElements.image);
-        if (lightboxElements.close) lightboxElements.close.addEventListener("click", closeLightbox);
-        if (lightboxElements.prev) lightboxElements.prev.addEventListener("click", () => shiftLightbox(-1));
-        if (lightboxElements.next) lightboxElements.next.addEventListener("click", () => shiftLightbox(1));
-
-        lightbox.addEventListener("click", (event) => {
-            if (event.target === lightbox) {
-                closeLightbox();
+        // keep the header's bag count in step
+        const bag = document.querySelector(".pm-header__bag");
+        if (bag) {
+            let count = bag.querySelector(".pm-header__count");
+            if (!count) {
+                count = el("span", "pm-header__count", "0");
+                count.setAttribute("aria-hidden", "true");
+                bag.appendChild(count);
             }
-        });
+            const total = (Number(count.textContent) || 0) + Number(quantity);
+            count.textContent = String(total);
+            bag.setAttribute("aria-label", `Bag, ${total} item${total === 1 ? "" : "s"}`);
+        }
+    }
 
-        document.addEventListener("keydown", (event) => {
-            if (!lightbox.classList.contains("is-open")) return;
-            if (event.key === "Escape") {
-                closeLightbox();
-            } else if (event.key === "ArrowLeft") {
-                shiftLightbox(-1);
-            } else if (event.key === "ArrowRight") {
-                shiftLightbox(1);
+    // Saves or unsaves a listing (same wishlist requests as before). Throws an Error with a message.
+    async function setSaved(listingId, userId, save, meta = {}) {
+        const response = await fetch(save ? "/api/wishlist" : `/api/wishlist/${listingId}`, {
+            method: save ? "POST" : "DELETE",
+            headers: { "Content-Type": "application/json", "X-User-Id": String(userId) },
+            body: save ? JSON.stringify({ listing_id: listingId }) : undefined
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok && !(response.status === 400 && /already in wishlist/i.test(result.error || ""))) {
+            throw new Error(result.error || "Couldn't update your saved items.");
+        }
+        if (save) {
+            addLocalWishlistItem({ listing_id: listingId, ...meta });
+        } else {
+            removeLocalWishlistItem(listingId);
+        }
+    }
+
+    function showToast(message, tone = "success") {
+        let root = document.querySelector(".pm-toasts");
+        if (!root) {
+            root = el("div", "pm pm-toasts");
+            root.setAttribute("role", "status");
+            root.setAttribute("aria-live", "polite");
+            document.body.appendChild(root);
+        }
+        const toast = el("div", `pm-toast${tone === "error" ? " pm-toast--error" : ""}`, message);
+        root.appendChild(toast);
+        window.setTimeout(() => toast.remove(), 2600);
+    }
+
+    // ________________________________________________________
+    // PHOTO FIT
+    // ________________________________________________________
+
+    // Studio shots (plain light edges) and wide photos sit whole on the mat; lifestyle shots fill it.
+    // Edge pixels can only be read from same-origin or CORS-enabled images; otherwise shape decides.
+    function chooseFit(img) {
+        const ratio = img.naturalWidth / img.naturalHeight;
+        let fit = ratio > 1.15 ? "contain" : "cover";
+        try {
+            const size = 24;
+            const canvas = document.createElement("canvas");
+            canvas.width = canvas.height = size;
+            const context = canvas.getContext("2d");
+            context.drawImage(img, 0, 0, size, size);
+            const data = context.getImageData(0, 0, size, size).data;
+            let light = 0;
+            let edge = 0;
+            for (let y = 0; y < size; y += 1) {
+                for (let x = 0; x < size; x += 1) {
+                    if (x !== 0 && y !== 0 && x !== size - 1 && y !== size - 1) continue;
+                    const i = (y * size + x) * 4;
+                    edge += 1;
+                    if (data[i] > 225 && data[i + 1] > 225 && data[i + 2] > 225) light += 1;
+                }
             }
-        });
-
-        return lightboxElements;
-    }
-
-    function updateDots(container, images, activeIndex, dotClassName, onSelect) {
-        if (!container) return;
-
-        container.innerHTML = "";
-        if (!Array.isArray(images) || images.length <= 1) {
-            return;
+            if (light / edge > 0.85) fit = "contain";
+        } catch (_error) {
+            // cross-origin photo: keep the shape-based choice
         }
-
-        images.forEach((_image, index) => {
-            const dot = document.createElement("button");
-            dot.type = "button";
-            dot.className = `${dotClassName} ${index === activeIndex ? "active" : ""}`;
-            dot.setAttribute("aria-label", `Go to image ${index + 1}`);
-            dot.addEventListener("click", () => onSelect(index));
-            container.appendChild(dot);
-        });
-    }
-
-    function renderLightbox() {
-        const { image, dots, prev, next } = getLightbox();
-        if (!image) return;
-
-        const { images, index } = lightboxState;
-        if (!images.length) return;
-
-        setImageSource(image, images[index]);
-        image.alt = `Listing image ${index + 1}`;
-        updateDots(dots, images, index, "lightbox-dot", (nextIndex) => {
-            lightboxState.index = nextIndex;
-            renderLightbox();
-        });
-
-        if (prev) {
-            prev.style.display = images.length > 1 ? "inline-flex" : "none";
-        }
-        if (next) {
-            next.style.display = images.length > 1 ? "inline-flex" : "none";
-        }
-    }
-
-    function openLightbox(images, startIndex = 0) {
-        const { lightbox } = getLightbox();
-        if (!lightbox || !Array.isArray(images) || !images.length) return;
-        lightboxState.images = images;
-        lightboxState.index = startIndex;
-        renderLightbox();
-        lightbox.classList.add("is-open");
-        document.body.style.overflow = "hidden";
-    }
-
-    function closeLightbox() {
-        const { lightbox } = getLightbox();
-        if (!lightbox) return;
-        lightbox.classList.remove("is-open");
-        document.body.style.overflow = "";
-    }
-
-    function shiftLightbox(step) {
-        if (!lightboxState.images.length) return;
-        lightboxState.index = (lightboxState.index + step + lightboxState.images.length) % lightboxState.images.length;
-        renderLightbox();
+        img.dataset.fit = fit;
     }
 
     // ________________________________________________________
-    // IMAGE CAROUSEL
-    // ________________________________________________________
-
-    function createListingImageCarousel(images, title, onOpen) { // Updated by James Williams 10/26/26
-        const shell = document.createElement("div");
-        shell.className = "listing-image-shell";
-
-        const image = document.createElement("img");
-        image.className = "listing-image";
-        image.alt = title;
-        useFallbackImageOnError(image);
-
-        const dots = document.createElement("div");
-        dots.className = "listing-image-dots";
-
-        const counter = document.createElement("div");
-        counter.className = "listing-image-counter";
-
-        let currentIndex = 0;
-
-        const render = () => {
-            setImageSource(image, images[currentIndex]);
-            counter.textContent = `${currentIndex + 1}/${images.length}`;
-            updateDots(dots, images, currentIndex, "listing-image-dot", (nextIndex) => {
-                currentIndex = nextIndex;
-                render();
-            });
-        };
-
-        image.addEventListener("click", () => {
-            openLightbox(images, currentIndex);
-            if (onOpen) onOpen(); // Added by James Williams 10/26/26
-        });
-        shell.classList.add("is-clickable");
-        shell.appendChild(image);
-
-        if (images.length > 1) {
-            const prevBtn = document.createElement("button");
-            prevBtn.type = "button";
-            prevBtn.className = "listing-image-nav listing-image-nav--left";
-            prevBtn.setAttribute("aria-label", "Previous image");
-            prevBtn.innerHTML = "&#10094;";
-            prevBtn.addEventListener("click", (event) => {
-                event.stopPropagation();
-                currentIndex = (currentIndex - 1 + images.length) % images.length;
-                render();
-            });
-
-            const nextBtn = document.createElement("button");
-            nextBtn.type = "button";
-            nextBtn.className = "listing-image-nav listing-image-nav--right";
-            nextBtn.setAttribute("aria-label", "Next image");
-            nextBtn.innerHTML = "&#10095;";
-            nextBtn.addEventListener("click", (event) => {
-                event.stopPropagation();
-                currentIndex = (currentIndex + 1) % images.length;
-                render();
-            });
-
-            shell.appendChild(prevBtn);
-            shell.appendChild(nextBtn);
-            shell.appendChild(dots);
-            shell.appendChild(counter);
-        }
-
-        render();
-        return { shell, getPrimaryImage: () => images[0] || PLACEHOLDER_IMAGE };
-    }
-
-    // ________________________________________________________
-    // CARD PIECES
+    // TILE
     // ________________________________________________________
 
     // Static icon markup only - no user data goes in here
-    const WISHLIST_ICON_SVG = `
-        <svg viewBox="0 0 24 24" class="wishlist-lock-icon" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/>
-            <rect x="8.5" y="11" width="7" height="5.8" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.8"/>
-            <path d="M10 11V9.7a2 2 0 1 1 4 0V11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-    `;
+    const WISHLIST_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>';
 
-    const MADE_TO_ORDER_STYLE = "display:inline-block;background:rgba(212,175,55,0.15);border:1px solid rgba(212,175,55,0.5);color:#d4af37;font-size:0.7rem;font-weight:700;letter-spacing:0.5px;padding:0.15rem 0.45rem;border-radius:999px;text-transform:uppercase;margin-top:2px;";
-    const ONE_SIZE_STYLE = "color:#d4af37;font-weight:600;padding:0.2rem 0;";
-    const SOLD_OUT_STYLE = "display:block;width:100%;padding:0.6rem 1rem;background:#3a3a3a;color:#888888;font-size:0.85rem;font-weight:600;text-align:center;border-radius:6px;cursor:not-allowed;letter-spacing:0.5px;box-sizing:border-box;";
-
-    function buildSizeField(listingId, sizeOptions, isOneSizeItem) {
-        const nodes = [];
-        if (isOneSizeItem) {
-            nodes.push(el("label", "field-label", "Size"));
-            const oneSize = el("span", "one-size-label", "One Size");
-            oneSize.setAttribute("style", ONE_SIZE_STYLE);
-            nodes.push(oneSize);
-        } else if (sizeOptions.length > 0) {
-            const label = el("label", "field-label", "Size");
-            label.htmlFor = `sizeSelect-${listingId}`;
-            const select = el("select", "size-select");
-            select.id = `sizeSelect-${listingId}`;
-            sizeOptions.forEach((size, index) => {
-                const option = el("option", null, size);
-                option.value = size;
-                if (index === 0) option.selected = true;
-                select.appendChild(option);
-            });
-            nodes.push(label, select);
-        } else {
-            nodes.push(el("label", "field-label", "Size"));
-            const select = el("select", "size-select");
-            select.disabled = true;
-            const option = el("option", null, "No sizes available");
-            option.value = "";
-            option.disabled = true;
-            option.selected = true;
-            select.appendChild(option);
-            nodes.push(select);
-        }
-        return nodes;
-    }
-
-    function buildStorefrontRow(item) {
-        const storefront = item.storefront || {};
-        const storefrontId = Number(storefront.id || item.storefront_id);
-        const brandName = storefront.brand_name || "Storefront";
-
-        const row = el("a", "listing-store-row");
-        row.href = `/storefronts/${storefrontId}`;
-        row.setAttribute("aria-label", `Visit ${brandName}`);
-
-        if (storefront.logo_url) {
-            const logo = el("img", "listing-store-logo");
-            logo.src = storefront.logo_url;
-            logo.alt = "";
-            logo.addEventListener("error", () => {
-                logo.replaceWith(buildStoreInitial(brandName));
-            });
-            row.appendChild(logo);
-        } else {
-            row.appendChild(buildStoreInitial(brandName));
-        }
-
-        row.appendChild(el("span", "listing-store-name", brandName));
-        return row;
-    }
-
-    function buildStoreInitial(brandName) {
-        const initial = el("span", "listing-store-logo listing-store-logo--initial", (brandName.trim()[0] || "?").toUpperCase());
-        initial.setAttribute("aria-hidden", "true");
-        return initial;
-    }
-
-    // ________________________________________________________
-    // CARD
-    // ________________________________________________________
-
-    async function create(item, options = {}) {
+    function buildHeart(listingId, title, options, meta) {
+        const heart = el("button", "pm-heart");
+        heart.type = "button";
+        heart.innerHTML = WISHLIST_ICON_SVG;
+        const render = (saved) => {
+            heart.setAttribute("aria-pressed", String(saved));
+            heart.setAttribute("aria-label", saved ? `Remove ${title} from saved` : `Save ${title}`);
+        };
         const wishlistIds = options.wishlistIds || new Set();
-        const currentUserId = options.currentUserId || null;
-        const showStorefront = Boolean(options.showStorefront);
+        render(wishlistIds.has(String(listingId)));
 
-        const card = document.createElement("div");
-        card.className = showStorefront ? "listing-card listing-card--browse" : "listing-card";
-
-        const listingId = Number(item.id || item.listing_id);
-        card.id = `listing-${listingId}`;
-
-        const title = item.title || item.name || "Untitled Listing";
-        const numericPrice = toNumericPrice(item.price);
-        const price = formatPrice(item.price);
-        const storefrontName = item.storefront?.brand_name || options.storefrontName || "Storefront";
-        const [images, sizeOptions] = await Promise.all([
-            getListingImages(listingId, item),
-            getListingSizeOptions(listingId, item)
-        ]);
-        const primaryImageUrl = images[0] || item.image_url || PLACEHOLDER_IMAGE;
-        const isWishlisted = wishlistIds.has(String(listingId));
-        const hasSizes = sizeOptions.length > 0;
-        const isOneSizeItem = hasSizes && sizeOptions.length === 1 && sizeOptions[0] === "One Size";
-        const isMadeToOrder = Boolean(item.is_made_to_order);
-        const maxQuantity = isMadeToOrder ? 999 : (item.quantity_on_hand || 1);
-        const isSoldOut = !isMadeToOrder && (item.status === "SOLD_OUT" || item.quantity_on_hand === 0);
-
-        // Title, price, badges
-        const info = el("div", "listing-info");
-        const copy = el("div", "listing-copy");
-        copy.appendChild(el("span", "item-name", title));
-        copy.appendChild(el("span", "item-price", price));
-        if (options.showCategory && item.category && item.category.name) {
-            copy.appendChild(el("span", "listing-category-label", item.category.name));
-        }
-        if (isMadeToOrder) {
-            const badge = el("span", "made-to-order-badge", "Made to Order");
-            badge.setAttribute("style", MADE_TO_ORDER_STYLE);
-            copy.appendChild(badge);
-        }
-
-        const actions = el("div", "listing-actions");
-        const wishlistBtn = el("button", `wishlist-lock-btn ${isWishlisted ? "active" : ""}`);
-        wishlistBtn.type = "button";
-        wishlistBtn.setAttribute("aria-label", isWishlisted ? "Remove from wishlist" : "Add to wishlist");
-        wishlistBtn.setAttribute("title", isWishlisted ? "Remove from wishlist" : "Add to wishlist");
-        wishlistBtn.innerHTML = WISHLIST_ICON_SVG;
-        actions.appendChild(wishlistBtn);
-        info.append(copy, actions);
-        card.appendChild(info);
-
-        if (item.description) {
-            card.appendChild(el("p", "listing-description", item.description));
-        }
-
-        // Size / count / add to cart
-        const panel = el("div", "purchase-panel");
-        const fields = el("div", "purchase-fields");
-        buildSizeField(listingId, sizeOptions, isOneSizeItem).forEach((node) => fields.appendChild(node));
-        const countLabel = el("label", "field-label", "Count");
-        countLabel.htmlFor = `countInput-${listingId}`;
-        const countInput = el("input", "count-input");
-        countInput.id = `countInput-${listingId}`;
-        countInput.type = "number";
-        countInput.min = "1";
-        countInput.max = String(maxQuantity);
-        countInput.step = "1";
-        countInput.value = "1";
-        countInput.setAttribute("inputmode", "numeric");
-        fields.append(countLabel, countInput);
-        panel.appendChild(fields);
-
-        let addToCartBtn = null;
-        if (isSoldOut) {
-            const soldOut = el("span", "sold-out-label", "Sold Out");
-            soldOut.setAttribute("style", SOLD_OUT_STYLE);
-            panel.appendChild(soldOut);
-        } else {
-            addToCartBtn = el("button", "add-to-cart-btn", "Add to Cart");
-            addToCartBtn.type = "button";
-            addToCartBtn.disabled = !hasSizes;
-            panel.appendChild(addToCartBtn);
-        }
-        card.appendChild(panel);
-
-        if (showStorefront) {
-            const storefrontId = Number(item.storefront?.id || item.storefront_id);
-            const viewLink = el("a", "view-in-storefront-link", "View in storefront");
-            viewLink.href = `/storefronts/${storefrontId}?listing=${listingId}`;
-            card.appendChild(viewLink);
-        }
-
-        // Updated by James Williams 10/26/26 - opening the image viewer counts as a detail_view
-        const carousel = createListingImageCarousel(images, title, () => trackDetailView(listingId, currentUserId));
-        card.prepend(carousel.shell);
-        if (showStorefront) {
-            card.prepend(buildStorefrontRow(item));
-        }
-
-        wishlistBtn.addEventListener("click", async () => {
-            if (!currentUserId) {
-                alert("Please log in to add items to your wishlist.");
+        heart.addEventListener("click", async () => {
+            if (!options.currentUserId) {
                 window.location.href = "/auth/login";
                 return;
             }
-
-            wishlistBtn.disabled = true;
-            const isActive = wishlistBtn.classList.contains("active");
-
+            const save = heart.getAttribute("aria-pressed") !== "true";
+            heart.disabled = true;
             try {
-                const response = await fetch(isActive ? `/api/wishlist/${listingId}` : "/api/wishlist", {
-                    method: isActive ? "DELETE" : "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-User-Id": String(currentUserId)
-                    },
-                    body: isActive ? undefined : JSON.stringify({ listing_id: listingId })
-                });
-
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok && !(response.status === 400 && /already in wishlist/i.test(result.error || ""))) {
-                    throw new Error(result.error || "Unable to update wishlist.");
-                }
-
-                const nextState = !isActive;
-                wishlistBtn.classList.toggle("active", nextState);
-                wishlistBtn.setAttribute("aria-label", nextState ? "Remove from wishlist" : "Add to wishlist");
-                wishlistBtn.setAttribute("title", nextState ? "Remove from wishlist" : "Add to wishlist");
-
-                if (nextState) {
-                    wishlistIds.add(String(listingId));
-                    addLocalWishlistItem({
-                        listing_id: listingId,
-                        title,
-                        price,
-                        image_url: primaryImageUrl,
-                        storefront_name: storefrontName
-                    });
-                } else {
-                    wishlistIds.delete(String(listingId));
-                    removeLocalWishlistItem(listingId);
-                }
+                await setSaved(listingId, options.currentUserId, save, meta);
+                render(save);
+                if (save) wishlistIds.add(String(listingId)); else wishlistIds.delete(String(listingId));
             } catch (error) {
-                console.error("Wishlist update failed:", error);
-                alert(error.message || "Unable to update wishlist right now.");
+                showToast(error.message, "error");
             } finally {
-                wishlistBtn.disabled = false;
+                heart.disabled = false;
             }
         });
+        return heart;
+    }
 
-        const sizeSelect = card.querySelector(".size-select");
+    async function create(item, options = {}) {
+        const listingId = Number(item.id || item.listing_id);
+        const title = item.title || item.name || "Untitled listing";
+        const storeName = (item.storefront && item.storefront.brand_name) || options.storefrontName || "";
+        const imageUrl = (Array.isArray(item.images) && item.images.find(Boolean)) || item.image_url || null;
+        const isMadeToOrder = Boolean(item.is_made_to_order);
+        const isSoldOut = !isMadeToOrder && (item.status === "SOLD_OUT" || item.quantity_on_hand === 0);
 
-        if (addToCartBtn) {
-            addToCartBtn.addEventListener("click", async () => {
-                if (!currentUserId) {
-                    alert("Please log in to add items to your cart.");
-                    window.location.href = "/auth/login";
-                    return;
-                }
+        const tile = el("article", "pm-tile");
+        tile.id = `listing-${listingId}`;
 
-                const selectedSize = isOneSizeItem ? "One Size" : (sizeSelect ? sizeSelect.value : "");
-                const selectedCount = Number.parseInt(countInput.value, 10);
-                const effectiveMax = isMadeToOrder ? Number.POSITIVE_INFINITY : (item.quantity_on_hand || 1);
-
-                if (!selectedSize) {
-                    showToast("Please select a size.", "error");
-                    return;
-                }
-
-                if (!Number.isInteger(selectedCount) || selectedCount < 1) {
-                    showToast("Count must be at least 1.", "error");
-                    countInput.value = "1";
-                    return;
-                }
-
-                if (!isMadeToOrder && selectedCount > effectiveMax) {
-                    showToast(`Maximum available quantity is ${effectiveMax}.`, "error");
-                    countInput.value = String(effectiveMax);
-                    return;
-                }
-
-                addToCartBtn.disabled = true;
-
-                try {
-                    const formData = new FormData();
-                    formData.append("item_id", String(listingId));
-                    formData.append("item_name", title);
-                    formData.append("price", String(numericPrice));
-                    formData.append("quantity", String(selectedCount));
-                    formData.append("size", selectedSize);
-
-                    const response = await fetch("/auth/add_to_cart", {
-                        method: "POST",
-                        body: formData,
-                        redirect: "follow"
-                    });
-
-                    if (!response.ok) {
-                        let errorMsg = "Unable to add item to cart right now.";
-                        try {
-                            const errData = await response.json();
-                            if (errData && errData.error) errorMsg = errData.error;
-                        } catch (_) {}
-                        throw new Error(errorMsg);
-                    }
-
-                    showToast(`${title} (${selectedSize}) x${selectedCount} added to cart.`);
-                } catch (error) {
-                    console.error("Add to cart failed:", error);
-                    showToast(error.message || "Unable to add to cart.", "error");
-                } finally {
-                    addToCartBtn.disabled = false;
-                }
-            });
+        const photo = el("div", "pm-tile__photo");
+        const img = el("img");
+        img.alt = "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        if (imageUrl) {
+            img.addEventListener("load", () => chooseFit(img), { once: true });
+            img.addEventListener("error", () => {
+                img.src = PLACEHOLDER_IMAGE;
+                img.className = "is-placeholder";
+            }, { once: true });
+            img.src = imageUrl;
+        } else {
+            img.src = PLACEHOLDER_IMAGE;
+            img.className = "is-placeholder";
         }
+        photo.appendChild(img);
+        if (isSoldOut || isMadeToOrder) {
+            photo.appendChild(el("span", "pm-tile__badge", isSoldOut ? "Sold out" : "Made to order"));
+        }
+        tile.appendChild(photo);
 
-        return card;
+        tile.appendChild(buildHeart(listingId, title, options, {
+            title,
+            price: item.price,
+            image_url: imageUrl || PLACEHOLDER_IMAGE,
+            storefront_name: storeName || "Storefront"
+        }));
+
+        const link = el("a", "pm-tile__link pm-tile__title", title);
+        link.href = `/listings/${listingId}`;
+        tile.appendChild(link);
+        tile.appendChild(el("span", "pm-tile__price pm-price", formatPrice(item.price)));
+        if (storeName && options.showStorefront !== false) {
+            tile.appendChild(el("span", "pm-tile__store", storeName));
+        }
+        return tile;
     }
 
     window.VaultListingCard = {
         create,
+        addToBag,
+        setSaved,
         getCurrentSessionUser,
         getWishlistIdSet,
         trackDetailView, // Added by James Williams 10/26/26

@@ -240,6 +240,35 @@ def edit_storefront_page(storefront_id):
     return render_template("edit_storefront.html", storefront_id=storefront_id)
 
 
+# Added by James Williams 10/26/26 - product page (buying moved here from the cards)
+SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "One Size"]
+
+
+@storefront_pages_bp.route("/listings/<int:listing_id>")
+def product_page(listing_id):
+    from flask import session
+    from models.listing_model import get_listing_by_id, get_images_for_listing, get_sizes_for_listing
+
+    listing = get_listing_by_id(listing_id)
+    storefront = get_storefront_by_id(listing["storefront_id"]) if listing else None
+    viewer_id = session.get("user_id")
+    is_public = (listing is not None and storefront is not None
+                 and listing["status"] in ("ACTIVE", "SOLD_OUT") and storefront.get("is_active") is not False)
+    is_owner_preview = (listing is not None and storefront is not None and viewer_id == storefront["owner_id"]
+                        and listing["status"] != "DELETED")
+    if not (is_public or is_owner_preview):
+        return render_template("product.html", listing=None), 404
+
+    image_urls = [image["image_url"] for image in get_images_for_listing(listing_id)][:4] or ([listing["image_url"]] if listing.get("image_url") else [])
+    sizes = sorted(get_sizes_for_listing(listing_id),
+                   key=lambda row: SIZE_ORDER.index(row["size"]) if row["size"] in SIZE_ORDER else len(SIZE_ORDER))
+    made_to_order = bool(listing.get("is_made_to_order"))
+    sold_out = not made_to_order and (listing["status"] == "SOLD_OUT" or listing.get("quantity_on_hand") == 0)
+    return render_template("product.html", listing=listing, storefront=storefront, images=image_urls, sizes=sizes,
+                           made_to_order=made_to_order, sold_out=sold_out, viewer_id=viewer_id,
+                           is_owner_preview=is_owner_preview and not is_public)
+
+
 @storefront_pages_bp.route("/listings/<int:listing_id>/edit")
 def edit_listing_page(listing_id):
     from flask import session, redirect, url_for

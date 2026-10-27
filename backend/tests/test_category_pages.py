@@ -142,7 +142,7 @@ class TestCategoryPagesOffline(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
         self.assertIn('<option value="newest" selected>', html)
-        self.assertNotIn("<script>", html.split("<body>")[1].split("<script src")[0])
+        self.assertNotIn("<script>", html.split("<body")[1].split("<script src")[0])
 
     def test_homepage_links_all_categories(self):
         response = self.client.get("/storefronts")
