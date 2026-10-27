@@ -41,7 +41,7 @@ def create_app():
     # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/storefront')
     def storefront():
-         if not session.get("user"):
+        if not session.get("user"):
             return redirect(url_for("auth.login"))
         return render_template('homepage.html')
 
@@ -49,7 +49,7 @@ def create_app():
     # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/create-storefront')
     def create_storefront():
-         if not session.get("user"):
+        if not session.get("user"):
             return redirect(url_for("auth.login"))
         return render_template('create_storefront.html')
 
@@ -57,7 +57,7 @@ def create_app():
     # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/create-listing')
     def create_listing():
-         if not session.get("user"):
+        if not session.get("user"):
             return redirect(url_for("auth.login"))
         return render_template('create_listing.html')
 
@@ -65,7 +65,7 @@ def create_app():
     # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/cart')
     def cart():
-         if not session.get("user"):
+        if not session.get("user"):
             return redirect(url_for("auth.login"))
         return render_template('cart.html')
 
