@@ -96,11 +96,11 @@ templates/                     Jinja HTML pages
 
 ## 4. Application Startup
 
-The main entry point is `app.py`.
+The main entry point is `../app.py`.
 
 Startup sequence:
 
-1. Python adds `backend/` to the import path.
+1. Python adds `../backend` to the import path.
 2. Flask imports the controller blueprints.
 3. `create_app()` creates the Flask application.
 4. The application sets a Flask secret key.
@@ -724,7 +724,7 @@ PATCH  /admin/returns/<id>
 
 ## 10. Database Design
 
-The database schema is created in `backend/init_db.py`.
+The database schema is created in `../backend/init_db.py`.
 
 ### Entity relationship diagram
 
@@ -973,7 +973,7 @@ returns/damage/
 
 ## 14. Testing Structure
 
-Tests are in `backend/tests/`.
+Tests are in `../backend/tests`.
 
 | Test file | Coverage |
 |---|---|
@@ -1146,12 +1146,12 @@ These notes explain why the diagram may show duplicate or disconnected-looking p
 3. Cart behavior is implemented inside the authentication controller rather than a dedicated cart controller/service.
 4. The older purchase feature uses `purchases`, while the newer checkout flow uses `orders` and `order_items`.
 5. Some purchase and wishlist comments identify those features as unfinished, even though wishlist routes and tests exist.
-6. `account_controller.py` appears unfinished and is not registered in `app.py`.
+6. `account_controller.py` appears unfinished and is not registered in `../app.py`.
 7. Some test files reflect older endpoint contracts and may not match the newest checkout implementation.
 8. Storefront and listing deletions are handled differently: listings use soft deletion, while the admin model directly deletes users and storefronts.
 9. Database connection helpers exist in more than one location, reflecting incremental development.
-10. The root `.env` contains sensitive database and cloud credentials. Those values are intentionally excluded from this document. They should be rotated and managed through a secure environment or deployment secret store.
-11. The application currently hardcodes a Flask secret key in `app.py` even though environment-based secret configuration also exists.
+10. The root `../.env` contains sensitive database and cloud credentials. Those values are intentionally excluded from this document. They should be rotated and managed through a secure environment or deployment secret store.
+11. The application currently hardcodes a Flask secret key in `../app.py` even though environment-based secret configuration also exists.
 
 ## 18. Short Explanation for a Presentation
 
