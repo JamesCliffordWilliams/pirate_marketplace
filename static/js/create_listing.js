@@ -6,12 +6,14 @@ CSC 405 Sp 26
 Created by Elali McNair - Iteration 4
 Updated by Day Ekoi - Iteration 5 4/9/26
 Updated by Day Ekoi - Iteration 5 4/22/26 - One Size mode, per-size quantities, Made-to-Order
+Updated by James Williams - 10/26/26 - added the required category picker
 
 Purpose:
 Handles form submission for Create Listing page. Supports:
 - One Size mode (single quantity, no other sizes selectable)
 - Multi-size mode (per-size quantity inputs)
 - Made-to-Order flag (bypasses inventory limits)
+- Required product category
 */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -52,6 +54,30 @@ document.addEventListener('DOMContentLoaded', function() {
   const oneSizeQtyRow = document.getElementById("oneSizeQtyRow");
   const oneSizeQty = document.getElementById("oneSizeQty");
   const madeToOrderToggle = document.getElementById("madeToOrderToggle");
+
+  // ── Category picker ─────────────────────────────────────────
+  // Added by James Williams 10/26/26
+  // Category errors from the server show under the picker instead of in an alert
+  const CATEGORY_ERROR_MESSAGES = [
+    "Please choose a category.",
+    "Choose a specific subcategory, not a main category.",
+    "That category doesn't exist."
+  ];
+  const submitBtn = listingForm ? listingForm.querySelector("button[type='submit']") : null;
+  let categoriesReady = false;
+  let formLocked = false; // true when the user has no storefront
+
+  function updateSubmitState() {
+    if (submitBtn) submitBtn.disabled = formLocked || !categoriesReady;
+  }
+
+  const categoryPicker = window.CategoryPicker.mount(document.getElementById("categoryPicker"), {
+    hiddenInput: document.getElementById("categoryId"),
+    onStatusChange: (status) => {
+      categoriesReady = status === "ready";
+      updateSubmitState();
+    }
+  });
 
   function applyOneSizeMode(enabled) {
     if (!multiSizeGrid || !oneSizeQtyRow) return;
@@ -216,6 +242,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
+      // Added by James Williams 10/26/26
+      const categoryId = document.getElementById("categoryId").value.trim();
+      if (!categoryId || !categoryPicker.hasValue()) {
+        categoryPicker.setError("Please choose a category.");
+        categoryPicker.focus();
+        return;
+      }
+
       // Collect sizes and per-size quantities
       let sizes = [];
       const sizeQuantities = {};
@@ -267,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append("is_made_to_order", isMadeToOrder ? "true" : "false");
         formData.append("sizes_available", JSON.stringify(sizes));
         formData.append("size_quantities", JSON.stringify(sizeQuantities));
+        formData.append("category_id", String(categoryId)); // Added by James Williams 10/26/26
         listingImages.forEach(file => formData.append("listing_images", file));
         formData.append("listing_image", listingImages[0]);
 
@@ -286,6 +321,9 @@ document.addEventListener('DOMContentLoaded', function() {
           window.setTimeout(() => {
             window.location.href = "/my-storefront";
           }, 2500);
+        } else if (CATEGORY_ERROR_MESSAGES.includes(result.error)) { // Added by James Williams 10/26/26
+          categoryPicker.setError(result.error);
+          categoryPicker.focus();
         } else {
           alert("Error creating listing: " + (result.error || "Unknown error"));
         }
@@ -345,8 +383,9 @@ document.addEventListener('DOMContentLoaded', function() {
           });
         } else {
           storefrontSelect.innerHTML = '<option value="" disabled>No storefronts found - create one first</option>';
+          formLocked = true;
           if (listingForm) {
-            listingForm.querySelectorAll("input, select, button[type='submit']").forEach(el => {
+            listingForm.querySelectorAll("input, select, button[type='submit'], .cp-trigger").forEach(el => {
               el.disabled = true;
             });
           }
@@ -357,8 +396,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       } else if (response.status === 404) {
         storefrontSelect.innerHTML = '<option value="" disabled>No storefronts found - create one first</option>';
+        formLocked = true;
         if (listingForm) {
-          listingForm.querySelectorAll("input, select, button[type='submit']").forEach(el => {
+          listingForm.querySelectorAll("input, select, button[type='submit'], .cp-trigger").forEach(el => {
             el.disabled = true;
           });
         }

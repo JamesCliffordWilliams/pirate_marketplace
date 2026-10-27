@@ -36,6 +36,7 @@ This file acts as the UI structure (skeleton) of the Create Listing feature.
 
     <!-- Flask version - uses create_storefront.css for styling consistency -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/create_storefront.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/category_picker.css') }}"> <!-- Added by James Williams 10/26/26 -->
     <style>
         .drop-zone {
             border: 2px dashed #d4af37;
@@ -275,6 +276,15 @@ This file acts as the UI structure (skeleton) of the Create Listing feature.
                 </div>
             </section>
 
+            <!-- Category picker - added by James Williams 10/26/26 -->
+            <section class="form-card category-picker-card">
+                <label for="categoryPicker" class="section-label">
+                    Category <span class="required">*</span>
+                </label>
+                <div id="categoryPicker"></div>
+                <input type="hidden" id="categoryId" name="category_id" value="">
+            </section>
+
             <section class="bottom-row">
                 <div class="form-card category-card">
                     <p class="section-label">Available Sizes <span class="required">*</span></p>
@@ -375,7 +385,8 @@ This file acts as the UI structure (skeleton) of the Create Listing feature.
 
 
     <!-- javascript -->
-    <script src="{{ url_for('static', filename='js/create_listing.js') }}"></script>
+<script src="{{ url_for('static', filename='js/category_picker.js') }}"></script> <!-- Added by James Williams 10/26/26 -->
+        <script src="{{ url_for('static', filename='js/create_listing.js') }}"></script>
 
 </body>
 </html>

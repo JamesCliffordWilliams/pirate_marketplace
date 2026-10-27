@@ -1,0 +1,125 @@
+<!--
+    category_listings.html
+
+    The Vault Campus Marketplace
+    CSC 405 Sp 26'
+    Created by James Williams - 10/26/26
+
+Description:
+The page for one category or subcategory. The server builds the page layout,
+and category_listings.js loads the products.
+-->
+{% from "partials/category_icons.html" import category_icon %}
+{% set parent_url = url_for('category_pages_bp.category_listings_page', parent_slug=parent.slug) %}
+{% set sort_qs = '' if sort == 'newest' else '?sort=' ~ sort %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Vault | {{ current.name }}</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/listing_card.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/categories.css') }}" />
+</head>
+
+<body>
+
+{% include 'partials/site_nav.html' %}
+
+  <main
+    class="cat-page cat-listings-page"
+    id="categoryListingsPage"
+    data-slug="{{ current.slug }}"
+    data-category-name="{{ current.name }}"
+    data-parent-name="{{ parent.name }}"
+    data-parent-url="{{ parent_url }}"
+    data-is-sub="{{ 'true' if active_sub else 'false' }}"
+    data-show-category="{{ 'true' if (not active_sub and page.has_children) else 'false' }}"
+    data-user-id="{{ current_user_id or '' }}"
+    data-logged-in="{{ 'true' if session.get('user') else 'false' }}"
+  >
+
+    <!-- Breadcrumb: All Categories › Parent [› Sub] -->
+    <nav class="cat-breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="{{ url_for('category_pages_bp.categories_page') }}">All Categories</a></li>
+        {% if active_sub %}
+        <li><a href="{{ parent_url }}{{ sort_qs }}">{{ parent.name }}</a></li>
+        <li><span aria-current="page">{{ active_sub.name }}</span></li>
+        {% else %}
+        <li><span aria-current="page">{{ parent.name }}</span></li>
+        {% endif %}
+      </ol>
+    </nav>
+
+    <header class="cat-listings-header">
+      <span class="cat-card-icon cat-card-icon--small">{{ category_icon(parent.icon, "cat-icon") }}</span>
+      <h1 class="cat-title cat-title--page">{{ current.name }}</h1>
+    </header>
+
+    {% if page.has_children %}
+    <!-- Subcategory buttons -->
+    <nav class="cat-chips" aria-label="Subcategories">
+      <a class="cat-chip{% if not active_sub %} is-active{% endif %}"
+         href="{{ parent_url }}{{ sort_qs }}"
+         {% if not active_sub %}aria-current="page"{% endif %}>
+        All {{ parent.name }}
+        <span class="cat-chip-count">{{ page.parent_total }}</span>
+      </a>
+      {% for sub in subcategories %}
+      <a class="cat-chip{% if sub.is_active %} is-active{% endif %}"
+         href="{{ url_for('category_pages_bp.category_listings_page', parent_slug=parent.slug, sub_slug=sub.slug) }}{{ sort_qs }}"
+         {% if sub.is_active %}aria-current="page"{% endif %}>
+        {{ sub.name }}
+        <span class="cat-chip-count">{{ sub.count }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+    {% endif %}
+
+    <div class="cat-toolbar">
+      <p class="cat-results-count" id="resultsCount" aria-live="polite">
+        {{ page.current_total }} {{ 'item' if page.current_total == 1 else 'items' }}
+      </p>
+
+      <label class="cat-sort" for="sortSelect">
+        <span class="cat-sort-label">Sort</span>
+        <select id="sortSelect" class="cat-sort-select">
+          <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+          <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+          <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+        </select>
+      </label>
+    </div>
+
+    <!-- Products (placeholders show while loading) -->
+    <section class="cat-listing-grid" id="categoryGrid" aria-busy="true" aria-label="{{ current.name }} products">
+      {% for _ in range(8) %}
+      <div class="cat-skeleton-card" aria-hidden="true">
+        <div class="cat-skeleton-block cat-skeleton-block--image"></div>
+        <div class="cat-skeleton-block cat-skeleton-block--line"></div>
+        <div class="cat-skeleton-block cat-skeleton-block--short"></div>
+        <div class="cat-skeleton-block cat-skeleton-block--button"></div>
+      </div>
+      {% endfor %}
+    </section>
+
+    <noscript>
+      <p class="cat-state-message">Turn on JavaScript to see products in this category.</p>
+    </noscript>
+
+    <div class="pagination" id="categoryPagination" hidden>
+      <button type="button" class="page-btn" id="prevPageBtn">Previous</button>
+      <span class="page-indicator" id="pageIndicator">Page 1 of 1</span>
+      <button type="button" class="page-btn" id="nextPageBtn">Next</button>
+    </div>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/listing_card.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/category_listings.js') }}"></script>
+</body>
+</html>

@@ -12,6 +12,10 @@ from controllers.return_controller import returns_bp
 from controllers.storefront_controller import storefront_bp, storefront_pages_bp
 from controllers.wallet_controller import wallet_bp
 from controllers.wishlist_controller import wishlist_bp
+from controllers.checkout_controller import checkout_bp
+from controllers.category_controller import category_bp, category_pages_bp  # Added by James Williams 10/26/26
+from controllers.hot_controller import hot_bp, hot_pages_bp  # Added by James Williams 10/26/26
+from init_db import create_vault_tables
 
 
 def create_app():
@@ -33,27 +37,48 @@ def create_app():
     def index():
         return render_template('index.html')
 
+    #About page -Added by Aniya Hopson 10/20/26
+    #Logged in user can only view this page
+    @app.route('/about')
+    def about():
+        if not session.get("user"):
+            return redirect(url_for("auth.login"))
+        return render_template('about.html')
+   
     # Route to the main storefront page after login - Updated 3/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/storefront')
     def storefront():
+        if not session.get("user"):
+            return redirect(url_for("auth.login"))
         return render_template('homepage.html')
 
     # Route to the "Create Storefront" form - Updated 3/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/create-storefront')
     def create_storefront():
+        if not session.get("user"):
+            return redirect(url_for("auth.login"))
         return render_template('create_storefront.html')
 
     # Route to the "Create Listing" form - Updated 3/24/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/create-listing')
     def create_listing():
+        if not session.get("user"):
+            return redirect(url_for("auth.login"))
         return render_template('create_listing.html')
 
     #Route to the Cart screen - Updated 3/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/cart')
     def cart():
+        if not session.get("user"):
+            return redirect(url_for("auth.login"))
         return render_template('cart.html')
 
     #Route to the Checkout - Updated 4/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/checkout')
     def checkout():
         if not session.get("user"):
@@ -61,6 +86,7 @@ def create_app():
         return render_template('checkout.html')
 
     # Route to the Order Confirmation page - Added 4/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/order-confirmation')
     def order_confirmation():
         if not session.get("user"):
@@ -87,6 +113,11 @@ def create_app():
 
     app.register_blueprint(wallet_bp)
 
+    app.register_blueprint(category_bp)         # Added by James Williams 10/26/26
+    app.register_blueprint(category_pages_bp)   # Added by James Williams 10/26/26
+    app.register_blueprint(hot_bp)              # Added by James Williams 10/26/26
+    app.register_blueprint(hot_pages_bp)        # Added by James Williams 10/26/26
+    
     @app.get("/health")
     def health():
         return {"status": "ok"}

@@ -19,6 +19,11 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 
+# Added by James Williams 10/26/26 - same category setup the migration uses
+from migrations.add_product_categories import apply_product_categories
+# Added by James Williams 10/26/26 - engagement table for the Hot page
+from migrations.add_listing_interest import apply_listing_interest
+
 load_dotenv()
 
 
@@ -119,6 +124,9 @@ def create_vault_tables():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
+                -- category_id: added by apply_product_categories() below
+                -- (James Williams 10/26/26)
+
                 CONSTRAINT fk_listing_storefront
                     FOREIGN KEY(storefront_id)
                     REFERENCES storefronts(id)
@@ -130,6 +138,13 @@ def create_vault_tables():
         cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS deleted_restore_status VARCHAR(20);")
         cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS is_made_to_order BOOLEAN DEFAULT FALSE;")
         cur.execute("UPDATE listings SET is_made_to_order = FALSE WHERE is_made_to_order IS NULL;")
+
+        # ________________________________________________________
+        # PRODUCT CATEGORIES
+        # Added by James Williams 10/26/26
+        # Creates product_categories and adds listings.category_id
+        # ________________________________________________________
+        apply_product_categories(cur)
 
         # ________________________________________________________
         # LISTING IMAGES TABLE (Multiple images per listing)
@@ -387,6 +402,16 @@ def create_vault_tables():
         tables = [row[0] for row in cur.fetchall()]
 
         print(f"DATABASE INITIALIZED: {', '.join(tables)} tables are ready.")
+        # ________________________________________________________
+        # LISTING INTEREST (Hot page engagement)
+        # Added by James Williams 10/26/26
+        # ________________________________________________________
+        apply_listing_interest(cur)
+
+        conn.commit()
+
+        # Updated by James Williams 10/26/26 - added listing_interest to the list
+        print("DATABASE INITIALIZED: users, storefronts, listings, product_categories, listing_images, listing_sizes, purchases, wishlist, orders, order_items, and listing_interest tables are ready.")
 
         cur.close()
         conn.close()
