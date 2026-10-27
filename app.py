@@ -37,11 +37,19 @@ def create_app():
     def index():
         return render_template('index.html')
 
+    #About page -Added by Aniya Hopson 10/20/26
+    #Logged in user can only view this page
+    @app.route('/about')
+    def about():
+        if not session.get("user"):
+            return redirect(url_for("auth.login"))
+        return render_template('about.html')
+   
     # Route to the main storefront page after login - Updated 3/22/2026
     # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/storefront')
     def storefront():
-         if not session.get("user"):
+        if not session.get("user"):
             return redirect(url_for("auth.login"))
         return render_template('homepage.html')
 
@@ -49,7 +57,7 @@ def create_app():
     # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/create-storefront')
     def create_storefront():
-         if not session.get("user"):
+        if not session.get("user"):
             return redirect(url_for("auth.login"))
         return render_template('create_storefront.html')
 
@@ -57,7 +65,7 @@ def create_app():
     # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/create-listing')
     def create_listing():
-         if not session.get("user"):
+        if not session.get("user"):
             return redirect(url_for("auth.login"))
         return render_template('create_listing.html')
 
@@ -65,7 +73,7 @@ def create_app():
     # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/cart')
     def cart():
-         if not session.get("user"):
+        if not session.get("user"):
             return redirect(url_for("auth.login"))
         return render_template('cart.html')
 
@@ -106,7 +114,7 @@ def create_app():
     app.register_blueprint(category_pages_bp)   # Added by James Williams 10/26/26
     app.register_blueprint(hot_bp)              # Added by James Williams 10/26/26
     app.register_blueprint(hot_pages_bp)        # Added by James Williams 10/26/26
-
+    
     @app.get("/health")
     def health():
         return {"status": "ok"}

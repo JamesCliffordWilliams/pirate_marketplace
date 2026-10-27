@@ -1,0 +1,173 @@
+<!--
+    about.html
+
+    Pirate Marketplace
+    Created by Aniya Hopson - 10/20/26
+
+Description:
+About page. 
+- Explains what Pirate Market is, how buying and selling work,
+and the safety rules.
+
+How it is used:
+- Opened from "About" in the side menu (partials/site_nav.html) or hamburger menu
+- Reuses storefront.css for the background, top bar and side menu (site_nav.html),
+  and about.css for this page's own layout.
+
+Keep this page accurate: when messaging, storefront verification/reviews and
+order time limits ship, update the "How it works" and "Trust & safety"
+sections so we never describe features that don't exist yet.
+
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Pirate Market is the campus fashion marketplace for Hampton University students. Shop student brands and meet in person to exchange." />
+  <title>Pirate Market | About</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}" />
+</head>
+
+<body>
+
+{% include 'partials/site_nav.html' %}
+
+<main class="about-page">
+
+  <!-- Hero: one-sentence answer to "what is this site?" -->
+  <section class="about-hero">
+    <p class="about-eyebrow">About</p>
+    <h1 class="brand-title">Pirate Market</h1>
+    <p class="about-lede">
+      The campus fashion marketplace built for Hampton University students.
+      Student designers open storefronts, list their pieces, and sell directly
+      to classmates, with every exchange happening in person on campus or through our wallet.
+    </p>
+  </section>
+
+  <!-- What you'll find here: names the main parts of the site -->
+  <section class="about-section" aria-labelledby="seeingHeading">
+    <h2 class="about-heading" id="seeingHeading">What you'll find here</h2>
+
+    <div class="about-grid">
+      <article class="about-card">
+        <span class="about-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M3 9.5 4.5 4h15L21 9.5"/><path d="M3 9.5h18v1a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0v-1Z"/><path d="M5 13v7h14v-7"/><path d="M10 20v-4h4v4"/>
+          </svg>
+        </span>
+        <h3>Storefronts</h3>
+        <p>Each student brand gets one storefront with its logo, banner, bio and contact details, so you always know who you're buying from.</p>
+      </article>
+
+      <article class="about-card">
+        <span class="about-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M8 3 4 6l2 4 2-1v12h8V9l2 1 2-4-4-3c-.5 1.5-2 2.5-4 2.5S8.5 4.5 8 3Z"/>
+          </svg>
+        </span>
+        <h3>Listings</h3>
+        <p>Listings show photos, price, available sizes and stock. Items are either in stock and ready now, or pre-order and made after you buy.</p>
+      </article>
+
+      <article class="about-card">
+        <span class="about-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M12 21c-3.9 0-7-2.8-7-6.6 0-2.6 1.4-4.6 3-6.2.3 1.7 1.2 2.9 2.4 3.4C10 8 11.4 5 14 3c.2 2.6 1.4 4.3 2.8 5.8 1.4 1.5 2.2 3.3 2.2 5.6 0 3.8-3.1 6.6-7 6.6Z"/>
+          </svg>
+        </span>
+        <h3>Categories &amp; Hot</h3>
+        <p>Browse by category, or check the Hot page to see what students are wishlisting, bagging and ordering right now.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- How it works, split by the two kinds of users -->
+  <section class="about-section" aria-labelledby="howHeading">
+    <h2 class="about-heading" id="howHeading">How it works</h2>
+
+    <div class="about-columns">
+      <div class="about-panel">
+        <h3>For shoppers</h3>
+        <ol class="about-steps">
+          <li><strong>Browse</strong> storefronts, categories and the Hot page.</li>
+          <li><strong>Add to your bag</strong> and pick your size.</li>
+          <li><strong>Check out</strong> with your contact info and a campus meeting spot. No card details are ever entered on the site.</li>
+          <li><strong>Meet the seller</strong> in person to pay and pick up your item.</li>
+        </ol>
+      </div>
+
+      <div class="about-panel">
+        <h3>For student brands</h3>
+        <ol class="about-steps">
+          <li><strong>Create your storefront</strong> with a logo, banner and bio.</li>
+          <li><strong>Post listings</strong> with photos, prices, sizes and stock.</li>
+          <li><strong>Manage everything</strong> from your My Storefront dashboard.</li>
+          <li><strong>Hand off orders</strong> in person and get paid directly.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust & safety: only lists rules the site enforces today -->
+  <section class="about-section" aria-labelledby="trustHeading">
+    <h2 class="about-heading" id="trustHeading">Trust &amp; safety</h2>
+
+    <ul class="about-trust">
+      <li>
+        <h3>Hampton students only</h3>
+        <p>Accounts require an <span class="nowrap">@hamptonu.edu</span> or <span class="nowrap">@my.hamptonu.edu</span> email address.</p>
+      </li>
+      <li>
+        <h3>Meet in public</h3>
+        <p>Choose a busy campus spot such as the student center or library, and inspect your item before paying.</p>
+      </li>
+      <li>
+        <h3>Returns</h3>
+        <p>If something arrives damaged or isn't as described, submit a return request with your order number.</p>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Common questions. <details> opens and closes without any JavaScript. -->
+  <section class="about-section" aria-labelledby="faqHeading">
+    <h2 class="about-heading" id="faqHeading">Frequently Asked Questions</h2>
+
+    <div class="about-faq">
+      <details>
+        <summary>What do I do with my confirmation number?</summary>
+        <p>After checkout you get a confirmation page with your confirmation number. Keep it handy, since the returns form asks for it.</p>
+      </details>
+      <details>
+        <summary>Does Pirate Market take a cut of sales?</summary>
+        <p>No. Payment goes directly from the buyer to the student brand at the meetup.</p>
+      </details>
+      <details>
+        <summary>Can students outside Hampton use it?</summary>
+        <p>Not right now. Limiting accounts to Hampton email addresses keeps every buyer and seller part of the same campus community.</p>
+      </details>
+      <details>
+        <summary>How do I start selling?</summary>
+        <p>Open the menu (the three lines in the top-left corner) and choose Create Storefront. Once your storefront is set up you can post your first listing.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Call to action: sends the user back into the shop -->
+  <section class="about-cta">
+    <h2>Ready to shop?</h2>
+    <p>See what Hampton's student brands have dropped.</p>
+    <div class="about-cta-buttons">
+      <a class="about-btn about-btn--primary" href="{{ url_for('storefront') }}">Browse storefronts</a>
+      <a class="about-btn" href="{{ url_for('hot_pages_bp.hot_page') }}">See what's hot</a>
+    </div>
+  </section>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+</body>
+</html>
