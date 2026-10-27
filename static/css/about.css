@@ -1,14 +1,14 @@
 /*
     about.css
 
-    Pirate Marketplace
+    Pirate Market
     CSC 405 
     Created by Aniya Hopson - 10/26/26
 
 Description:
 Layout and styling for the public About page. Loaded AFTER storefront.css,
 which already supplies the background image, top bar, side menu, the
-.brand-title heading and the --vault-* color tokens used below.
+.brand-title heading and the --PM-* color tokens used below.
 
 Works with:
 - about.html

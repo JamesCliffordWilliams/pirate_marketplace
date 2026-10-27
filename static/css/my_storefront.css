@@ -510,3 +510,49 @@ body {
         padding-top: 4.2rem;
     }
 }
+
+/* Incoming orders - Added by Aniya Hopson 10/27/26 */
+.orders-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 20px;
+}
+
+.orders-title {
+    color: #d4af37;
+}
+
+.orders-note,
+.orders-message {
+    color: #bbb;
+    font-size: 0.9rem;
+    margin: 0.4rem 0 1rem;
+}
+
+.order-card {
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+    background: #141414;
+    border: 1px solid #333;
+    border-radius: 12px;
+}
+
+.order-number {
+    color: #d4af37;
+    font-weight: bold;
+    margin-bottom: 0.4rem;
+}
+
+.order-line,
+.order-item {
+    font-size: 0.9rem;
+    margin: 0.2rem 0;
+}
+
+.order-deadline {
+    color: #d4af37;
+    font-size: 0.9rem;
+    margin: 0.6rem 0;
+}
