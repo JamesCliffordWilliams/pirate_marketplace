@@ -45,6 +45,7 @@ BLUEPRINTS = [
     (checkout_bp, "/api"),
     (listing_bp, None),
     (message_bp, None), # Billy
+    (orders_bp, "/api"),  # Aniya
     (storefront_bp, None),
     (storefront_pages_bp, None),
     (purchase_bp, None),
@@ -63,7 +64,7 @@ def register_pages(app):
     for url, endpoint, template in PUBLIC_PAGES:
         app.add_url_rule(url, endpoint, lambda t=template: render_template(t))
     for url, endpoint, template in PRIVATE_PAGES: # Aniya: reroute the user login if they are not a user
-        app.add_url_rule(url, endpoint, lambda t=template: render_template(t) if session.get('user') else redirect(url_for("auth.login")))
+        app.add_url_rule(url,   endpoint, lambda t=template: render_template(t) if session.get('user') else redirect(url_for("auth.login")))
 
 # Billy: Rewrite
 def create_app():
@@ -87,61 +88,6 @@ def create_app():
     for blueprint, prefix in BLUEPRINTS:
         app.register_blueprint(blueprint, url_prefix=prefix)
 
-    # Route to the "Create Listing" form - Updated 3/24/2026
-    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
-    @app.route('/create-listing')
-    def create_listing():
-        if not session.get("user"):
-            return redirect(url_for("auth.login"))
-        return render_template('create_listing.html')
-
-    #Route to the Cart screen - Updated 3/22/2026
-    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
-    @app.route('/cart')
-    def cart():
-        if not session.get("user"):
-            return redirect(url_for("auth.login"))
-        return render_template('cart.html')
-
-    #Route to the Checkout - Updated 4/22/2026
-    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
-    @app.route('/checkout')
-    def checkout():
-        if not session.get("user"):
-            return redirect(url_for("auth.login"))
-        return render_template('checkout.html')
-
-    # Route to the Order Confirmation page - Added 4/22/2026
-    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
-    @app.route('/order-confirmation')
-    def order_confirmation():
-        if not session.get("user"):
-            return redirect(url_for("auth.login"))
-        return render_template('order_confirmation.html')
-    
-    # Route to My Storefront dashboard page - Updated 4/9/2026
-    @app.route('/my-storefront')
-    def my_storefront():
-        if not session.get("user"):
-            return redirect(url_for("auth.login"))
-        return render_template('my_storefront.html')
-
-    # Register Blueprints
-    app.register_blueprint(auth_bp, url_prefix='/auth')
-    app.register_blueprint(listing_bp)
-    app.register_blueprint(storefront_bp)
-    app.register_blueprint(storefront_pages_bp)  # Updated by Day E 3/22/26
-    app.register_blueprint(purchase_bp)
-    app.register_blueprint(wishlist_bp)
-    app.register_blueprint(admin_bp) # Updated 3/19/2026 by Ryan Grimes
-    app.register_blueprint(returns_bp)
-    app.register_blueprint(checkout_bp, url_prefix='/api')
-    app.register_blueprint(category_bp)         # Added by James Williams 10/26/26
-    app.register_blueprint(category_pages_bp)   # Added by James Williams 10/26/26
-    app.register_blueprint(hot_bp)              # Added by James Williams 10/26/26
-    app.register_blueprint(hot_pages_bp)        # Added by James Williams 10/26/26
-    app.register_blueprint(orders_bp, url_prefix='/api')  # Added by Aniya Hopson 10/27/26
-    
     @app.get("/health")
     def health():
         return {"status": "ok"}
