@@ -1,22 +1,17 @@
-import sys
 import os
-from datetime import timedelta
 
 from flask import Flask, render_template, redirect, url_for, session
 
-from controllers.wallet_controller import wallet_bp
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))) # Updated 3/19/2026 by Ryan Grimes
-
-from controllers.listing_controller import listing_bp
-from controllers.storefront_controller import storefront_bp, storefront_pages_bp  # Updated by Day E 3/22/26
-from controllers.purchase_controller import purchase_bp
-from controllers.wishlist_controller import wishlist_bp
+# Billy - Iteration 3
 from controllers.admin_controller import admin_bp
-from controllers.auth_controller import auth_bp # Updated 3/19/2026 by Ryan Grimes
-from controllers.return_controller import returns_bp
+from controllers.auth_controller import auth_bp
 from controllers.checkout_controller import checkout_bp
-from init_db import create_vault_tables
+from controllers.listing_controller import listing_bp
+from controllers.purchase_controller import purchase_bp
+from controllers.return_controller import returns_bp
+from controllers.storefront_controller import storefront_bp, storefront_pages_bp
+from controllers.wallet_controller import wallet_bp
+from controllers.wishlist_controller import wishlist_bp
 
 
 def create_app():
