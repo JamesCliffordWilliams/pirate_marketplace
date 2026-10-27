@@ -18,6 +18,7 @@ This page also includes action buttons that let the seller:
 
 This file acts as the UI structure for the seller's personal storefront management page.
 It is different from the public storefront page because this version is meant for the storefront owner.
+Updated by Aniya Hopson-  added in incoming orders section
 -->
 
 <!DOCTYPE html>
@@ -86,6 +87,14 @@ It is different from the public storefront page because this version is meant fo
             </div>
 
         </section>
+       
+        <!-- Incoming orders - Added by Aniya Hopson 10/27/26 -->
+        <section class="orders-section">
+            <h2 class="orders-title">Incoming Orders</h2>
+            <p class="orders-note">Hand the items to the buyer, then click "Mark as Picked Up". Orders not picked up by their date expire and the items go back into your stock.</p>
+            <p class="orders-message" id="ordersMessage">Loading orders...</p>
+            <div id="ordersList"></div>
+        </section>
 
         <!-- Listings section -->
         <section class="listings-section">
@@ -95,5 +104,6 @@ It is different from the public storefront page because this version is meant fo
     </main>
 
     <script src="{{ url_for('static', filename='js/my_storefront.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/seller_orders.js') }}"></script>  <!-- Added by Aniya Hopson 10/27/26 -->
 </body>
 </html>

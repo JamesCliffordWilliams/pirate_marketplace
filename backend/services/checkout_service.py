@@ -1,28 +1,27 @@
 # The Vault Campus Marketplace
 # CSC 405 Sp 26'
 # Updated by Day Ekoi - 4/22/26
+#updated by Aniya Hopson - 10/25/26 ( stock and order are saved tg)
 
 import random
 import string
 from datetime import datetime
 
 from models.checkout_model import (
-    create_order,
-    create_order_item,
     get_order_by_confirmation,
     get_order_items_by_order_id,
     get_orders_by_user_id,
     clear_cart_for_user,
-    update_listing_size_inventory,
     remove_purchased_from_wishlist,
-    check_listing_availability,
 )
+
+from models.order_model import place_order, expire_old_orders  # Added by Aniya Hopson team 10/26/26
 
 
 def _generate_confirmation_number():
     date_str = datetime.now().strftime("%y%m%d")
     suffix = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
-    return f"VAULT-{date_str}-{suffix}"
+    return f"PM-{date_str}-{suffix}"
 
 
 def complete_transaction_from_session(user_id, session_cart, buyer_details):
@@ -35,83 +34,49 @@ def complete_transaction_from_session(user_id, session_cart, buyer_details):
     if not session_cart:
         raise Exception("Cart is empty.")
 
-    # Validate all cart items are still available before creating the order
+    buyer = {
+        "first_name":(buyer_details.get("first_name") or "").strip(),
+        "last_name": (buyer_details.get("last_name") or "").strip(),
+        "email": (buyer_details.get("email") or "").strip(),
+        "contact": (buyer_details.get("contact") or "").strip(),
+        "meeting_location": (buyer_details.get("meeting_location") or "").strip()
+    }
+
+    if not all(buyer.values()):
+            raise Exception ("All buyer details are required.")
+    items = []
     for item in session_cart:
-        item_id = item.get("id")
-        quantity = int(item.get("quantity", 1))
-        if item_id:
-            check_listing_availability(int(item_id), quantity)
-
-    first_name = (buyer_details.get("first_name") or "").strip()
-    last_name = (buyer_details.get("last_name") or "").strip()
-    email = (buyer_details.get("email") or "").strip()
-    contact = (buyer_details.get("contact") or "").strip()
-    meeting_location = (buyer_details.get("meeting_location") or "").strip()
-
-    if not all([first_name, last_name, email, contact, meeting_location]):
-        raise Exception("All buyer details are required.")
-
-    total_amount = round(
-        sum(float(item.get("price", 0)) * int(item.get("quantity", 1)) for item in session_cart),
-        2,
-    )
-
+        items.append({
+            "listing_id": int(item["id"]) if item.get("id") else None,
+            "name": item.get("name", "Item"),
+            "quantity": int(item.get("quantity", 1)),
+            "price": float(item.get("price", 0)),
+            "size": item.get("size") or None,
+        })
+    total_amount = round(sum(i["price"] * i["quantity"] for i in items), 2)
     confirmation_number = _generate_confirmation_number()
 
-    order = create_order(
-        user_id=user_id,
-        confirmation_number=confirmation_number,
-        buyer_first_name=first_name,
-        buyer_last_name=last_name,
-        buyer_email=email,
-        buyer_contact=contact,
-        buyer_meeting_location=meeting_location,
-        total_amount=total_amount,
-    )
-
-    order_items = []
-    for item in session_cart:
-        item_id = item.get("id")
-        item_name = item.get("name", "Item")
-        quantity = int(item.get("quantity", 1))
-        price = float(item.get("price", 0))
-        size = item.get("size")
-
-        order_item = create_order_item(
-            order_id=order["id"],
-            listing_id=item_id,
-            item_name=item_name,
-            quantity=quantity,
-            price_at_purchase=price,
-            selected_size=size,
-        )
-        order_items.append(order_item)
-
-        if item_id and size:
-            try:
-                update_listing_size_inventory(int(item_id), size, quantity)
-            except Exception as e:
-                print(f"[checkout] inventory update failed for listing {item_id} size {size}: {e}")
+    expire_old_orders()  # put back stock from overdue orders first, so this buyer can get it
+    order_id = place_order(user_id, confirmation_number, buyer, items, total_amount)
 
     clear_cart_for_user(user_id)
 
     # Remove purchased listings from the user's wishlist
-    purchased_listing_ids = [item.get("id") for item in session_cart if item.get("id") is not None]
     try:
-        remove_purchased_from_wishlist(user_id, purchased_listing_ids)
+        remove_purchased_from_wishlist(user_id, [i["listing_id"] for i in items])
     except Exception as e:
         print(f"[checkout] wishlist cleanup failed: {e}")
 
     return {
         "confirmation_number": confirmation_number,
-        "order": order,
-        "order_items": order_items,
+        "order": get_order_by_confirmation(confirmation_number),
+        "order_items": get_order_items_by_order_id(order_id),
         "total_amount": total_amount,
     }
 
-
 def get_order_summary_service(confirmation_number, user_id):
     """Returns order + items for the confirmation page. Validates user ownership."""
+    expire_old_orders() # Added By Aniya Hopson 10/26/26
     order = get_order_by_confirmation(confirmation_number)
     if not order:
         raise Exception("Order not found.")
@@ -123,4 +88,5 @@ def get_order_summary_service(confirmation_number, user_id):
 
 def get_user_orders_service(user_id):
     """Returns all orders for the given user, newest first."""
+    expire_old_orders() # Added By Aniya Hopson 10/26/26
     return get_orders_by_user_id(user_id)
