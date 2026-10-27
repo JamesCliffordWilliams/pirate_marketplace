@@ -1,7 +1,11 @@
 import os
+import sys
 from datetime import timedelta
 
 from flask import Flask, render_template, redirect, request, url_for, session
+
+# Added back by James Williams 10/27/26 - lets `python3 app.py` find backend/ outside PyCharm
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend')))
 
 # Billy: Rewrite
 from controllers.admin_controller import admin_bp
