@@ -10,6 +10,7 @@ from controllers.category_controller import category_bp, category_pages_bp # Jam
 from controllers.checkout_controller import checkout_bp
 from controllers.hot_controller import hot_bp, hot_pages_bp # James
 from controllers.listing_controller import listing_bp
+from controllers.message_controller import message_bp
 from controllers.purchase_controller import purchase_bp
 from controllers.return_controller import returns_bp
 from controllers.storefront_controller import storefront_bp, storefront_pages_bp
@@ -41,6 +42,7 @@ BLUEPRINTS = [
     (auth_bp, "/auth"),
     (checkout_bp, "/api"),
     (listing_bp, None),
+    (message_bp, None), # Billy
     (storefront_bp, None),
     (storefront_pages_bp, None),
     (purchase_bp, None),
