@@ -2,7 +2,7 @@
 init_db.py
 
 Purpose:
-This file initializes the PostgreSQL database schema for The Vault.
+This file initializes the PostgreSQL database schema for Pirate Market.
 It creates all required database tables if they do not already exist.
 
 Run this file manually when:
@@ -11,9 +11,10 @@ Run this file manually when:
 - Ensuring the database schema is properly initialized
 """
 
-# The Vault Campus Marketplace
+# Pirate Market Campus Marketplace
 # CSC 405 Sp 26'
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added contact_info, preview_image_1-4, categories columns to storefronts; added ALTER TABLE migrations
+
 
 import psycopg2
 import os
@@ -23,7 +24,6 @@ from dotenv import load_dotenv
 from migrations.add_product_categories import apply_product_categories
 # Added by James Williams 10/26/26 - engagement table for the Hot page
 from migrations.add_listing_interest import apply_listing_interest
-
 load_dotenv()
 
 
@@ -321,7 +321,10 @@ def create_vault_tables():
                     ON DELETE CASCADE
             );
         """
+        #Added by Aniya Hopson 10/26/26
         cur.execute(create_orders_table)
+        cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days');")
+        cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;")
 
         # ________________________________________________________
         # ORDER ITEMS TABLE (Items per order)
@@ -343,7 +346,65 @@ def create_vault_tables():
                     ON DELETE CASCADE
             );
         """
+
         cur.execute(create_order_items_table)
+        #Added by Aniya Hopson 10/26/26
+        cur.execute("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;")
+
+        create_wallets_table = """
+            CREATE TABLE IF NOT EXISTS wallets  (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL UNIQUE,
+                balance NUMERIC(10,2) NOT NULL DEFAULT 0 CHECK (balance >= 0),
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+
+               CONSTRAINT fk_wallet_user
+                    FOREIGN KEY(user_id)
+                    REFERENCES users(id)
+                    ON DELETE CASCADE
+            );
+        """
+
+        cur.execute(create_wallets_table)
+
+        create_wallet_transactions_table = """
+            CREATE TABLE IF NOT EXISTS wallet_transactions  (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                type VARCHAR(10) NOT NULL
+                    CHECK (type IN ('DEPOSIT', 'WITHDRAW', 'PURCHASE')),
+                amount NUMERIC(10,2) NOT NULL CHECK (amount > 0),
+                balance_after NUMERIC(10,2) NOT NULL,
+                description TEXT,
+                order_id INTEGER,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+
+            CONSTRAINT fk_wallet_tx_user
+                    FOREIGN KEY(user_id)
+                    REFERENCES users(id)
+                    ON DELETE CASCADE,
+
+             CONSTRAINT fk_wallet_tx_order
+                    FOREIGN KEY(order_id)
+                    REFERENCES orders(id)
+                    ON DELETE SET NULL
+            );
+        """
+
+
+
+        cur.execute(create_wallet_transactions_table)
+        conn.commit()
+
+        cur.execute("""
+                    SELECT table_name
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    ORDER BY table_name;
+                    """)
+        tables = [row[0] for row in cur.fetchall()]
 
         #_________________________________________________________
         # MESSAGES TABLE (buyer <-> seller messages)
@@ -373,6 +434,7 @@ def create_vault_tables():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);") #Helps with loading a conversatio
 
+        print(f"DATABASE INITIALIZED: {', '.join(tables)} tables are ready.")
         # ________________________________________________________
         # LISTING INTEREST (Hot page engagement)
         # Added by James Williams 10/26/26
