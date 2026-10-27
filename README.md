@@ -2,7 +2,7 @@
 
 **A cloud-based fashion marketplace for Hampton University students**
 
-Designed & Built by Aniya Hopson, Billy Anders, Cletus (CJ) Hyacinth, James Williams, Madison Rickman, Miles Walker, and Terrance Wynn
+Designed & Built by Aniya Hopson, Billy Anders, Cletus Hyacinth, Elisa Earls, James Williams, Madison Rickman, Miles Walker, and Terrance Wynn
 
 CSC 404 — Fall 26'
 
@@ -98,13 +98,13 @@ python3 backend/tests/test_file_name
 
 | Name | Role |
 |---|---|
-| Aniya Hopson | About page, login-required pages, sign-up email rules |
-| Billy Anders | Wallet, app setup and session timeout |
-| Cletus (CJ) Hyacinth | |
-| James Williams | All Categories, Hot page, Pirate Market redesign, product pages, listing reliability, AWS |
-| Madison Rickman | |
-| Miles Walker | Messaging system |
-| Terrance Wynn | |
+| Billy Anders | Project Manager (PM) |
+| Elisa Earls | Co-Project Manager / Backend Support |
+| Miles Walker | Document Lead |
+| Aniya Hopson | Systems & Security Planning Lead |
+| Cletus Hyacinth | Cloud Deployment Lead |
+| James Williams | Cloud Deployment Lead |
+| Madison Rickman | Database & Application Support Lead |
 
 ---
 
