@@ -38,26 +38,39 @@ def create_app():
         return render_template('index.html')
 
     # Route to the main storefront page after login - Updated 3/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/storefront')
     def storefront():
+         if not session.get("user"):
+            return redirect(url_for("auth.login"))
         return render_template('homepage.html')
 
     # Route to the "Create Storefront" form - Updated 3/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/create-storefront')
     def create_storefront():
+         if not session.get("user"):
+            return redirect(url_for("auth.login"))
         return render_template('create_storefront.html')
 
     # Route to the "Create Listing" form - Updated 3/24/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/create-listing')
     def create_listing():
+         if not session.get("user"):
+            return redirect(url_for("auth.login"))
         return render_template('create_listing.html')
 
     #Route to the Cart screen - Updated 3/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/cart')
     def cart():
+         if not session.get("user"):
+            return redirect(url_for("auth.login"))
         return render_template('cart.html')
 
     #Route to the Checkout - Updated 4/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/checkout')
     def checkout():
         if not session.get("user"):
@@ -65,6 +78,7 @@ def create_app():
         return render_template('checkout.html')
 
     # Route to the Order Confirmation page - Added 4/22/2026
+    # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/order-confirmation')
     def order_confirmation():
         if not session.get("user"):
