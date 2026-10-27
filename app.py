@@ -1,5 +1,7 @@
 import sys
 import os
+from datetime import timedelta
+
 from flask import Flask, render_template, redirect, url_for, session
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend'))) # Updated 3/19/2026 by Ryan Grimes
@@ -22,6 +24,11 @@ def create_app():
 
     # James: removed exposed secret key for security reasons. Use environment variable instead.
     app.secret_key = os.getenv('SECRET_KEY')
+
+
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
     # Run DB migrations on every startup so new columns are always present
     # try:
