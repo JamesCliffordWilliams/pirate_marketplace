@@ -1,10 +1,10 @@
-# The Vault — Campus Marketplace
+# Pirate Market — Campus Marketplace
 
 **A cloud-based fashion marketplace for Hampton University students**
 
 Designed & Built by Aniya Hopson, Billy Anders, Cletus Hyacinth, Elisa Earls, James Williams, Madison Rickman, Miles Walker, and Terrance Wynn
 
-CSC 404 — Spring 26'
+CSC 404 — Fall 26'
 
 ---
 
