@@ -70,7 +70,7 @@ def signup():
             return redirect(url_for('auth.login'))
         # Updated by James Williams 10/26/26 - show the form again with the reason
         reasons = {
-            "You Must Use a Hampton University Associated Email": "Use your Hampton University email (ending in hamptonu.edu).",
+            "You Must Use a Hampton University Associated Email": "Use your Hampton University email (@hamptonu.edu or @my.hamptonu.edu).",
         }
         return render_template('signup.html', error=reasons.get(message, "Your account wasn't created. That username or email may already be taken."),
                                username=user, email=email)

@@ -173,6 +173,9 @@ class TestCategoryPagesOffline(unittest.TestCase):
         self.assertIn("css/listing_card.css", html)
 
     def test_listing_forms_include_picker(self):
+        # Updated by James Williams 10/27/26 - /create-listing now needs a logged-in user
+        with self.client.session_transaction() as sess:
+            sess["user"] = "tester"
         for path in ("/create-listing",):
             with self.subTest(path=path):
                 html = self.client.get(path).get_data(as_text=True)
