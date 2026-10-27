@@ -1,0 +1,231 @@
+/*
+    seller.css
+
+    Pirate Market
+    Created by James Williams - 10/26/26
+    Seller pages: create/edit listing and storefront (form beside a live preview), and the
+    My storefront dashboard. Components come from theme.css. Loaded after the pages' older CSS,
+    so a few rules reset styles that create_storefront.css sets on plain elements.
+*/
+
+/* ---------- form + sticky preview ---------- */
+
+.pm .pm-editor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 56px;
+    align-items: start;
+    max-width: 1040px;
+}
+
+.pm .pm-editor__form { display: grid; gap: 40px; min-width: 0; }
+
+.pm .pm-editor__preview {
+    position: sticky;
+    top: 136px;
+    display: grid;
+    gap: 12px;
+}
+
+/* the preview is a picture of a tile, not something to click */
+.pm .pm-preview-tile { pointer-events: none; }
+.pm .pm-preview-tile .pm-tile__link::after { display: none; }
+
+.pm .pm-form-section { display: grid; gap: 4px; }
+.pm .pm-form-section > h2 { margin-bottom: 4px; }
+.pm .pm-form-section > .pm-hint { margin-bottom: 12px; }
+
+.pm .pm-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 24px;
+    border-top: 1px solid var(--pm-rigging);
+}
+
+.pm .pm-form-actions .pm-btn--primary { min-width: 180px; min-height: 48px; font-size: var(--pm-t16); }
+.pm .pm-form-error:not(:empty) { margin-bottom: -24px; }
+
+.pm .pm-notice {
+    padding: 12px 16px;
+    border-left: 3px solid var(--pm-brass);
+    border-radius: var(--pm-r-control);
+    background: var(--pm-hull);
+}
+
+.pm .pm-notice a { color: var(--pm-brass); font-weight: 600; }
+
+/* create_storefront.css styles plain inputs and selects; theme controls win here */
+.pm input.pm-input,
+.pm select.pm-select,
+.pm textarea.pm-textarea { width: 100%; margin: 0; font-size: var(--pm-t16); box-shadow: none; }
+.pm .pm-prefix input.pm-input { border: 0; background: none; }
+
+/* ---------- photo tiles (Cover + 3) ---------- */
+
+.pm .pm-photos {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.pm .pm-photo { position: relative; }
+.pm .pm-photo[hidden] { display: none; }
+
+.pm .pm-photo__zone.drop-zone {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    min-height: 0;
+    margin: 0;
+    padding: 8px;
+    border: 1px dashed var(--pm-control-line);
+    border-radius: var(--pm-r-tile);
+    background: var(--pm-hull) center / cover no-repeat;
+    color: var(--pm-fog);
+    font-size: var(--pm-t13);
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.pm .pm-photo:first-child .pm-photo__zone { border-color: var(--pm-fog); }
+.pm .pm-photo__zone:hover,
+.pm .pm-photo__zone.dragover { border-color: var(--pm-brass); color: var(--pm-sail); }
+
+.pm .pm-photo__zone.has-image {
+    border-style: solid;
+    border-color: transparent;
+    background-color: var(--pm-mat);
+    background-image: var(--preview-image);
+}
+
+.pm .pm-photo__zone.has-image .drop-text { visibility: hidden; }
+.pm .pm-photo__zone .drop-text { display: grid; justify-items: center; gap: 6px; }
+.pm .pm-photo__zone svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+
+/* processing: a quiet shimmer over the tile */
+.pm .pm-photo__zone.is-processing {
+    opacity: 1;
+    background-image: linear-gradient(90deg, var(--pm-hull) 0%, var(--pm-hull-raised) 50%, var(--pm-hull) 100%);
+    background-size: 200% 100%;
+    animation: pm-shimmer 1.2s linear infinite;
+}
+
+.pm .pm-photo:first-child.has-photo::after {
+    content: "Cover";
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    padding: 2px 8px;
+    border-radius: var(--pm-r-control);
+    background: var(--pm-harbor);
+    font-size: var(--pm-t13);
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.pm .pm-photo__remove {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(11, 27, 54, 0.8);
+    color: var(--pm-sail);
+    cursor: pointer;
+}
+
+.pm .pm-photo__remove[hidden] { display: none; }
+.pm .pm-photo__remove svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.pm .pm-photos + .pm-error,
+.pm .pm-photos ~ .upload-error { margin-top: 8px; }
+.pm .pm-photo .upload-error { margin: 6px 0 0; text-align: left; font-size: var(--pm-t13); color: var(--pm-signal-text); }
+
+/* ---------- sizes, stock and switches ---------- */
+
+.pm .pm-fieldset { display: grid; gap: 14px; margin: 8px 0 0; padding: 0; border: 0; }
+.pm .pm-fieldset > legend { margin-bottom: 10px; padding: 0; }
+
+.pm .pm-sizes { display: flex; flex-wrap: wrap; gap: 10px; }
+.pm .pm-size { display: inline-flex; align-items: center; gap: 6px; }
+.pm .pm-size .size-qty-input { width: 72px; min-height: 36px; padding: 4px 8px; }
+.pm .pm-field--inline { grid-template-columns: auto 120px; align-items: center; gap: 12px; margin: 0; }
+
+/* ---------- photos already saved (edit listing) ---------- */
+
+/* saved photos and free spots share one row of four */
+.pm .pm-photos-all { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.pm .pm-photos-all > .pm-saved-photos,
+.pm .pm-photos-all > .pm-photos { display: contents; }
+
+.pm .pm-saved-photos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.pm .pm-saved-photo { display: grid; gap: 6px; }
+
+.pm .pm-saved-photo__img {
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: var(--pm-r-tile);
+    background: var(--pm-mat);
+}
+
+.pm .pm-saved-photo__img img { width: 100%; height: 100%; object-fit: cover; }
+.pm .pm-saved-photo__actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.pm .pm-saved-photo__actions .pm-btn { min-height: 32px; padding: 0 8px; font-size: var(--pm-t13); }
+
+@media (max-width: 899px) {
+    .pm .pm-editor { grid-template-columns: 1fr; gap: 32px; }
+    .pm .pm-editor__preview { position: static; order: -1; max-width: 220px; }
+}
+
+@media (max-width: 480px) {
+    .pm .pm-photos,
+    .pm .pm-photos-all { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .pm .pm-form-actions .pm-btn--primary { flex: 1; }
+}
+
+/* category picker (category_picker.css) inside the redesigned form */
+.pm .pm-field .cp { width: 100%; max-width: none; margin: 0; }
+
+.pm .pm-field .cp-trigger {
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid var(--pm-control-line);
+    border-radius: var(--pm-r-control);
+    background: var(--pm-hull);
+    font: 400 var(--pm-t16) var(--pm-sans);
+}
+
+.pm .pm-field .cp-trigger:focus-visible,
+.pm .pm-field .cp-trigger[aria-expanded="true"] { border-color: var(--pm-brass); box-shadow: none; outline: none; }
+.pm .pm-field .cp-error,
+.pm .pm-field .cp-status-text--error { font-size: var(--pm-t13); font-weight: 400; color: var(--pm-signal-text); }
+.pm .pm-field .cp-chevron { color: var(--pm-fog); }
+.pm .pm-field .cp-popup { border: 1px solid var(--pm-control-line); border-radius: var(--pm-r-tile); background: var(--pm-hull-raised); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4); }
+.pm .pm-field .cp-group-header { color: var(--pm-fog); font-size: var(--pm-t13); letter-spacing: normal; text-transform: none; }
+.pm .pm-field .cp-option { font-family: var(--pm-sans); }
+
+/* in Edit listing the cover is a saved photo, so new tiles never get the Cover label */
+.pm .pm-photos-all .pm-photo.has-photo::after { content: none; }
+
+/* ---------- storefront forms ---------- */
+
+.pm .pm-store-brand { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 20px; align-items: center; }
+.pm .pm-photo--round .pm-photo__zone.drop-zone { aspect-ratio: 1; border-radius: 50%; }
+.pm .pm-photo--round .pm-photo__zone.has-image { border: 2px solid var(--pm-brass); }
+.pm .pm-banner-tile { margin-top: 12px; }
+.pm .pm-photo--wide .pm-photo__zone.drop-zone { aspect-ratio: 16 / 5; }
+.pm .pm-editor__preview--store { width: 320px; }
+@media (min-width: 900px) {
+    .pm .pm-editor:has(.pm-editor__preview--store) { grid-template-columns: minmax(0, 1fr) 320px; }
+}
+
+@media (max-width: 899px) {
+    .pm .pm-editor__preview--store { width: auto; max-width: 340px; }
+}

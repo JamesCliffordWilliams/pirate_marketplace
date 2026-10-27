@@ -181,7 +181,7 @@ class TestCategoryPagesOffline(unittest.TestCase):
                 self.assertLess(html.index("js/category_picker.js"), html.index("js/create_listing.js"))
                 # placed after Listing Name and before Available Sizes
                 self.assertLess(html.index('id="listingName"'), html.index('id="categoryPicker"'))
-                self.assertLess(html.index('id="categoryPicker"'), html.index("Available Sizes"))
+                self.assertLess(html.index('id="categoryPicker"'), html.index('id="multiSizeGrid"'))  # Updated by James Williams 10/26/26
 
 
 @require_local_db

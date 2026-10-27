@@ -11,12 +11,20 @@
     Updated by James Williams - 10/26/26 - added the category picker; saving no longer
     reactivates INACTIVE listings
     Updated by James Williams - 10/26/26 - shared photo picker, one request per save
+    Updated by James Williams - 10/26/26 - redesign: saved photos as tiles, only free photo spots shown,
+    live preview, inline errors instead of alerts. Requests are unchanged.
 */
 
 document.addEventListener("DOMContentLoaded", async () => {
+    const { photoTiles, showError, clearErrors, renderPreview } = window.SellerForm;
+
     const form = document.getElementById("editListingForm");
     const cancelBtn = document.getElementById("cancelBtn");
     const listingId = Number(window.location.pathname.split("/")[2]);
+    const listingName = document.getElementById("listingName");
+    const priceInput = document.getElementById("price");
+    const storefrontName = document.getElementById("storefrontName");
+    const livePreview = document.getElementById("livePreview");
 
     const oneSizeToggle = document.getElementById("oneSizeToggle");
     const multiSizeGrid = document.getElementById("multiSizeGrid");
@@ -25,7 +33,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const madeToOrderToggle = document.getElementById("madeToOrderToggle");
     const currentImageGallery = document.getElementById("currentImageGallery");
     const imageFallback = document.getElementById("imageFallback");
-    const imageStatusNote = document.getElementById("imageStatusNote");
 
     const previewInputs = [1, 2, 3, 4].map((index) => document.getElementById(`previewImage${index}`));
 
@@ -35,18 +42,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     let loadedListing = null;
 
     // ── Category picker ─────────────────────────────────────────
-    // Added by James Williams 10/26/26
     const CATEGORY_ERROR_MESSAGES = [
         "Please choose a category.",
         "Choose a specific subcategory, not a main category.",
         "That category doesn't exist."
     ];
-    const submitBtn = form ? form.querySelector("button[type='submit']") : null;
+    const submitBtn = form.querySelector("button[type='submit']");
     const categoryPickerRoot = document.getElementById("categoryPicker");
     let categoriesReady = false;
 
     function updateSubmitState() {
-        if (submitBtn) submitBtn.disabled = !categoriesReady || !loadedListing;
+        submitBtn.disabled = !categoriesReady || !loadedListing;
     }
 
     // If the listing's category was removed from the list, tell the seller (saving still keeps it)
@@ -56,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!note) {
             note = document.createElement("p");
             note.id = "retiredCategoryNote";
-            note.className = "helper-note";
+            note.className = "pm-hint";
             categoryPickerRoot.parentNode.appendChild(note);
         }
         const name = loadedListing.category?.name;
@@ -77,7 +83,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     updateSubmitState();
 
-    // Added by James Williams 10/26/26
     // Don't send a status for INACTIVE/DELETED listings so saving never reactivates them
     function computeSaveStatus(currentStatus, isMadeToOrder, totalQty) {
         if (currentStatus !== "ACTIVE" && currentStatus !== "SOLD_OUT") {
@@ -86,80 +91,134 @@ document.addEventListener("DOMContentLoaded", async () => {
         return !isMadeToOrder && totalQty === 0 ? "SOLD_OUT" : "ACTIVE";
     }
 
-    if (cancelBtn) {
-        cancelBtn.addEventListener("click", () => {
-            window.location.href = "/storefronts/dashboard";
-        });
-    }
+    cancelBtn.addEventListener("click", () => {
+        window.location.href = "/storefronts/dashboard";
+    });
 
-    function updateImageStatusNote() {
-        if (!imageStatusNote) return;
-        const pendingCount = queuedFiles().length;
-        const totalCount = existingImages.length + pendingCount;
-        imageStatusNote.textContent = `${existingImages.length} saved image${existingImages.length === 1 ? "" : "s"} | ${pendingCount} queued upload${pendingCount === 1 ? "" : "s"} | ${totalCount}/4 total`;
-    }
-
+    // ── Sizes ────────────────────────────────────────────────────
     function applyOneSizeMode(enabled) {
-        if (!multiSizeGrid || !oneSizeQtyRow) return;
         if (enabled) {
             multiSizeGrid.style.display = "none";
-            multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach((cb) => {
-                cb.checked = false;
-            });
+            multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach((cb) => { cb.checked = false; });
             multiSizeGrid.querySelectorAll(".size-qty-input").forEach((inp) => {
                 inp.value = "";
                 inp.style.display = "none";
             });
-            oneSizeQtyRow.style.display = "block";
+            oneSizeQtyRow.style.display = "";
         } else {
             multiSizeGrid.style.display = "";
             oneSizeQtyRow.style.display = "none";
-            if (oneSizeQty) oneSizeQty.value = "";
+            oneSizeQty.value = "";
         }
     }
 
-    if (oneSizeToggle) {
-        oneSizeToggle.addEventListener("change", () => {
-            applyOneSizeMode(oneSizeToggle.checked);
-        });
-    }
+    oneSizeToggle.addEventListener("change", () => applyOneSizeMode(oneSizeToggle.checked));
 
-    if (multiSizeGrid) {
-        multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach((cb) => {
-            cb.addEventListener("change", () => {
-                const row = cb.closest(".size-qty-row");
-                if (!row) return;
-                const qtyInput = row.querySelector(".size-qty-input");
-                if (qtyInput) {
-                    qtyInput.style.display = cb.checked ? "inline-block" : "none";
-                    if (!cb.checked) qtyInput.value = "";
-                }
-            });
+    multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach((cb) => {
+        cb.addEventListener("change", () => {
+            const qtyInput = cb.closest(".size-qty-row").querySelector(".size-qty-input");
+            qtyInput.style.display = cb.checked ? "inline-block" : "none";
+            if (cb.checked) qtyInput.focus(); else qtyInput.value = "";
         });
-    }
+    });
 
-    // Added by James Williams 10/26/26 - shared picker (js/image_uploader.js)
-    const imagePickers = previewInputs.map((input, index) => window.ImageUploader.attach(input, {
-        preview: document.getElementById(`previewPreview${index + 1}`),
-        onChange: (file, picker) => {
-            if (file && existingImages.length + queuedFiles().length > 4) {
-                picker.clear();
-                picker.showError("You can upload up to 4 listing images total.");
-                return;
-            }
-            updateImageStatusNote();
-        }
-    }));
+    // ── Photos: saved ones, plus a tile for each free spot ──────
+    const imagePickers = photoTiles(previewInputs, { onChange: updatePreview });
 
     function queuedFiles() {
         return imagePickers.map((picker) => picker.file).filter(Boolean);
     }
 
+    function showFreeSpots() {
+        const free = Math.max(0, 4 - existingImages.length);
+        imagePickers.forEach((picker, index) => {
+            const tile = picker.input.closest(".pm-photo");
+            tile.hidden = index >= free;
+            if (tile.hidden && picker.file) picker.clear();
+        });
+    }
+
+    function updatePreview() {
+        const cover = existingImages[0]?.image_url || imagePickers.find((picker) => picker.file)?.previewUrl;
+        renderPreview(livePreview, {
+            title: listingName.value.trim(),
+            price: priceInput.value,
+            image: cover,
+            store: storefrontName.value
+        });
+    }
+
+    [listingName, priceInput].forEach((input) => input.addEventListener("input", updatePreview));
+
+    function photoButton(label, onClick, disabled) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "pm-btn pm-btn--ghost";
+        button.textContent = label;
+        button.disabled = Boolean(disabled);
+        button.addEventListener("click", onClick);
+        return button;
+    }
+
+    function authHeaders() {
+        return { "X-User-Id": currentUser.id, "X-User-Role": currentUser.role };
+    }
+
+    async function imageRequest(url, method, failMessage) {
+        showError("photosError", "");
+        try {
+            const response = await fetch(url, { method, headers: authHeaders() });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result.error || failMessage);
+            await refreshListingImages();
+        } catch (error) {
+            console.error(failMessage, error);
+            showError("photosError", error.message || failMessage);
+        }
+    }
+
+    function renderExistingImages() {
+        currentImageGallery.replaceChildren();
+        imageFallback.style.display = existingImages.length ? "none" : "";
+
+        existingImages.forEach((image, index) => {
+            const card = document.createElement("div");
+            card.className = "pm-saved-photo";
+
+            const frame = document.createElement("div");
+            frame.className = "pm-saved-photo__img";
+            const img = document.createElement("img");
+            img.src = image.image_url;
+            img.alt = `Saved photo ${index + 1}`;
+            frame.appendChild(img);
+
+            const actions = document.createElement("div");
+            actions.className = "pm-saved-photo__actions";
+            if (image.is_primary) {
+                const cover = document.createElement("span");
+                cover.className = "pm-hint";
+                cover.textContent = "Cover";
+                actions.appendChild(cover);
+            } else {
+                actions.appendChild(photoButton("Make cover", () => imageRequest(
+                    `/api/listings/${listingId}/images/${image.id}/primary`, "PATCH", "Couldn't change the cover photo."
+                ), image.is_legacy));
+            }
+            actions.appendChild(photoButton("Remove", () => {
+                if (!window.confirm("Remove this photo from the listing?")) return;
+                imageRequest(`/api/listings/${listingId}/images/${image.id}`, "DELETE", "Couldn't remove the photo.");
+            }, existingImages.length <= 1 || image.is_legacy));
+
+            card.append(frame, actions);
+            currentImageGallery.appendChild(card);
+        });
+        showFreeSpots();
+        updatePreview();
+    }
+
     async function fetchListingImages() {
         const response = await fetch(`/api/listings/${listingId}/images`);
-        if (!response.ok) {
-            return [];
-        }
+        if (!response.ok) return [];
         const images = await response.json();
         return Array.isArray(images) ? images.slice(0, 4) : [];
     }
@@ -167,135 +226,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function refreshListingImages() {
         existingImages = await fetchListingImages();
         renderExistingImages();
-        updateImageStatusNote();
-    }
-
-    function renderExistingImages() {
-        if (!currentImageGallery) return;
-
-        currentImageGallery.innerHTML = "";
-
-        if (!existingImages.length) {
-            if (imageFallback) imageFallback.style.display = "block";
-            return;
-        }
-
-        if (imageFallback) imageFallback.style.display = "none";
-
-        existingImages.forEach((image, index) => {
-            const card = document.createElement("div");
-            card.className = "existing-image-card";
-            card.innerHTML = `
-                <p class="image-slot-label">${image.is_primary ? "Primary Image" : `Image ${index + 1}`}</p>
-                <img src="${image.image_url}" alt="Listing image ${index + 1}">
-                <div class="existing-image-actions">
-                    <button type="button" class="mini-btn ${image.is_primary ? "is-active" : ""}" data-action="primary" ${image.is_primary || image.is_legacy ? "disabled" : ""}>${image.is_primary ? "Primary" : "Set Primary"}</button>
-                    <button type="button" class="mini-btn is-danger" data-action="remove" ${existingImages.length <= 1 || image.is_legacy ? "disabled" : ""}>Remove</button>
-                </div>
-            `;
-
-            const primaryBtn = card.querySelector('[data-action="primary"]');
-            const removeBtn = card.querySelector('[data-action="remove"]');
-
-            if (primaryBtn) {
-                primaryBtn.addEventListener("click", async () => {
-                    if (!currentUser) return;
-                    try {
-                        const response = await fetch(`/api/listings/${listingId}/images/${image.id}/primary`, {
-                            method: "PATCH",
-                            headers: {
-                                "X-User-Id": currentUser.id,
-                                "X-User-Role": currentUser.role
-                            }
-                        });
-                        const result = await response.json().catch(() => ({}));
-                        if (!response.ok) {
-                            throw new Error(result.error || "Could not update the primary image.");
-                        }
-                        await refreshListingImages();
-                    } catch (error) {
-                        console.error("Unable to set primary image:", error);
-                        alert(error.message || "Could not update the primary image.");
-                    }
-                });
-            }
-
-            if (removeBtn) {
-                removeBtn.addEventListener("click", async () => {
-                    if (!currentUser) return;
-                    if (!window.confirm("Are you sure you want to remove this listing image?")) {
-                        return;
-                    }
-                    try {
-                        const response = await fetch(`/api/listings/${listingId}/images/${image.id}`, {
-                            method: "DELETE",
-                            headers: {
-                                "X-User-Id": currentUser.id,
-                                "X-User-Role": currentUser.role
-                            }
-                        });
-                        const result = await response.json().catch(() => ({}));
-                        if (!response.ok) {
-                            throw new Error(result.error || "Could not remove the image.");
-                        }
-                        await refreshListingImages();
-                    } catch (error) {
-                        console.error("Unable to remove listing image:", error);
-                        alert(error.message || "Could not remove the image.");
-                    }
-                });
-            }
-
-            currentImageGallery.appendChild(card);
-        });
     }
 
     async function uploadListingImageFile(file) {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("folder", "listings");
-
-        const response = await fetch("/api/storefronts/upload-image", {
-            method: "POST",
-            body: formData
-        });
+        const response = await fetch("/api/storefronts/upload-image", { method: "POST", body: formData });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            throw new Error(data.error || "Could not upload listing image.");
-        }
+        if (!response.ok) throw new Error(data.error || "Couldn't upload a photo.");
         return data.url;
     }
 
     async function saveQueuedImages() {
         const queuedImages = queuedFiles();
-        if (!queuedImages.length) return;
-
         if (existingImages.length + queuedImages.length > 4) {
-            throw new Error("You can upload up to 4 listing images total.");
+            throw new Error("Only 4 photos fit. Remove one to add another.");
         }
-
         for (let index = 0; index < queuedImages.length; index += 1) {
-            const file = queuedImages[index];
-            const imageUrl = await uploadListingImageFile(file);
+            const imageUrl = await uploadListingImageFile(queuedImages[index]);
             const response = await fetch(`/api/listings/${listingId}/images`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-User-Id": currentUser.id,
-                    "X-User-Role": currentUser.role
-                },
-                body: JSON.stringify({
-                    image_url: imageUrl,
-                    is_primary: existingImages.length === 0 && index === 0
-                })
+                headers: { "Content-Type": "application/json", ...authHeaders() },
+                body: JSON.stringify({ image_url: imageUrl, is_primary: existingImages.length === 0 && index === 0 })
             });
             const result = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                throw new Error(result.error || "Could not save listing image.");
-            }
+            if (!response.ok) throw new Error(result.error || "Couldn't save a photo.");
         }
     }
 
+    // ── Load ─────────────────────────────────────────────────────
     try {
         const userRes = await fetch("/auth/api/auth/me");
         if (!userRes.ok) {
@@ -307,213 +267,155 @@ document.addEventListener("DOMContentLoaded", async () => {
         const [listingRes, sizesRes, myStorefrontRes] = await Promise.all([
             fetch(`/api/listings/${listingId}`),
             fetch(`/api/listings/${listingId}/sizes`),
-            fetch("/api/storefronts/me", {
-                headers: {
-                    "X-User-Id": currentUser.id,
-                    "X-User-Role": currentUser.role
-                }
-            })
+            fetch("/api/storefronts/me", { headers: authHeaders() })
         ]);
-
-        if (!listingRes.ok) {
-            throw new Error("Could not load listing.");
-        }
+        if (!listingRes.ok) throw new Error("This listing couldn't be loaded.");
 
         const listing = await listingRes.json();
         loadedListing = listing;
-        categoryPicker.setValue(listing.category_id); // Added by James Williams 10/26/26
+        categoryPicker.setValue(listing.category_id);
         updateSubmitState();
         noteRetiredCategory();
         sizesArray = sizesRes.ok ? await sizesRes.json() : [];
         const myStorefront = myStorefrontRes.ok ? await myStorefrontRes.json() : null;
 
-        document.getElementById("listingName").value = listing.title || "";
-        document.getElementById("price").value = Number(listing.price || 0).toFixed(2);
-        document.getElementById("storefrontName").value = myStorefront?.brand_name || `Storefront #${listing.storefront_id}`;
+        listingName.value = listing.title || "";
+        priceInput.value = Number(listing.price || 0).toFixed(2);
+        storefrontName.value = myStorefront?.brand_name || `Storefront #${listing.storefront_id}`;
+        madeToOrderToggle.checked = Boolean(listing.is_made_to_order);
 
-        if (madeToOrderToggle && listing.is_made_to_order) {
-            madeToOrderToggle.checked = true;
-        }
-
-        await refreshListingImages();
-
+        existingImages = await fetchListingImages();
         if (!existingImages.length && listing.image_url) {
-            existingImages = [{
-                id: `legacy-${listing.id}`,
-                image_url: listing.image_url,
-                is_primary: true,
-                is_legacy: true
-            }];
-            renderExistingImages();
-            updateImageStatusNote();
+            existingImages = [{ id: `legacy-${listing.id}`, image_url: listing.image_url, is_primary: true, is_legacy: true }];
         }
+        renderExistingImages();
 
         const isOneSize = Array.isArray(sizesArray) && sizesArray.length === 1 && sizesArray[0].size === "One Size";
-
         if (isOneSize) {
-            if (oneSizeToggle) oneSizeToggle.checked = true;
+            oneSizeToggle.checked = true;
             applyOneSizeMode(true);
-            if (oneSizeQty) oneSizeQty.value = sizesArray[0].quantity || 0;
+            oneSizeQty.value = sizesArray[0].quantity || 0;
         } else {
             const sizeMap = {};
-            sizesArray.forEach((sizeEntry) => {
-                sizeMap[sizeEntry.size] = sizeEntry.quantity;
+            sizesArray.forEach((sizeEntry) => { sizeMap[sizeEntry.size] = sizeEntry.quantity; });
+            multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach((cb) => {
+                if (!Object.prototype.hasOwnProperty.call(sizeMap, cb.value)) return;
+                cb.checked = true;
+                const qtyInput = cb.closest(".size-qty-row").querySelector(".size-qty-input");
+                qtyInput.style.display = "inline-block";
+                qtyInput.value = sizeMap[cb.value];
             });
+        }
+    } catch (error) {
+        console.error("Error loading edit listing page:", error);
+        showError("formError", `${error.message || "This listing couldn't be loaded."} Go back to your storefront and try again.`);
+        form.querySelectorAll("input, select, button[type='submit']").forEach((el) => { el.disabled = true; });
+        return;
+    }
 
-            if (multiSizeGrid) {
-                multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach((cb) => {
-                    if (Object.prototype.hasOwnProperty.call(sizeMap, cb.value)) {
-                        cb.checked = true;
-                        const row = cb.closest(".size-qty-row");
-                        if (row) {
-                            const qtyInput = row.querySelector(".size-qty-input");
-                            if (qtyInput) {
-                                qtyInput.style.display = "inline-block";
-                                qtyInput.value = sizeMap[cb.value];
-                            }
-                        }
-                    }
-                });
+    // ── Save ─────────────────────────────────────────────────────
+    form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Saving…", async () => {
+        clearErrors(form);
+        const isOneSizeMode = oneSizeToggle.checked;
+        const isMadeToOrder = madeToOrderToggle.checked;
+        const price = Number(priceInput.value);
+        const title = listingName.value.trim();
+        const queuedImages = queuedFiles();
+        let firstInvalid = null;
+        const fail = (errorId, message, field) => {
+            showError(errorId, message);
+            firstInvalid = firstInvalid || field;
+        };
+
+        if (existingImages.length + queuedImages.length === 0) fail("photosError", "Keep at least one photo.", previewInputs[0]);
+        if (!title) fail("nameError", "Enter a listing name.", listingName);
+        if (priceInput.value === "" || isNaN(price) || price < 0) fail("priceError", "Enter a price of 0 or more.", priceInput);
+
+        let checkedSizes = [];
+        const sizeQuantities = {};
+        if (isOneSizeMode) {
+            const qty = parseInt(oneSizeQty.value || "0", 10);
+            if (!isMadeToOrder && (isNaN(qty) || qty < 0)) fail("sizesError", "Enter how many you have (0 or more).", oneSizeQty);
+            checkedSizes = ["One Size"];
+            sizeQuantities["One Size"] = isMadeToOrder ? 0 : (qty || 0);
+        } else {
+            checkedSizes = Array.from(multiSizeGrid.querySelectorAll('input[name="sizes"]:checked')).map((cb) => cb.value);
+            if (!checkedSizes.length) {
+                fail("sizesError", "Pick at least one size, or turn on One size.", multiSizeGrid.querySelector('input[name="sizes"]'));
+            }
+            for (const size of checkedSizes) {
+                const qtyInput = multiSizeGrid.querySelector(`.size-qty-input[data-size="${size}"]`);
+                const qty = parseInt(qtyInput.value, 10);
+                if (!isMadeToOrder && (isNaN(qty) || qty < 0)) {
+                    fail("sizesError", `Enter how many you have in size ${size} (0 or more).`, qtyInput);
+                    break;
+                }
+                sizeQuantities[size] = isMadeToOrder ? 0 : (isNaN(qty) ? 0 : qty);
             }
         }
 
-        form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Saving…", async () => {
-            const isOneSizeMode = oneSizeToggle && oneSizeToggle.checked;
-            const isMadeToOrder = madeToOrderToggle && madeToOrderToggle.checked;
-            const price = Number(document.getElementById("price").value);
-            const title = document.getElementById("listingName").value.trim();
-            const queuedImages = queuedFiles();
+        const categoryId = document.getElementById("categoryId").value.trim();
+        if (!categoryId && !loadedListing.category_id) {
+            categoryPicker.setError("Please choose a category.");
+            firstInvalid = firstInvalid || { focus: () => categoryPicker.focus() };
+        }
+        if (firstInvalid) {
+            firstInvalid.focus();
+            return;
+        }
 
-            if (!title || price < 0) {
-                alert("Please enter valid listing details.");
-                return;
-            }
+        const totalQty = isMadeToOrder ? 0 : Object.values(sizeQuantities).reduce((a, b) => a + b, 0);
+        const updateBody = {
+            title,
+            price,
+            quantity_on_hand: totalQty,
+            fulfillment_type: "IN_STOCK",
+            sizes_available: checkedSizes,
+            is_made_to_order: isMadeToOrder,
+        };
+        const saveStatus = computeSaveStatus(loadedListing.status, isMadeToOrder, totalQty);
+        if (saveStatus) updateBody.status = saveStatus;
+        // No value means the old category was removed; leaving it out keeps it
+        if (categoryId) updateBody.category_id = /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId;
 
-            if (existingImages.length + queuedImages.length === 0) {
-                alert("Please keep at least one listing image.");
-                return;
-            }
-
-            if (existingImages.length + queuedImages.length > 4) {
-                alert("You can upload up to 4 listing images total.");
-                return;
-            }
-
-            let checkedSizes = [];
-            const sizeQuantities = {};
-
-            if (isOneSizeMode) {
-                const qty = parseInt(oneSizeQty ? oneSizeQty.value : "0", 10);
-                if (!isMadeToOrder && (isNaN(qty) || qty < 0)) {
-                    alert("Please enter a valid quantity for One Size.");
-                    return;
-                }
-                checkedSizes = ["One Size"];
-                sizeQuantities["One Size"] = isMadeToOrder ? 0 : (qty || 0);
-            } else {
-                const checked = Array.from(document.querySelectorAll('input[name="sizes"]:checked'));
-                checkedSizes = checked.map((cb) => cb.value);
-                if (!checkedSizes.length) {
-                    alert("Please select at least one size.");
-                    return;
-                }
-                for (const size of checkedSizes) {
-                    const qtyInput = multiSizeGrid
-                        ? multiSizeGrid.querySelector(`.size-qty-input[data-size="${size}"]`)
-                        : null;
-                    const qty = qtyInput ? parseInt(qtyInput.value, 10) : NaN;
-                    if (!isMadeToOrder && (isNaN(qty) || qty < 0)) {
-                        alert(`Please enter a valid quantity for size ${size}.`);
-                        return;
-                    }
-                    sizeQuantities[size] = isMadeToOrder ? 0 : (isNaN(qty) ? 0 : qty);
-                }
-            }
-
-            const totalQty = isMadeToOrder
-                ? 0
-                : Object.values(sizeQuantities).reduce((a, b) => a + b, 0);
-
-            // Added by James Williams 10/26/26
-            const categoryId = document.getElementById("categoryId").value.trim();
-            if (!categoryId && !loadedListing.category_id) {
-                categoryPicker.setError("Please choose a category.");
-                categoryPicker.focus();
-                return;
-            }
-
-            const updateBody = {
-                title,
-                price,
-                quantity_on_hand: totalQty,
-                fulfillment_type: "IN_STOCK",
-                sizes_available: checkedSizes,
-                is_made_to_order: isMadeToOrder,
-            };
-            const saveStatus = computeSaveStatus(loadedListing.status, isMadeToOrder, totalQty);
-            if (saveStatus) updateBody.status = saveStatus;
-            // No value means the old category was removed; leaving it out keeps it
-            if (categoryId) updateBody.category_id = /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId;
-
+        try {
             const updateRes = await fetch(`/api/listings/${listingId}`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-User-Id": currentUser.id,
-                    "X-User-Role": currentUser.role
-                },
+                headers: { "Content-Type": "application/json", ...authHeaders() },
                 body: JSON.stringify(updateBody)
             });
-
             const updateData = await updateRes.json().catch(() => ({}));
             if (!updateRes.ok) {
                 if (CATEGORY_ERROR_MESSAGES.includes(updateData.error)) {
                     categoryPicker.setError(updateData.error);
                     categoryPicker.focus();
                 } else {
-                    alert(updateData.error || "Failed to update listing.");
+                    showError("formError", updateData.error || "Your changes weren't saved. Try again.");
                 }
                 return;
             }
 
             const existingSizeSet = new Set((Array.isArray(sizesArray) ? sizesArray : []).map((s) => String(s.size)));
             const newSizeSet = new Set(checkedSizes);
-
             for (const size of checkedSizes) {
                 await fetch(`/api/listings/${listingId}/sizes`, {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-User-Id": currentUser.id,
-                        "X-User-Role": currentUser.role
-                    },
+                    headers: { "Content-Type": "application/json", ...authHeaders() },
                     body: JSON.stringify({ size, quantity: sizeQuantities[size] || 0 })
                 });
             }
-
             for (const existing of existingSizeSet) {
                 if (newSizeSet.has(existing)) continue;
-                await fetch(`/api/listings/${listingId}/sizes/${existing}`, {
-                    method: "DELETE",
-                    headers: {
-                        "X-User-Id": currentUser.id,
-                        "X-User-Role": currentUser.role
-                    }
-                });
+                await fetch(`/api/listings/${listingId}/sizes/${existing}`, { method: "DELETE", headers: authHeaders() });
             }
 
-            try {
-                await saveQueuedImages();
-            } catch (error) {
-                alert(error.message || "Could not save the new images.");
-                return;
-            }
-            window.location.href = "/storefronts/dashboard";
-            return true;
-        }));
-    } catch (error) {
-        console.error("Error loading edit listing page:", error);
-        alert(error.message || "Something went wrong while loading this listing.");
-        window.location.href = "/storefronts/dashboard";
-    }
+            await saveQueuedImages();
+        } catch (error) {
+            showError("formError", error.message || "Your changes weren't fully saved. Try again.");
+            return;
+        }
+        VaultListingCard.showToast("Changes saved");
+        window.setTimeout(() => { window.location.href = "/storefronts/dashboard"; }, 700);
+        return true;
+    }));
 });

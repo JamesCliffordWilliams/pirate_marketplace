@@ -59,7 +59,7 @@ All store text is set with textContent.
             const img = el("img");
             img.src = url;
             img.alt = "";
-            img.addEventListener("error", () => img.remove(), { once: true });
+            img.addEventListener("error", () => VaultListingCard.dropCoverPhoto(img), { once: true });
             cover.appendChild(img);
         });
     }

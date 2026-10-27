@@ -6,6 +6,7 @@
     Created by Day Ekoi - Iteration 5 4/16/2026
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - drag-drop zones, image preview thumbnails, preview_image_1-4 upload + pre-fill, existing preview image display
     Updated by James Williams - 10/26/26 - shared photo picker, one request per save
+    Updated by James Williams - 10/26/26 - redesign: saved photos in their tiles, live facade preview, inline errors
 
 Handles the Edit Storefront page:
 - Loads current storefront data and pre-fills the form
@@ -70,8 +71,8 @@ function configureStorefrontStatusButton(storefront, user) {
 
     const isActive = storefront?.is_active !== false;
     deactivateBtn.textContent = isActive ? "Deactivate" : "Reactivate";
-    deactivateBtn.classList.toggle("danger-btn", isActive);
-    deactivateBtn.classList.toggle("reactivate-btn", !isActive);
+    deactivateBtn.classList.toggle("pm-btn--danger", isActive);
+    deactivateBtn.classList.toggle("pm-btn--secondary", !isActive);
 
     deactivateBtn.onclick = async () => {
         const action = isActive ? "deactivate" : "reactivate";
@@ -94,45 +95,42 @@ function configureStorefrontStatusButton(storefront, user) {
 
             window.location.href = "/storefronts/dashboard";
         } catch (error) {
-            alert(error.message || `Could not ${action} storefront.`);
+            VaultListingCard.showToast(error.message || `Couldn't ${action} the storefront.`, "error");
         }
     };
 }
 
 
-// shows existing S3 URLs as thumbnails (for pre-filled images)
-function showExistingImages(containerId, urls) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = "";
-    urls.filter(Boolean).forEach((url, i) => {
-        const wrap = document.createElement("div");
-        wrap.className = "thumb-wrap";
+// Added by James Williams 10/26/26 - shared picker (js/image_uploader.js) and the live facade preview.
+// Saved photos show in their tiles until a new file replaces them.
+const { showError, clearErrors, renderFacade } = window.SellerForm;
+const saved = { logo: null, banner: null, previews: [null, null, null, null] };
+let imagePickers = null;
 
-        const img = document.createElement("img");
-        img.src = url;
-        img.alt = `Preview ${i + 1}`;
-
-        const label = document.createElement("span");
-        label.className = "thumb-name";
-        label.textContent = `Preview ${i + 1}`;
-
-        wrap.appendChild(img);
-        wrap.appendChild(label);
-        container.appendChild(wrap);
-    });
+function setupImagePickers() {
+    const attach = (inputId) => window.ImageUploader.attach(document.getElementById(inputId), { onChange: updateFacade });
+    return {
+        logo: attach("logoUpload"),
+        banner: attach("bannerUpload"),
+        previews: [1, 2, 3, 4].map((n) => attach(`previewImage${n}`)),
+    };
 }
 
+function showSavedPhoto(zoneId, url) {
+    if (!url) return;
+    const zone = document.getElementById(zoneId);
+    zone.classList.add("has-image");
+    zone.style.setProperty("--preview-image", `url("${encodeURI(url)}")`);
+}
 
-// Added by James Williams 10/26/26 - shared picker (js/image_uploader.js)
-function setupImagePickers() {
-    const attach = (inputId, previewId) => window.ImageUploader.attach(
-        document.getElementById(inputId), { preview: document.getElementById(previewId) }
-    );
-    return {
-        logo: attach("logoUpload", "logoPreview"),
-        banner: attach("bannerUpload", "bannerPreview"),
-        previews: [1, 2, 3, 4].map((n) => attach(`previewImage${n}`, `previewPreview${n}`)),
-    };
+function updateFacade() {
+    const shown = (picker, url) => (picker && picker.previewUrl) || url;
+    renderFacade({
+        name: document.getElementById("brandName").value.trim(),
+        logo: shown(imagePickers && imagePickers.logo, saved.logo),
+        banner: shown(imagePickers && imagePickers.banner, saved.banner),
+        images: saved.previews.map((url, i) => shown(imagePickers && imagePickers.previews[i], url)).filter(Boolean)
+    });
 }
 
 
@@ -158,8 +156,7 @@ async function loadStorefront(userId, userRole) {
     });
 
     if (!res.ok) {
-        alert("Could not load storefront data.");
-        window.location.href = "/storefronts/dashboard";
+        showError("formError", "This storefront couldn't be loaded. Go back to your dashboard and try again.");
         return null;
     }
 
@@ -169,17 +166,13 @@ async function loadStorefront(userId, userRole) {
     document.getElementById("storeDescription").value = sf.bio || "";
     document.getElementById("contactInfo").value = sf.contact_info || "";
 
-    // show current banner
-    if (sf.banner_url) {
-        document.getElementById("bannerPreviewImg").src = sf.banner_url;
-        document.getElementById("bannerCurrentPreview").style.display = "block";
-    }
-
-    // show current logo
-    if (sf.logo_url) {
-        document.getElementById("logoPreviewImg").src = sf.logo_url;
-        document.getElementById("logoCurrentPreview").style.display = "block";
-    }
+    // show the current banner, logo and previews in their tiles
+    saved.logo = sf.logo_url || null;
+    saved.banner = sf.banner_url || null;
+    saved.previews = [sf.preview_image_1, sf.preview_image_2, sf.preview_image_3, sf.preview_image_4].map((url) => url || null);
+    showSavedPhoto("logoZone", saved.logo);
+    showSavedPhoto("bannerZone", saved.banner);
+    saved.previews.forEach((url, i) => showSavedPhoto(`previewZone${i + 1}`, url));
 
     // pre-check saved categories - Added by Day Ekoi 4/20/26
     if (sf.categories) {
@@ -190,19 +183,6 @@ async function loadStorefront(userId, userRole) {
         });
         validateCategoryLimit();
     }
-
-    // show existing preview images in individual slots - Updated by Day Ekoi 4/20/26
-    const existingPreviews = [sf.preview_image_1, sf.preview_image_2, sf.preview_image_3, sf.preview_image_4];
-    existingPreviews.forEach((url, i) => {
-        if (url) {
-            const slotDiv = document.getElementById(`existingPreview${i + 1}`);
-            const slotImg = document.getElementById(`existingImg${i + 1}`);
-            if (slotDiv && slotImg) {
-                slotImg.src = url;
-                slotDiv.style.display = "block";
-            }
-        }
-    });
 
     return sf;
 }
@@ -219,11 +199,19 @@ async function init() {
         const currentStorefront = await loadStorefront(user.id, user.role);
         if (!currentStorefront) return;
 
-        const imagePickers = setupImagePickers();
+        imagePickers = setupImagePickers();
+        document.getElementById("brandName").addEventListener("input", updateFacade);
+        updateFacade();
         setupCategoryLimitGuard();
         configureStorefrontStatusButton(currentStorefront, user);
 
         form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Saving…", async () => {
+            clearErrors(form);
+            if (!document.getElementById("brandName").value.trim()) {
+                showError("brandError", "Enter a storefront name.");
+                document.getElementById("brandName").focus();
+                return;
+            }
             if (!validateCategoryLimit()) {
                 return;
             }
@@ -236,12 +224,12 @@ async function init() {
 
             if (logoFile) {
                 try { logoUrl = await uploadImageToS3(logoFile, "storefronts/logos"); }
-                catch (err) { alert("Failed to upload logo. Please try again."); return; }
+                catch (err) { showError("formError", "The logo didn't upload. Try again."); return; }
             }
 
             if (bannerFile) {
                 try { bannerUrl = await uploadImageToS3(bannerFile, "storefronts/banners"); }
-                catch (err) { alert("Failed to upload banner. Please try again."); return; }
+                catch (err) { showError("formError", "The banner didn't upload. Try again."); return; }
             }
 
             // upload each preview slot independently, keep existing if no new file - Updated by Day Ekoi 4/20/26
@@ -258,7 +246,7 @@ async function init() {
                     try {
                         previewUrls[i] = await uploadImageToS3(file, "storefronts/previews");
                     } catch (err) {
-                        alert(`Failed to upload preview image ${i + 1}. Please try again.`);
+                        showError("formError", `Preview ${i + 1} didn't upload. Try again.`);
                         return;
                     }
                 }
@@ -293,17 +281,18 @@ async function init() {
             const data = await res.json();
 
             if (!res.ok) {
-                alert(data.error || "Failed to update storefront.");
+                showError("formError", data.error || "Your changes weren't saved. Try again.");
                 return;
             }
 
-            window.location.href = "/storefronts/dashboard";
+            VaultListingCard.showToast("Changes saved");
+            window.setTimeout(() => { window.location.href = "/storefronts/dashboard"; }, 700);
             return true;
         }));
 
     } catch (err) {
         console.error("Error initializing edit page:", err);
-        alert("Something went wrong. Please try again.");
+        showError("formError", "Couldn't reach Pirate Market. Check your connection and refresh the page.");
     }
 }
 

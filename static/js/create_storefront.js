@@ -8,6 +8,7 @@
     Updated by Day Ekoi - Iteration 5 4/16/26 - S3 image upload integration
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - drag-drop zones, image preview thumbnails, preview_image_1-4 upload support
     Updated by James Williams - 10/26/26 - shared photo picker, one request per submit
+    Updated by James Williams - 10/26/26 - redesign: live facade preview, inline errors instead of alerts
 */
 
 const form = document.getElementById("storefrontForm");
@@ -69,8 +70,7 @@ function setupCategoryLimitGuard() {
         });
 
         if (sfRes.ok) {
-            alert("You already have a storefront. Redirecting to your dashboard.");
-            window.location.href = "/storefronts/dashboard";
+            window.location.replace("/storefronts/dashboard"); // one storefront per seller
         }
     } catch (err) {
         // silently allow page to load if check fails
@@ -78,19 +78,31 @@ function setupCategoryLimitGuard() {
 })();
 
 
-// Added by James Williams 10/26/26 - shared picker (js/image_uploader.js)
+// Added by James Williams 10/26/26 - shared picker (js/image_uploader.js) and the live facade preview
+const { showError, clearErrors, renderFacade } = window.SellerForm;
+const brandNameInput = document.getElementById("brandName");
+
 function setupImagePickers() {
-    const attach = (inputId, previewId) => window.ImageUploader.attach(
-        document.getElementById(inputId), { preview: document.getElementById(previewId) }
-    );
+    const attach = (inputId) => window.ImageUploader.attach(document.getElementById(inputId), { onChange: updateFacade });
     return {
-        logo: attach("logoUpload", "logoPreview"),
-        banner: attach("bannerUpload", "bannerPreview"),
-        previews: [1, 2, 3, 4].map((n) => attach(`previewImage${n}`, `previewPreview${n}`)),
+        logo: attach("logoUpload"),
+        banner: attach("bannerUpload"),
+        previews: [1, 2, 3, 4].map((n) => attach(`previewImage${n}`)),
     };
 }
 
+function updateFacade() {
+    renderFacade({
+        name: brandNameInput.value.trim(),
+        logo: imagePickers.logo.previewUrl,
+        banner: imagePickers.banner.previewUrl,
+        images: imagePickers.previews.map((picker) => picker.previewUrl).filter(Boolean)
+    });
+}
+
 const imagePickers = setupImagePickers();
+brandNameInput.addEventListener("input", updateFacade);
+updateFacade();
 setupCategoryLimitGuard();
 
 
@@ -113,6 +125,12 @@ async function uploadImageToS3(file, folder) {
 
 // form submission
 form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Creating…", async () => {
+    clearErrors(form);
+    if (!brandNameInput.value.trim()) {
+        showError("brandError", "Enter a storefront name.");
+        brandNameInput.focus();
+        return;
+    }
     if (!validateCategoryLimit()) {
         return;
     }
@@ -120,9 +138,8 @@ form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Creating
     try {
         const userRes = await fetch("/auth/api/auth/me");
         if (!userRes.ok) {
-            alert("You must be logged in to create a storefront.");
             window.location.href = "/auth/login";
-            return;
+            return true;
         }
         const user = await userRes.json();
 
@@ -133,7 +150,7 @@ form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Creating
         const logoFile = imagePickers.logo.file;
         if (logoFile) {
             try { logoUrl = await uploadImageToS3(logoFile, "storefronts/logos"); }
-            catch (err) { alert("Failed to upload logo image. Please try again."); return; }
+            catch (err) { showError("formError", "The logo didn't upload. Try again."); return; }
         }
 
         // upload banner
@@ -141,7 +158,7 @@ form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Creating
         const bannerFile = imagePickers.banner.file;
         if (bannerFile) {
             try { bannerUrl = await uploadImageToS3(bannerFile, "storefronts/banners"); }
-            catch (err) { alert("Failed to upload banner image. Please try again."); return; }
+            catch (err) { showError("formError", "The banner didn't upload. Try again."); return; }
         }
 
         // upload 4 individual preview images - Updated by Day Ekoi 4/20/26
@@ -152,7 +169,7 @@ form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Creating
                 try {
                     previewUrls[i] = await uploadImageToS3(file, "storefronts/previews");
                 } catch (err) {
-                    alert(`Failed to upload preview image ${i + 1}. Please try again.`);
+                    showError("formError", `Preview ${i + 1} didn't upload. Try again.`);
                     return;
                 }
             }
@@ -186,15 +203,16 @@ form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Creating
         const data = await res.json();
 
         if (!res.ok) {
-            alert(data.error || "Failed to create storefront.");
+            showError("formError", data.error || "The storefront wasn't created. Try again.");
             return;
         }
 
-        window.location.href = "/storefronts/dashboard";
+        VaultListingCard.showToast("Storefront created");
+        window.setTimeout(() => { window.location.href = "/storefronts/dashboard"; }, 700);
         return true;
 
     } catch (err) {
         console.error("Error creating storefront:", err);
-        alert("Something went wrong. Please try again.");
+        showError("formError", "Couldn't reach Pirate Market. Check your connection and try again.");
     }
 }));

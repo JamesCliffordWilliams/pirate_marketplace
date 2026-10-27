@@ -3,6 +3,7 @@
 
     The Vault Campus Marketplace
     Created by James Williams - 10/26/26
+    Updated by James Williams - 10/26/26 - several photos at once (onExtraFiles), picker.pick()
     Shared photo picker for the listing, storefront and returns forms.
     - Each .drop-zone is a <label> around its file input, so one click opens one dialog
     - Accepts JPG, PNG, WebP and GIF; says why anything else was refused
@@ -177,7 +178,8 @@
         container.appendChild(wrap);
     }
 
-    // Wires one picker. options.preview: thumbnail container; options.onChange(file, picker)
+    // Wires one picker. options.preview: thumbnail container; options.onChange(file, picker);
+    // options.onExtraFiles(files): more files picked or dropped at once (the page decides where they go)
     function attach(input, options = {}) {
         const zone = input.closest(".drop-zone");
         const message = document.createElement("p");
@@ -211,7 +213,7 @@
 
         async function pick(file) {
             const pickId = ++latestPick;
-            input.value = ""; // lets the same file be picked again
+            input.value = ""; // lets the same file be picked again (also clears a multi-pick)
             picker.showError("");
             zone.classList.add("is-processing");
             zone.setAttribute("aria-busy", "true");
@@ -232,9 +234,15 @@
             }
         }
 
-        input.addEventListener("change", () => {
-            if (input.files && input.files[0]) pick(input.files[0]);
-        });
+        function pickMany(fileList) {
+            const files = Array.from(fileList || []);
+            if (!files.length) return;
+            pick(files[0]);
+            if (files.length > 1 && options.onExtraFiles) options.onExtraFiles(files.slice(1));
+        }
+
+        picker.pick = pick;
+        input.addEventListener("change", () => pickMany(input.files));
         zone.addEventListener("dragover", (event) => {
             event.preventDefault();
             zone.classList.add("dragover");
@@ -243,8 +251,7 @@
         zone.addEventListener("drop", (event) => {
             event.preventDefault();
             zone.classList.remove("dragover");
-            const file = event.dataTransfer && event.dataTransfer.files[0];
-            if (file) pick(file);
+            if (event.dataTransfer) pickMany(event.dataTransfer.files);
         });
         return picker;
     }

@@ -376,8 +376,16 @@ Works with:
         return tile;
     }
 
+    // A storefront cover photo that fails to load is removed and the mosaic re-counts its photos
+    function dropCoverPhoto(img) {
+        const cover = img.parentNode;
+        img.remove();
+        if (cover) cover.dataset.count = String(Math.min(cover.querySelectorAll("img").length, 3));
+    }
+
     window.VaultListingCard = {
         create,
+        dropCoverPhoto,
         addToBag,
         setSaved,
         getCurrentSessionUser,

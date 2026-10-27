@@ -59,7 +59,7 @@ textContent, never as HTML.
       img.src = url;
       img.alt = "";
       img.loading = "lazy";
-      img.addEventListener("error", () => img.remove(), { once: true });
+      img.addEventListener("error", () => VaultListingCard.dropCoverPhoto(img), { once: true });
       cover.appendChild(img);
     });
 

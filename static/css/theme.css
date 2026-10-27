@@ -70,6 +70,7 @@
 
 body.pm {
     margin: 0;
+    padding: 0;
     min-height: 100vh;
     background: var(--pm-harbor);
     color: var(--pm-sail);
@@ -101,6 +102,9 @@ body.pm {
     outline: 2px solid var(--pm-brass);
     outline-offset: 2px;
 }
+
+/* components set display; the hidden attribute must still win */
+.pm [hidden] { display: none !important; }
 
 .pm .pm-visually-hidden {
     position: absolute;
