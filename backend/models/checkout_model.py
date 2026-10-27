@@ -1,10 +1,12 @@
 # The Vault Campus Marketplace
 # CSC 405 Sp 26'
 # Updated by Day Ekoi - 4/22/26 - rewrote to match orders/order_items schema
-
+#Updated by Aniya Hopson - 10/25/26 checkout saves the order and takes stock
 from db import get_connection
 
-
+#-------------------------------------------
+# No longer used 
+# replaced by place_order() in models/order_model.py (Aniya Hopson 10/27/26 
 def create_order(user_id, confirmation_number, buyer_first_name, buyer_last_name,
                  buyer_email, buyer_contact, buyer_meeting_location, total_amount):
     conn = get_connection()
@@ -35,7 +37,9 @@ def create_order(user_id, confirmation_number, buyer_first_name, buyer_last_name
         "created_at": str(row[10]),
     }
 
-
+#-------------------------------------------
+# No longer used 
+# replaced by place_order() in models/order_model.py (Aniya Hopson 10/27/26 
 def create_order_item(order_id, listing_id, item_name, quantity, price_at_purchase, selected_size=None):
     conn = get_connection()
     cur = conn.cursor()
@@ -64,7 +68,8 @@ def get_order_by_confirmation(confirmation_number):
     cur = conn.cursor()
     cur.execute("""
         SELECT id, user_id, confirmation_number, buyer_first_name, buyer_last_name,
-               buyer_email, buyer_contact, buyer_meeting_location, total_amount, order_status, created_at
+                buyer_email, buyer_contact, buyer_meeting_location, total_amount, order_status, created_at,
+                TO_CHAR(expires_at, 'Mon DD, YYYY')
         FROM orders
         WHERE confirmation_number = %s;
     """, (confirmation_number,))
@@ -85,7 +90,8 @@ def get_order_by_confirmation(confirmation_number):
         "total_amount": float(row[8]),
         "order_status": row[9],
         "created_at": str(row[10]),
-    }
+        "pickup_by": row[11],  # Added by Aniya Hopson 10/25/26
+     }
 
 
 def get_order_items_by_order_id(order_id):
@@ -119,7 +125,8 @@ def get_orders_by_user_id(user_id):
     cur = conn.cursor()
     cur.execute("""
         SELECT id, user_id, confirmation_number, buyer_first_name, buyer_last_name,
-               buyer_email, total_amount, order_status, created_at
+               buyer_email, total_amount, order_status, created_at,
+               TO_CHAR(expires_at, 'Mon DD, YYYY')
         FROM orders
         WHERE user_id = %s
         ORDER BY created_at DESC;
@@ -138,6 +145,7 @@ def get_orders_by_user_id(user_id):
             "total_amount": float(r[6]),
             "order_status": r[7],
             "created_at": str(r[8]),
+            "pickup_by": r[9],  # Added by Aniya Hopson 10/25/26
         }
         for r in rows
     ]
@@ -178,6 +186,9 @@ def clear_cart_for_user(user_id):
     conn.close()
     return {"deleted_count": deleted_count}
 
+#-------------------------------------------
+# No longer used 
+# replaced by place_order() in models/order_model.py (Aniya Hopson 10/27/26 
 
 def check_listing_availability(listing_id, quantity_requested):
     """Raises if the listing is sold out or has insufficient stock. Skips made-to-order items."""
@@ -202,7 +213,9 @@ def check_listing_availability(listing_id, quantity_requested):
             f'"{title}" only has {qty_on_hand} in stock (you requested {quantity_requested}).'
         )
 
-
+#-------------------------------------------
+# No longer used
+# replaced by place_order() in models/order_model.py (Aniya Hopson 10/27/26 
 def update_listing_size_inventory(listing_id, size, purchased_qty):
     """Decrements per-size inventory and syncs listing quantity_on_hand after purchase."""
     conn = get_connection()

@@ -1,11 +1,13 @@
-<!--Made by Madison Boyd on  3/23/2026-->
+<!--Made by Madison Boyd on  3/23/2026
+
+-->
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Vault | Account Console</title>
+    <title>Pirate Market | Account Console</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}">
     <style>
         :root { --gold: #B8860B; --dark-bg: #121212; }
@@ -521,8 +523,7 @@
                 row.innerHTML = `
                     <div class="purchase-conf">${order.confirmation_number}</div>
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
-                        <div class="purchase-meta">${date} &nbsp;|&nbsp; ${order.order_status}</div>
-                        <span class="purchase-total">$${parseFloat(order.total_amount).toFixed(2)}</span>
+                    <div class="purchase-meta">${date} &nbsp;|&nbsp; ${order.order_status}${order.order_status === "SUBMITTED" ? ` &nbsp;|&nbsp; Pick up by ${order.pickup_by}` : ""}</div>                        <span class="purchase-total">$${parseFloat(order.total_amount).toFixed(2)}</span>
                     </div>
                     <div class="purchase-meta" style="margin-top:6px;">
                         ${order.buyer_first_name} ${order.buyer_last_name}
