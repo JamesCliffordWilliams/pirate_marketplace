@@ -26,13 +26,13 @@ it also ensures that each card looks correct once a storefront is created and it
 4. Styling of the carousel within the storefront cards, including image size and carousel button styles
 */
 
-/* Shared palette tokens for the blue + gold redesign.
-   Swap these two values to retune the new-palette pieces in one place. */
+/* These are the navy and gold colors for the blue and gold redesign.
+   Change them here to update every place that uses them. */
 :root {
-    --vault-navy: 11, 27, 51;   /* #0B1B33, as RGB parts so it can take an alpha */
-    --vault-gold: 212, 175, 55; /* #D4AF37, as RGB parts so it can take an alpha */
-    /* The background image is dimmed by the 58% black overlay on body, so anything
-       meant to sit flush with the page needs this much darker navy, not --vault-navy */
+    --vault-navy: 11, 27, 51;   /* #0B1B33 as RGB numbers so we can add transparency */
+    --vault-gold: 212, 175, 55; /* #D4AF37 as RGB numbers so we can add transparency */
+    /* This darker navy matches the dimmed background image, so use it
+       for anything that should blend into the page */
     --vault-navy-deep: 0, 7, 19;
 }
 
@@ -212,7 +212,7 @@ body {
 .page-content {
     max-width: 1280px;
     margin: 0 auto;
-    /* Keeps the last row of cards clear of the fixed pagination scrim */
+    /* This keeps the last row of cards from hiding behind the page buttons */
     padding-bottom: 100px;
 }
 
@@ -225,8 +225,7 @@ body {
 }
 */
 
-/* Pagination - pinned to the bottom of the viewport so it is always reachable
-   without scrolling, and no longer attached to the bottom of the card grid */
+/* This pins the page buttons to the bottom of the window so you can always reach them */
 .pagination {
     position: fixed;
     left: 0;
@@ -238,8 +237,7 @@ body {
     flex-wrap: wrap;
     gap: 18px;
     padding: 40px 16px calc(16px + env(safe-area-inset-bottom));
-    /* Faded scrim rather than a solid bar - a flat fill reads as a mismatched
-       strip against the dimmed background, this just deepens what is behind it */
+    /* This fades the background behind the buttons instead of using a solid bar */
     background: linear-gradient(
         to top,
         rgba(var(--vault-navy-deep), 0.95) 0%,
@@ -247,8 +245,8 @@ body {
         rgba(var(--vault-navy-deep), 0) 100%
     );
     z-index: 15;
-    /* The faded top of the scrim is see-through, so let clicks pass through it
-       to the cards underneath - only the controls themselves stay interactive */
+    /* This lets clicks go through the faded part to the cards underneath.
+       Only the buttons themselves can be clicked. */
     pointer-events: none;
 }
 

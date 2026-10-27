@@ -2,7 +2,7 @@
     returns.js
 
     Handles return form interactions and submission.
-    Updated by James Williams - 10/26/26 - shared photo picker, one request per submit; redesign copy
+    Updated by James Williams - 10/26/26 - shared photo picker, one request per submit, simpler wording
 */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         feedback.style.display = "none";
     }
 
-    // Added by James Williams 10/26/26 - shared picker (js/image_uploader.js)
+    // Added by James Williams 10/26/26 - the shared photo picker from image_uploader.js
     const damagePicker = damageInput
         ? window.ImageUploader.attach(damageInput, { preview: damagePreview })
         : null;

@@ -6,7 +6,7 @@
     Created by James Williams - 10/26/26
 
 Description:
-The page for one category or subcategory. The server builds the page layout,
+This is the page for one category or subcategory. The server builds the layout
 and category_listings.js loads the products.
 -->
 {% from "partials/category_icons.html" import category_icon %}
@@ -43,7 +43,7 @@ and category_listings.js loads the products.
     data-logged-in="{{ 'true' if session.get('user') else 'false' }}"
   >
 
-    <!-- Breadcrumb: All Categories › Parent [› Sub] -->
+    <!-- This shows the path back to All Categories -->
     <nav class="cat-breadcrumb" aria-label="Breadcrumb">
       <ol>
         <li><a href="{{ url_for('category_pages_bp.categories_page') }}">All categories</a></li>
@@ -96,7 +96,7 @@ and category_listings.js loads the products.
       </label>
     </div>
 
-    <!-- Products (placeholders show while loading) -->
+    <!-- This is the product grid. Placeholders show while it loads. -->
     <section class="cat-listing-grid pm-grid" id="categoryGrid" aria-busy="true" aria-label="{{ current.name }} products">
       {% for _ in range(8) %}
       <div class="cat-skeleton-card" aria-hidden="true">

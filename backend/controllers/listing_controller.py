@@ -3,8 +3,8 @@
 # Created by Day Ekoi - Iteration 3 
 # Dates: 2/25-2/26
 # Updated by Day Ekoi - Iteration 5 4/10/26 - S3 image upload integration
-# Updated by James Williams - 10/26/26 - required categories; the form create checks everything before
-#   uploading and saves the listing, photos and sizes together, once per request key
+# Updated by James Williams - 10/26/26 - listings need a category now. The form create checks everything
+#   before uploading and saves the listing, photos and sizes all at once
 
 """
 controllers/listing_controller.py
@@ -143,8 +143,8 @@ def create_listing_from_form():
         elif quantity_on_hand is None:
             quantity_on_hand = 0
 
-        # Updated by James Williams 10/26/26 - everything is checked before any upload, then
-        # the listing, images and sizes are saved together, once per Idempotency-Key
+        # Updated by James Williams 10/26/26 - checks everything before uploading, then saves the listing,
+        # photos and sizes all at once. The Idempotency-Key stops the same request from making two listings
         key = parse_idempotency_key(request.headers.get("Idempotency-Key"))
 
         upload_files = [f for f in request.files.getlist("listing_images") if f and f.filename]
@@ -170,7 +170,7 @@ def create_listing_from_form():
             "category_id": request.form.get("category_id"),
         })
 
-        # Per-size quantity if provided, else the total
+        # Uses each size's own quantity if there is one, otherwise the total
         size_rows = []
         for size in sizes_available:
             if size is None or str(size).strip() == "":
@@ -187,7 +187,7 @@ def create_listing_from_form():
     except CreateError as e:
         return jsonify({"error": str(e)}), e.status
     except RequestEntityTooLarge:
-        raise  # app-level 413 handler explains the limit
+        raise  # the 413 handler in app.py shows the size limit message
     except Exception as e:
         msg = str(e).lower()
         if "unauthorized" in msg:

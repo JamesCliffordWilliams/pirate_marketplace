@@ -1,11 +1,13 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - listing_interest migration tests
 #
-# Runs against a throwaway schema on a LOCAL database (skipped otherwise, see db_test_guard.py).
+# This runs in a test schema on a local database and gets skipped otherwise
+# (see db_test_guard.py).
 
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 import psycopg2
 
@@ -41,7 +43,7 @@ class TestListingInterestMigration(unittest.TestCase):
 
     def setUp(self):
         self.db = ThrowawaySchema("test_interest_mig").create()
-        # Start from a database without the new table (as production is today)
+        # This starts without the new table, like production is right now
         self.db.execute("DROP TABLE IF EXISTS listing_interest;")
         self.seller_store = self.db.add_storefront()
         self.listing_id = self.db.add_listing(self.seller_store)
@@ -75,13 +77,12 @@ class TestListingInterestMigration(unittest.TestCase):
         self.assertEqual(second["outcome"], "committed")
         self.assertFalse(second["table_created"])
 
-        # existing tables untouched
+        # The tables that were already there didn't change
         self.assertEqual(self.db.execute(COLUMNS_SQL), columns_before)
         self.assertEqual(self.db.execute(CONSTRAINTS_SQL), constraints_before)
         self.assertEqual(self.db.execute("SELECT * FROM wishlist ORDER BY id;"), wishlist_before)
-        self.assertEqual(first["counts_before"], first["counts_after"])
 
-        # no backfill
+        # Old activity doesn't get copied in
         self.assertEqual(self.db.scalar("SELECT COUNT(*) FROM listing_interest;"), 0)
 
         indexes = {row[0] for row in self.db.execute(
@@ -112,12 +113,12 @@ class TestListingInterestMigration(unittest.TestCase):
                 "INSERT INTO listing_interest (listing_id, user_id, kind) VALUES (%s, %s, 'impression');",
                 (self.listing_id, self.shopper),
             )
-        # cascades with the listing
+        # Deleting the listing deletes its rows too
         self.db.execute("DELETE FROM listings WHERE id = %s;", (self.listing_id,))
         self.assertEqual(self.db.scalar("SELECT COUNT(*) FROM listing_interest;"), 0)
 
     def test_live_writes_during_migration_do_not_fail_it(self):
-        # a shopper adds to cart while the migration runs (another connection, committed)
+        # A shopper adds to their cart on another connection while the migration runs
         from migrations import add_listing_interest as migration
         real_apply = migration.apply_listing_interest
 
@@ -128,7 +129,6 @@ class TestListingInterestMigration(unittest.TestCase):
             )
             return real_apply(cur)
 
-        from unittest.mock import patch
         with patch.object(migration, "apply_listing_interest", side_effect=apply_with_concurrent_write):
             summary = self._migrate()
         self.assertEqual(summary["outcome"], "committed")

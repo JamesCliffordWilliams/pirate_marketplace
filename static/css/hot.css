@@ -4,11 +4,11 @@
     The Vault Campus Marketplace
     CSC 405 Sp 26'
     Created by James Williams - 10/26/26
-    Updated by James Williams - 10/26/26 - rewritten for the Pirate Market redesign (body.pm)
+    Updated by James Williams - 10/26/26 - rewritten for the Pirate Market redesign
 
 Description:
-Styles for the Hot page. The frame, skeletons and states come from categories.css;
-product tiles and the grid come from theme.css.
+This styles the Hot page. Most of the layout comes from categories.css
+and the product tiles come from theme.css.
 */
 
 .pm .hot-how { margin-top: 12px; max-width: 68ch; }

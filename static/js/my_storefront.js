@@ -7,13 +7,13 @@
     Implemented & Updated by Day Ekoi - Iteration 5 - 4/9/2026
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - added deactivate storefront button handler
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - guarded optional dashboard buttons after layout cleanup
-    Updated by James Williams - 10/26/26 - listing cards show their category; banner for listings in "Other"
-    Updated by James Williams - 10/26/26 - redesign: listings table with status and quick actions;
-    built with DOM methods (no HTML strings); toasts instead of alerts. Requests are unchanged.
+    Updated by James Williams - 10/26/26 - listings show their category, plus a banner for listings in "Other"
+    Updated by James Williams - 10/26/26 - redesign with a listings table and quick buttons, and small pop-up
+    messages instead of alerts. The requests didn't change.
 
 Description:
-The seller dashboard: the user's storefront and their listings, with Edit, Hide/Show, Delete,
-Edit storefront, Add listing, View storefront and Deactivate storefront.
+This is the seller dashboard. It shows your storefront and your listings, with buttons to
+edit, hide, delete and add listings, and to edit, view or deactivate the storefront.
 */
 
 (function () {
@@ -43,7 +43,7 @@ Edit storefront, Add listing, View storefront and Deactivate storefront.
         return !item.category || item.category.slug === OTHER_CATEGORY_SLUG;
     }
 
-    // Listings in "Other" are hard to find in the category pages; nudge the seller
+    // Listings in "Other" are hard to find on the category pages, so this shows the seller a reminder
     function renderCategoryReminder(listings) {
         let banner = document.getElementById("categoryReminderBanner");
         const inOther = listings.filter(isInOtherCategory);

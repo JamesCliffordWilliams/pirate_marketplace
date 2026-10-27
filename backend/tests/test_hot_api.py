@@ -1,8 +1,9 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - Hot service, cache, API and page
 #
-# TestHotServiceOffline / TestHotApiOffline: model layer mocked (no database).
-# TestHotOnDatabase: throwaway schema on a LOCAL database (skipped otherwise, see db_test_guard.py).
+# The offline tests fake the database calls, so they don't need a database.
+# The database tests use a test schema on a local database and get skipped
+# otherwise (see db_test_guard.py).
 
 import json
 import os
@@ -21,7 +22,6 @@ for path in (PROJECT_ROOT, BACKEND_ROOT):
 from tests.db_test_guard import require_local_db
 from tests.hot_test_db import ThrowawaySchema
 from app import create_app
-from config import hot_ranking as cfg
 from services import hot_service
 
 
@@ -58,7 +58,7 @@ class FakeModels:
 
     def browse_public_listings(self, listing_ids=None, available_only=False, limit=24, **kwargs):
         self.browse_calls.append((list(listing_ids), available_only))
-        found = [self.cards[i] for i in sorted(listing_ids) if i in self.cards]   # not in ranked order
+        found = [self.cards[i] for i in sorted(listing_ids) if i in self.cards]   # comes back out of ranked order on purpose
         return found, len(found)
 
     def patch(self, test):
@@ -85,7 +85,7 @@ class TestHotServiceOffline(unittest.TestCase):
         first = self.ids(hot_service.get_hot_page_data())
         self.assertEqual(first["hot"], [1, 4, 3, 2])
 
-        # listing 1 sells out: still in the cached ranking, gone from the fresh read
+        # Listing 1 sells out. It's still in the cached ranking but shouldn't show up
         del fake.cards[1]
         second = self.ids(hot_service.get_hot_page_data())
         self.assertEqual(fake.event_calls, 1)
@@ -98,7 +98,7 @@ class TestHotServiceOffline(unittest.TestCase):
         clock = [1000.0]
         with patch.object(hot_service.time, "monotonic", side_effect=lambda: clock[0]):
             hot_service.get_hot_page_data()
-            clock[0] += cfg.CACHE_SECONDS - 1
+            clock[0] += hot_service.CACHE_SECONDS - 1
             hot_service.get_hot_page_data()
             self.assertEqual(fake.event_calls, 1)
             clock[0] += 2
@@ -121,14 +121,6 @@ class TestHotServiceOffline(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 hot_service.get_hot_page_data()
 
-    def test_cached_value_cannot_be_changed_by_callers(self):
-        fake = FakeModels(hot_events(1, 1), [card(1)])
-        fake.patch(self)
-        hot_service.get_hot_page_data()
-        cached = hot_service._ranking_cache.peek()
-        with self.assertRaises((TypeError, AttributeError)):
-            cached["hot"].append({"listing_id": 99})
-
     def test_ranked_order_preserved(self):
         events = hot_events(5, 5, engagers=3) + hot_events(9, 9, engagers=6) + hot_events(7, 7, engagers=4)
         fake = FakeModels(events, [card(5, 5), card(7, 7), card(9, 9)])
@@ -139,14 +131,6 @@ class TestHotServiceOffline(unittest.TestCase):
         fake = FakeModels([], [])
         fake.patch(self)
         self.assertEqual(self.ids(hot_service.get_hot_page_data()), {"hot": [], "rising": []})
-
-    def test_fork_gets_a_fresh_cache(self):
-        fake = FakeModels(hot_events(1, 1), [card(1)])
-        fake.patch(self)
-        hot_service.get_hot_page_data()
-        self.assertIsNotNone(hot_service._ranking_cache.peek())
-        hot_service._ranking_cache.reset_after_fork()
-        self.assertIsNone(hot_service._ranking_cache.peek())
 
 
 class TestHotApiOffline(unittest.TestCase):
@@ -181,7 +165,7 @@ class TestHotApiOffline(unittest.TestCase):
         self.assertEqual(response.get_json(), {"error": "Couldn't load the Hot page. Please try again."})
         self.assertNotIn("db.internal.example", response.get_data(as_text=True))
         self.assertIsNone(response.headers.get("Cache-Control"))
-        # the real error is kept in the server log
+        # The real error still goes to the server log
         self.assertIn("db.internal.example", "\n".join(logs.output))
 
     def test_page_renders(self):
@@ -200,7 +184,7 @@ class TestHotApiOffline(unittest.TestCase):
             self.assertIn(asset, html)
 
     def test_every_nav_link_reaches_a_route(self):
-        # Updated by James Williams 10/26/26 - new header, drawer and footer link only to real pages
+        # Updated by James Williams 10/26/26 - the new header, menu and footer only link to real pages
         import re
         from controllers import category_controller
         with patch.object(category_controller, "get_category_tree_service", return_value=[]):
@@ -211,14 +195,14 @@ class TestHotApiOffline(unittest.TestCase):
             shell = html[html.index('<header class="pm pm-header">'):html.index('<span id="main"')]
             shell += html[html.index('<footer class="pm pm-footer">'):]
             links = set(re.findall(r'href="(/[^"#?]*)"', shell))
-            # the old menu's items, Home first (Updated by James Williams 10/26/26)
+            # These are the old menu's links, Home first (Updated by James Williams 10/26/26)
             for href in ("/storefronts", "/storefronts/create", "/listings/create", "/my-storefront",
                          "/categories", "/hot", "/returns"):
                 self.assertIn(href, links, path)
             self.assertFalse(any(link.startswith("/categories/") for link in links), path)
             for link in links:
                 with self.subTest(page=path, link=link):
-                    adapter.match(link, method="GET")  # raises NotFound for a dead link
+                    adapter.match(link, method="GET")  # this fails on a dead link
             for dead in ("Explore Brands", "New Drops", "Sitemap"):
                 self.assertNotIn(dead, html)
 
@@ -262,13 +246,13 @@ class TestHotOnDatabase(unittest.TestCase):
         self.assertEqual(set(data["hot"][0]), expected_keys)
 
     def test_unavailable_listings_never_appear_even_from_cache(self):
-        self.assertEqual(len(self.api()["hot"]), 4)     # warms the cache
+        self.assertEqual(len(self.api()["hot"]), 4)     # this fills the cache
         sold_out, deleted, inactive, closed_store_listing = self.listings
         self.db.execute("UPDATE listings SET status = 'SOLD_OUT' WHERE id = %s;", (sold_out,))
         self.db.execute("UPDATE listings SET status = 'DELETED' WHERE id = %s;", (deleted,))
         self.db.execute("UPDATE listings SET status = 'INACTIVE' WHERE id = %s;", (inactive,))
         self.db.execute("UPDATE storefronts SET is_active = FALSE WHERE id = %s;", (self.stores[3],))
-        self.assertIsNotNone(hot_service._ranking_cache.peek())
+        self.assertIsNotNone(hot_service._cached_ranking)
         data = self.api()
         shown = [c["id"] for section in data.values() for c in section]
         for listing in self.listings:

@@ -1,7 +1,7 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - storefront covers and the product page
 #
-# Runs in a throwaway schema on a local database.
+# This runs in a test schema on a local database.
 
 import os
 import sys
@@ -86,7 +86,7 @@ class TestShopping(unittest.TestCase):
         self.assertIn("Von Dutch", html)
         self.assertIn(f'href="/storefronts/{store}"', html)
         self.assertIn('value="M"', html)                      # size chip from listing_sizes
-        self.assertIn("Barely worn &lt;b&gt;hat&lt;/b&gt;", html)  # escaped
+        self.assertIn("Barely worn &lt;b&gt;hat&lt;/b&gt;", html)  # HTML in the description gets escaped
         self.assertIn("https://img/hat.jpg", html)
         self.assertIn(f'data-listing-id="{listing}"', html)
 

@@ -4,15 +4,13 @@
 """
 services/listing_create_service.py
 
-Purpose:
-Creates a listing with its images and sizes all-or-nothing, and at most once per
-(user, request key), so a double-clicked or retried request can't make duplicates.
+Saves the listing, its photos and sizes all at once, so it either all saves or nothing does.
+Each request has a key so a double click or a retry can't make two listings.
 
-Flow: claim the key -> upload images (each S3 key is recorded) -> insert listing,
-images and sizes in one transaction -> mark the claim COMPLETE. On any failure the
-transaction rolls back, this request's uploads are deleted, and the claim is FAILED.
-uploaded_keys always lists S3 objects that aren't attached to a listing yet, which is
-what scripts/cleanup_listing_uploads.py removes.
+First it claims the key, then uploads the photos, then saves everything and marks the request COMPLETE.
+If something fails, nothing is saved, the uploaded photos get deleted and the request is marked FAILED.
+Any photos that are uploaded but not on a listing yet are kept in uploaded_keys,
+and scripts/cleanup_listing_uploads.py deletes those later.
 """
 
 import hashlib
@@ -23,11 +21,13 @@ from db import get_connection
 from models import listing_model
 from utils import s3
 
-STALE_AFTER = "2 minutes"  # a PENDING claim older than this is from a request that died
+STALE_AFTER = "2 minutes"  # if a PENDING request is older than this, it probably crashed
+
+STILL_RUNNING = "This listing is still being created. Please wait a moment."
 
 
 class CreateError(Exception):
-    """A failure with a message for the user and an HTTP status."""
+    """An error with a message for the user and an HTTP status code."""
 
     def __init__(self, message, status):
         super().__init__(message)
@@ -35,7 +35,7 @@ class CreateError(Exception):
 
 
 def parse_idempotency_key(raw):
-    """Returns the key as a string, None when the client didn't send one (older pages)."""
+    """Returns the key as a string, or None if the page didn't send one."""
     if not raw:
         return None
     try:
@@ -45,6 +45,7 @@ def parse_idempotency_key(raw):
 
 
 def _request_hash(fields, sizes, files):
+    """Makes a fingerprint of the form and photos so we can tell if a key gets reused for something else."""
     digest = hashlib.sha256(json.dumps([fields, sizes], sort_keys=True, default=str).encode())
     for file in files:
         digest.update(hashlib.sha256(file.read()).digest())
@@ -53,7 +54,7 @@ def _request_hash(fields, sizes, files):
 
 
 def _claim(cur, user_id, key, request_hash):
-    """Returns None when this request owns the key, or (listing, status) to send back instead."""
+    """Returns None if this request gets the key. Otherwise returns the listing and status to send back."""
     cur.execute("""
         INSERT INTO listing_create_requests (user_id, idempotency_key, request_hash, status)
         VALUES (%s, %s, %s, 'PENDING')
@@ -63,14 +64,14 @@ def _claim(cur, user_id, key, request_hash):
     if cur.fetchone():
         return None
 
-    cur.execute(f"""
-        SELECT request_hash, status, listing_id, updated_at < now() - interval '{STALE_AFTER}'
+    cur.execute("""
+        SELECT request_hash, status, listing_id
         FROM listing_create_requests WHERE user_id = %s AND idempotency_key = %s;
     """, (user_id, key))
     row = cur.fetchone()
     if row is None:
-        raise CreateError("This listing is still being created. Please wait a moment.", 409)
-    saved_hash, status, listing_id, stale = row
+        raise CreateError(STILL_RUNNING, 409)
+    saved_hash, status, listing_id = row
 
     if saved_hash != request_hash:
         raise CreateError("This request key was already used for a different listing.", 422)
@@ -80,20 +81,21 @@ def _claim(cur, user_id, key, request_hash):
             raise CreateError("This listing was already created and has since been removed.", 409)
         return listing, 200
 
-    # FAILED, or PENDING from a request that died: take it over (only one request can win)
-    cur.execute(f"""
+    # If the old request FAILED or crashed, this one takes over. Only one request can do this
+    cur.execute("""
         UPDATE listing_create_requests
         SET status = 'PENDING', error = NULL, updated_at = now()
         WHERE user_id = %s AND idempotency_key = %s
-          AND (status = 'FAILED' OR (status = 'PENDING' AND updated_at < now() - interval '{STALE_AFTER}'))
+          AND (status = 'FAILED' OR (status = 'PENDING' AND updated_at < now() - %s::interval))
         RETURNING 1;
-    """, (user_id, key))
+    """, (user_id, key, STALE_AFTER))
     if cur.fetchone() is None:
-        raise CreateError("This listing is still being created. Please wait a moment.", 409)
+        raise CreateError(STILL_RUNNING, 409)
     return None
 
 
-def _insert_all(conn, fields, image_urls, sizes, claim):
+def _save_listing(conn, user_id, key, fields, image_urls, sizes):
+    """Saves the listing, photos and sizes in one transaction and marks the request COMPLETE."""
     conn.autocommit = False
     try:
         with conn.cursor() as cur:
@@ -102,14 +104,15 @@ def _insert_all(conn, fields, image_urls, sizes, claim):
                 listing_model.insert_listing_image(cur, listing["id"], url, is_primary=(index == 0))
             for size, quantity in sizes:
                 listing_model.insert_listing_size(cur, listing["id"], size, quantity)
-            if claim:
+            if key:
+                # These photos are on the listing now, so the cleanup script should leave them alone
                 used = [s3.key_from_url(url) for url in image_urls]
                 cur.execute("""
                     UPDATE listing_create_requests
                     SET status = 'COMPLETE', listing_id = %s, uploaded_keys = uploaded_keys - %s::text[],
                         updated_at = now()
                     WHERE user_id = %s AND idempotency_key = %s;
-                """, (listing["id"], used, *claim))
+                """, (listing["id"], used, user_id, key))
         conn.commit()
         return listing
     except Exception:
@@ -121,15 +124,14 @@ def _insert_all(conn, fields, image_urls, sizes, claim):
 
 def create_listing_once(user_id, key, fields, sizes, files):
     """
-    fields: build_listing_fields() output; sizes: [(size, quantity)]; files: uploaded images,
-    first is primary. Returns (listing, http_status). Raises CreateError or the original error.
+    Creates the listing once and returns (listing, http_status).
+    fields comes from build_listing_fields(), sizes is a list of (size, quantity), and the first file is the main photo.
     """
-    claim = (user_id, key) if key else None
     conn = get_connection()
-    conn.autocommit = True  # claim and upload records are saved right away
+    conn.autocommit = True  # saves the claim and each upload right away
     try:
         with conn.cursor() as cur:
-            if claim:
+            if key:
                 replay = _claim(cur, user_id, key, _request_hash(fields, sizes, files))
                 if replay:
                     return replay
@@ -141,22 +143,25 @@ def create_listing_once(user_id, key, fields, sizes, files):
                     if not url:
                         raise CreateError(f"Image {number} couldn't be uploaded. Nothing was saved; please try again.", 500)
                     image_urls.append(url)
-                    if claim:
+                    if key:
+                        # Remembers the photo so the cleanup script can find it if we crash
                         cur.execute("""
                             UPDATE listing_create_requests
                             SET uploaded_keys = uploaded_keys || jsonb_build_array(%s::text), updated_at = now()
                             WHERE user_id = %s AND idempotency_key = %s;
-                        """, (s3.key_from_url(url), *claim))
-                return _insert_all(conn, fields, image_urls, sizes, claim), 201
+                        """, (s3.key_from_url(url), user_id, key))
+                return _save_listing(conn, user_id, key, fields, image_urls, sizes), 201
             except Exception as error:
-                deleted = [k for k in (s3.key_from_url(url) for url in image_urls) if s3.delete_image_from_s3(k)]
-                if claim:
+                # Deletes the photos we uploaded. Any that don't delete stay in uploaded_keys for the cleanup script
+                uploaded_keys = [s3.key_from_url(url) for url in image_urls]
+                deleted = [k for k in uploaded_keys if s3.delete_image_from_s3(k)]
+                if key:
                     cur.execute("""
                         UPDATE listing_create_requests
                         SET status = 'FAILED', error = %s, uploaded_keys = uploaded_keys - %s::text[],
                             updated_at = now()
                         WHERE user_id = %s AND idempotency_key = %s;
-                    """, (str(error)[:500], deleted, *claim))
+                    """, (str(error)[:500], deleted, user_id, key))
                 raise
     finally:
         conn.close()

@@ -1,9 +1,9 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - category page tests
 #
-# TestCategoryPagesOffline renders the real templates with the category data
-# mocked (no database). TestCategoryPagesOnDatabase repeats the key checks
-# against a LOCAL migrated database (skipped otherwise).
+# The offline tests render the real pages with fake category data, so no database.
+# The database tests repeat the main checks on a local migrated database and
+# get skipped otherwise.
 
 import os
 import re
@@ -25,7 +25,7 @@ from services import category_service
 
 
 def build_fake_db():
-    """Turns the config taxonomy into the rows the category model would return."""
+    """Turns the category list in config into the rows the database would return."""
     tree, by_slug, children_of = [], {}, {}
     next_id = 1
     for p_index, parent in enumerate(PRODUCT_CATEGORIES, start=1):
@@ -85,7 +85,7 @@ class TestCategoryPagesOffline(unittest.TestCase):
         self.assertEqual(html.count('class="cat-card"'), 12)
         self.assertIn("Laptops &amp; Computers, Phones, Tablets &amp; eReaders…", html)
         self.assertIn("Everything else.", html)
-        self.assertIn('href="/categories"', html)  # nav link from the shared partial
+        self.assertIn('href="/categories"', html)  # link from the shared nav
 
     def test_parent_page(self):
         laptops = self.by_slug["laptops-and-computers"]["id"]
@@ -95,7 +95,7 @@ class TestCategoryPagesOffline(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertIn('data-slug="electronics-and-technology"', html)
         self.assertIn("All Electronics &amp; Technology", html)
-        # only leaves with visible items get chips
+        # Only subcategories that have items get a chip
         self.assertIn('/categories/electronics-and-technology/laptops-and-computers"', html)
         self.assertNotIn('/categories/electronics-and-technology/phones"', html)
         self.assertIn("3 items", html)
@@ -150,7 +150,7 @@ class TestCategoryPagesOffline(unittest.TestCase):
         response = self.client.get("/storefronts")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        # Updated by James Williams 10/26/26 - new header: links only to pages that exist
+        # Updated by James Williams 10/26/26 - the new header only links to pages that exist
         self.assertIn('href="/categories">All categories</a>', html)
         self.assertIn('href="/hot"', html)
         for dead in ("Explore Brands", "New Drops", "Sitemap"):
@@ -181,7 +181,7 @@ class TestCategoryPagesOffline(unittest.TestCase):
                 self.assertIn('id="categoryPicker"', html)
                 self.assertIn('name="category_id"', html)
                 self.assertLess(html.index("js/category_picker.js"), html.index("js/create_listing.js"))
-                # placed after Listing Name and before Available Sizes
+                # The picker goes after Listing Name and before Available Sizes
                 self.assertLess(html.index('id="listingName"'), html.index('id="categoryPicker"'))
                 self.assertLess(html.index('id="categoryPicker"'), html.index('id="multiSizeGrid"'))  # Updated by James Williams 10/26/26
 

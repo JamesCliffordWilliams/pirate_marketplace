@@ -3,11 +3,8 @@
 
     Pirate Market
     Created by James Williams - 10/26/26
-    Shared by the seller pages (listing fields come from partials/listing_form.html):
-    - photoTiles(): the four photo tiles (several files at once fill the empty tiles, remove buttons)
-    - showError() / clearErrors(): inline field errors instead of alert()
-    - renderPreview(): the live product tile beside the form, built by VaultListingCard
-    - renderFacade(): the live storefront facade beside the storefront form
+    This is shared code for the seller pages. It has the four photo tiles, the sizes, the error messages
+    under each field, and the live previews that show up next to the form.
 */
 
 (function () {
@@ -25,8 +22,8 @@
         form.querySelectorAll(".pm-error").forEach((error) => showError(error.id, ""));
     }
 
-    // inputs: the 4 file inputs. options.onChange(file, picker) runs after any tile changes.
-    function photoTiles(inputs, options = {}) {
+    // This sets up the four photo tiles. onChange runs whenever a tile changes
+    function photoTiles(inputs, onChange) {
         const pickers = [];
 
         function isOpen(picker) {
@@ -51,22 +48,60 @@
             const remove = tile.querySelector("[data-remove-slot]");
             const picker = window.ImageUploader.attach(input, {
                 onExtraFiles: fillEmpty,
-                onChange: (file, changed) => {
+                onChange: (file) => {
                     remove.hidden = !file;
                     tile.classList.toggle("has-photo", Boolean(file));
                     if (file) showError("photosError", "");
-                    if (options.onChange) options.onChange(file, changed);
+                    onChange();
                 }
             });
-            picker.input = input;
             remove.addEventListener("click", () => picker.clear());
             pickers.push(picker);
         });
         return pickers;
     }
 
+    // This shows or hides the stock box next to each size when it's checked
+    function watchSizeBoxes(multiSizeGrid) {
+        multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach((cb) => {
+            cb.addEventListener("change", () => {
+                const qtyInput = cb.closest(".size-qty-row").querySelector(".size-qty-input");
+                qtyInput.style.display = cb.checked ? "inline-block" : "none";
+                if (cb.checked) qtyInput.focus(); else qtyInput.value = "";
+            });
+        });
+    }
+
+    // Reads the sizes and how many of each. Made to order listings always save 0.
+    // If something is wrong it calls fail(errorId, message, field) like the other checks on the page
+    function readSizes({ oneSizeToggle, oneSizeQty, multiSizeGrid, isMadeToOrder }, fail) {
+        let sizes = [];
+        const sizeQuantities = {};
+        if (oneSizeToggle.checked) {
+            const qty = parseInt(oneSizeQty.value || "0", 10);
+            if (!isMadeToOrder && (isNaN(qty) || qty < 0)) fail("sizesError", "Enter how many you have (0 or more).", oneSizeQty);
+            sizes = ["One Size"];
+            sizeQuantities["One Size"] = isMadeToOrder ? 0 : (qty || 0);
+        } else {
+            sizes = Array.from(multiSizeGrid.querySelectorAll('input[name="sizes"]:checked')).map((cb) => cb.value);
+            if (!sizes.length) {
+                fail("sizesError", "Pick at least one size, or turn on One size.", multiSizeGrid.querySelector('input[name="sizes"]'));
+            }
+            for (const size of sizes) {
+                const qtyInput = multiSizeGrid.querySelector(`.size-qty-input[data-size="${size}"]`);
+                const qty = parseInt(qtyInput.value, 10);
+                if (!isMadeToOrder && (isNaN(qty) || qty < 0)) {
+                    fail("sizesError", `Enter how many you have in size ${size} (0 or more).`, qtyInput);
+                    break;
+                }
+                sizeQuantities[size] = isMadeToOrder ? 0 : (isNaN(qty) ? 0 : qty);
+            }
+        }
+        const totalQty = isMadeToOrder ? 0 : Object.values(sizeQuantities).reduce((a, b) => a + b, 0);
+        return { sizes, sizeQuantities, totalQty };
+    }
+
     async function renderPreview(container, { title, price, image, store }) {
-        if (!container || !window.VaultListingCard) return;
         const tile = await VaultListingCard.create({
             id: 0,
             title: title || "Listing name",
@@ -78,7 +113,7 @@
         container.replaceChildren(tile);
     }
 
-    // Storefront editors: the facade preview (cover photos, logo medallion, name)
+    // This builds the store cover preview with the photos, logo and name
     function renderFacade({ name, logo, images, banner }) {
         const cover = document.getElementById("facadeCover");
         const medallion = document.getElementById("facadeLogo");
@@ -101,5 +136,5 @@
         }
     }
 
-    window.SellerForm = { photoTiles, showError, clearErrors, renderPreview, renderFacade };
+    window.SellerForm = { photoTiles, watchSizeBoxes, readSizes, showError, clearErrors, renderPreview, renderFacade };
 })();

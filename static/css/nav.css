@@ -2,9 +2,9 @@
     nav.css
 
     Pirate Market
-    Created by James Williams - 10/26/26 (top bar and side menu rules moved here from storefront.css)
-    Header, category bar, drawer menu and footer from partials/site_nav.html and site_footer.html.
-    Uses the tokens in theme.css. Written to hold up on pages that still use their old styles.
+    Created by James Williams - 10/26/26 (top bar and side menu moved here from storefront.css)
+    This styles the shared header, category bar, side menu and footer.
+    It also works on pages that still use their old styles.
 */
 
 .pm-header,
@@ -35,7 +35,7 @@
 
 /* ---------- header ---------- */
 
-/* pages not yet on theme.css pad the top of <body>; keep the header flush with the top */
+/* This keeps the header at the very top on pages that still use their old styles */
 body:not(.pm):has(> .pm-header) { padding-top: 0; }
 body:not(.pm) > .pm-header { margin-bottom: 28px; }
 
@@ -64,7 +64,7 @@ body:not(.pm) > .pm-header { margin-bottom: 28px; }
     position: relative;
     flex: 1;
     max-width: 480px;
-    margin: 0; /* lines up with the first tab (Home) */
+    margin: 0; /* This lines up with the Home tab */
 }
 
 .pm-header .pm-header__search svg {
@@ -143,7 +143,7 @@ body:not(.pm) > .pm-header { margin-bottom: 28px; }
     font-variant-numeric: tabular-nums;
 }
 
-/* three lines that turn into an x while the drawer is open */
+/* This is the menu button. Its three lines turn into an X while the menu is open */
 .pm-burger { position: relative; display: block; width: 20px; height: 14px; }
 
 .pm-burger span {
@@ -190,7 +190,7 @@ body:not(.pm) > .pm-header { margin-bottom: 28px; }
 .pm-catbar a[aria-current="page"] { color: var(--pm-sail); border-bottom-color: var(--pm-brass); }
 .pm-catbar a:focus-visible { outline: 2px solid var(--pm-brass); outline-offset: -2px; }
 
-/* ---------- drawer ---------- */
+/* ---------- side menu ---------- */
 
 .pm-overlay {
     position: fixed;
@@ -253,8 +253,7 @@ body.pm-scroll-locked { overflow: hidden; }
 
 /* ---------- footer ---------- */
 
-/* redesigned pages: the footer sits at the bottom of short pages, and the page's own bottom
-   padding is the only gap above it (no extra scrolling to reach it) */
+/* This keeps the footer at the bottom of short pages without extra scrolling */
 body.pm:not(.pm-entry) { display: flex; flex-direction: column; }
 body.pm > .pm-footer { margin-top: auto; }
 
@@ -281,7 +280,7 @@ body.pm > .pm-footer { margin-top: auto; }
 .pm-footer nav a { color: var(--pm-fog); font-size: var(--pm-t14); text-decoration: none; }
 .pm-footer nav a:hover { color: var(--pm-sail); text-decoration: underline; }
 
-/* ---------- narrow screens: drawer replaces the category bar ---------- */
+/* ---------- small screens: the side menu replaces the category bar ---------- */
 
 @media (max-width: 899px) {
     .pm-header .pm-header__menu { display: inline-grid; }

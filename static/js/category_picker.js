@@ -6,10 +6,10 @@
     Created by James Williams - 10/26/26
 
 Description:
-The searchable category picker on the Create Listing and Edit Listing forms.
-Sellers can only pick a subcategory (or "Other"), never a main category.
-Typing filters the list; arrow keys move, Enter picks, Escape closes.
-Use CategoryPicker.mount(element, options) to add it to a page.
+This is the category search box on the Create Listing and Edit Listing forms.
+Sellers can only pick a subcategory or "Other", not a main category.
+You type to search, use the arrow keys to move, Enter to pick and Escape to close.
+Pages add it with CategoryPicker.mount(element, options).
 
 Works with:
 - category_picker.css
@@ -17,10 +17,8 @@ Works with:
 */
 
 (function () {
-    const ENDPOINT = "/api/categories";
     const PATH_SEPARATOR = " › ";
-    const NO_MATCH_TEXT = "No matching categories. Try a broader term or choose Other.";
-    let instanceCount = 0;
+    let pickerCount = 0;
 
     // ________________________________________________________
     // HELPERS (also used by the tests)
@@ -35,55 +33,44 @@ Works with:
             .trim();
     }
 
-    function queryTerms(query) {
-        const normalized = normalize(query);
-        return normalized ? normalized.split(" ") : [];
-    }
-
-    // True if every search word is in the name, the main category name, or the keywords
-    function leafMatches(leaf, parent, terms) {
-        if (!terms.length) return true;
-        const haystack = [
-            normalize(leaf.name),
-            parent ? normalize(parent.name) : "",
-            ...(leaf.keywords || []).map(normalize)
-        ].join(" | ");
-        return terms.every((term) => haystack.includes(term));
-    }
-
-    // Turns the category tree into the list the picker shows
+    // Turns the category tree into the list the picker shows.
+    // Main categories become groups, and a category with no children (like Other) is a normal option
     function buildEntries(tree) {
         const entries = [];
         (tree || []).forEach((node) => {
             const children = Array.isArray(node.children) ? node.children : [];
             if (children.length) {
-                entries.push({
-                    type: "group",
-                    node,
-                    leaves: children.filter((child) => child.is_selectable !== false)
-                });
+                entries.push({ type: "group", node, leaves: children.filter((child) => child.is_selectable !== false) });
             } else if (node.is_selectable !== false) {
-                entries.push({ type: "leaf", node, parent: null });
+                entries.push({ type: "leaf", node });
             }
         });
         return entries;
     }
 
-    // Returns the categories that match the search
+    // Returns the categories that match the search. Every search word has to be in the
+    // category name, its main category name, or its keywords
     function filterEntries(entries, query) {
-        const terms = queryTerms(query);
+        const searchText = normalize(query);
+        const terms = searchText ? searchText.split(" ") : [];
+        const matches = (leaf, parent) => {
+            const haystack = [normalize(leaf.name), parent ? normalize(parent.name) : "", ...(leaf.keywords || []).map(normalize)].join(" | ");
+            return terms.every((term) => haystack.includes(term));
+        };
+
         const results = [];
         entries.forEach((entry) => {
             if (entry.type === "group") {
-                const leaves = entry.leaves.filter((leaf) => leafMatches(leaf, entry.node, terms));
+                const leaves = entry.leaves.filter((leaf) => matches(leaf, entry.node));
                 if (leaves.length) results.push({ entry, leaves });
-            } else if (leafMatches(entry.node, null, terms)) {
+            } else if (matches(entry.node, null)) {
                 results.push({ entry, leaves: [entry.node] });
             }
         });
         return results;
     }
 
+    // Finds the option with this id. Main categories can't be picked, so they return null
     function findSelection(entries, id) {
         const wanted = Number(id);
         if (!Number.isInteger(wanted) || wanted <= 0) return null;
@@ -100,12 +87,10 @@ Works with:
 
     function selectionPath(selection) {
         if (!selection) return "";
-        return selection.parent
-            ? `${selection.parent.name}${PATH_SEPARATOR}${selection.leaf.name}`
-            : selection.leaf.name;
+        return selection.parent ? `${selection.parent.name}${PATH_SEPARATOR}${selection.leaf.name}` : selection.leaf.name;
     }
 
-    // Splits text so the matching part can be highlighted
+    // Splits text so the matching part can be highlighted. Searching "and" also marks "&" and the other way around
     function highlightChunks(text, query) {
         const raw = String(text || "");
         const terms = String(query || "")
@@ -118,14 +103,12 @@ Works with:
         const lower = raw.toLowerCase();
         const marks = new Array(raw.length).fill(false);
         terms.forEach((term) => {
-            const variants = term === "and" ? ["and", "&"] : (term === "&" ? ["&", "and"] : [term]);
+            const variants = term === "and" || term === "&" ? ["and", "&"] : [term];
             variants.forEach((variant) => {
-                let from = 0;
-                while (variant && from < lower.length) {
-                    const at = lower.indexOf(variant, from);
-                    if (at === -1) break;
-                    for (let i = at; i < at + variant.length; i += 1) marks[i] = true;
-                    from = at + variant.length;
+                let at = lower.indexOf(variant);
+                while (at !== -1) {
+                    marks.fill(true, at, at + variant.length);
+                    at = lower.indexOf(variant, at + variant.length);
                 }
             });
         });
@@ -149,18 +132,15 @@ Works with:
     function el(tag, className, text) {
         const node = document.createElement(tag);
         if (className) node.className = className;
-        if (text !== undefined && text !== null) node.textContent = String(text);
+        if (text !== undefined) node.textContent = text;
         return node;
     }
 
+    // Fills the element with the text and puts <mark> around the parts that match the search
     function appendHighlighted(container, text, query) {
         container.textContent = "";
         highlightChunks(text, query).forEach((chunk) => {
-            if (chunk.match) {
-                container.appendChild(el("mark", "cp-mark", chunk.text));
-            } else {
-                container.appendChild(document.createTextNode(chunk.text));
-            }
+            container.appendChild(chunk.match ? el("mark", "cp-mark", chunk.text) : document.createTextNode(chunk.text));
         });
     }
 
@@ -168,28 +148,28 @@ Works with:
 
     // ________________________________________________________
     // MOUNT
+    // options.hiddenInput gets the picked id, options.onChange runs when the seller picks one,
+    // options.onStatusChange gets "loading", "ready" or "error", and autoLoad: false skips loading the list (for tests)
     // ________________________________________________________
 
     function mount(rootEl, options = {}) {
-        if (!rootEl) throw new Error("CategoryPicker.mount needs a root element.");
-
-        instanceCount += 1;
-        const uid = `cp${instanceCount}`;
-        const hiddenInput = options.hiddenInput || null;
-        const onChange = typeof options.onChange === "function" ? options.onChange : () => {};
-        const onStatusChange = typeof options.onStatusChange === "function" ? options.onStatusChange : () => {};
+        pickerCount += 1;
+        const uid = `cp${pickerCount}`;
+        const hiddenInput = options.hiddenInput;
+        const onChange = options.onChange || (() => {});
+        const onStatusChange = options.onStatusChange || (() => {});
 
         let entries = [];
         let selection = null;
-        let pendingId = options.initialId ?? (hiddenInput && hiddenInput.value ? hiddenInput.value : null);
+        let pendingId = hiddenInput.value || null; // an id set before the list loads
         let status = "loading";
         let isOpen = false;
         let query = "";
-        let activeOptionId = null;     // DOM id of the active option
+        let activeOptionId = null; // id of the highlighted option
         const expandedGroups = new Set();
-        let optionEls = [];            // [{el, leaf, parent, groupId}] currently navigable
+        let optionEls = []; // the options you can reach with the arrow keys right now
 
-        // ---------- static structure ----------
+        // ---------- build the picker ----------
         rootEl.classList.add("cp");
         rootEl.textContent = "";
 
@@ -272,14 +252,10 @@ Works with:
             onStatusChange(next);
         }
 
-        // ---------- selection ----------
-        function describedBy() {
-            return [helper.hidden ? null : helper.id, errorBox.hidden ? null : errorBox.id]
-                .filter(Boolean).join(" ");
-        }
-
-        function syncDescribedBy() {
-            const ids = describedBy();
+        // ---------- selection and errors ----------
+        // Screen readers read the description and the error, but only the ones that are showing
+        function updateDescribedBy() {
+            const ids = [helper, errorBox].filter((box) => !box.hidden).map((box) => box.id).join(" ");
             if (ids) {
                 trigger.setAttribute("aria-describedby", ids);
             } else {
@@ -287,25 +263,26 @@ Works with:
             }
         }
 
-        function renderTrigger() {
+        function setError(message) {
+            errorBox.textContent = message || "";
+            errorBox.hidden = !message;
+            trigger.setAttribute("aria-invalid", message ? "true" : "false");
+            rootEl.classList.toggle("cp--invalid", Boolean(message));
+            updateDescribedBy();
+        }
+
+        function applySelection(next) {
+            selection = next;
+            hiddenInput.value = selection ? String(selection.leaf.id) : "";
+
             triggerText.textContent = selection ? selectionPath(selection) : "Select a category";
             trigger.classList.toggle("cp-trigger--placeholder", !selection);
-
             const description = selection && selection.leaf.description;
             helper.textContent = description || "";
             helper.hidden = !description;
-            syncDescribedBy();
-        }
+            updateDescribedBy();
 
-        function applySelection(next, { notify }) {
-            selection = next;
-            if (hiddenInput) {
-                hiddenInput.value = selection ? String(selection.leaf.id) : "";
-                if (notify) hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
-            }
-            renderTrigger();
-            if (selection) clearError();
-            if (notify) onChange(selection ? { ...selection, path: selectionPath(selection) } : null);
+            if (selection) setError("");
         }
 
         function setValue(id) {
@@ -313,95 +290,75 @@ Works with:
                 pendingId = id;
                 return;
             }
-            applySelection(findSelection(entries, id), { notify: false });
+            applySelection(findSelection(entries, id));
         }
 
-        // ---------- list rendering ----------
-        function optionDomId(leaf) {
-            return `${uid}-opt-${leaf.id}`;
-        }
+        // ---------- list ----------
+        const hasQuery = () => normalize(query) !== "";
+        const findOption = (optionId) => optionEls.find((item) => item.el.id === optionId);
 
-        function groupDomId(node) {
-            return `${uid}-group-${node.id}`;
-        }
-
-        function buildOption(leaf, parent, extraClass) {
-            const option = el("div", `cp-option${extraClass ? ` ${extraClass}` : ""}`);
-            option.id = optionDomId(leaf);
+        function addOption(container, leaf, parent, extraClass) {
+            const option = el("div", extraClass ? `cp-option ${extraClass}` : "cp-option");
+            option.id = `${uid}-opt-${leaf.id}`;
             option.setAttribute("role", "option");
             const isSelected = Boolean(selection && Number(selection.leaf.id) === Number(leaf.id));
             option.setAttribute("aria-selected", isSelected ? "true" : "false");
             option.dataset.id = String(leaf.id);
             appendHighlighted(option, leaf.name, query);
 
-            option.addEventListener("mousedown", (event) => event.preventDefault()); // keep focus in search
+            option.addEventListener("mousedown", (event) => event.preventDefault()); // keeps the cursor in the search box
             option.addEventListener("click", () => choose({ leaf, parent }));
-            option.addEventListener("mousemove", () => setActive(option.id, { scroll: false }));
-            return option;
+            option.addEventListener("mousemove", () => setActive(option.id, false));
+            container.appendChild(option);
+            optionEls.push({ el: option, leaf, parent });
         }
 
         function renderList() {
             list.textContent = "";
             optionEls = [];
             const results = filterEntries(entries, query);
-            const hasQuery = queryTerms(query).length > 0;
-            const anyMatch = results.length > 0;
 
             results.forEach(({ entry, leaves }) => {
-                if (entry.type === "group") {
-                    const groupId = groupDomId(entry.node);
-                    const expanded = hasQuery || expandedGroups.has(entry.node.id);
-
-                    const group = el("div", "cp-group");
-                    group.setAttribute("role", "group");
-                    group.setAttribute("aria-labelledby", `${groupId}-label`);
-
-                    const header = el("div", "cp-group-header");
-                    header.id = `${groupId}-label`;
-                    header.setAttribute("aria-expanded", expanded ? "true" : "false");
-                    const headerText = el("span", "cp-group-name");
-                    appendHighlighted(headerText, entry.node.name, query);
-                    header.appendChild(headerText);
-                    header.appendChild(el("span", "cp-group-count", String(leaves.length)));
-                    header.insertAdjacentHTML("beforeend", CHEVRON_SVG);
-                    header.addEventListener("mousedown", (event) => event.preventDefault());
-                    header.addEventListener("click", () => toggleGroup(entry.node.id));
-
-                    const body = el("div", "cp-group-options");
-                    body.hidden = !expanded;
-                    leaves.forEach((leaf) => {
-                        const option = buildOption(leaf, entry.node);
-                        body.appendChild(option);
-                        optionEls.push({ el: option, leaf, parent: entry.node, groupNodeId: entry.node.id });
-                    });
-
-                    group.append(header, body);
-                    list.appendChild(group);
-                } else {
-                    const option = buildOption(entry.node, null, "cp-option--top");
-                    list.appendChild(option);
-                    optionEls.push({ el: option, leaf: entry.node, parent: null, groupNodeId: null });
+                if (entry.type === "leaf") {
+                    addOption(list, entry.node, null, "cp-option--top");
+                    return;
                 }
+                const groupId = `${uid}-group-${entry.node.id}`;
+                const expanded = hasQuery() || expandedGroups.has(entry.node.id);
+
+                const group = el("div", "cp-group");
+                group.setAttribute("role", "group");
+                group.setAttribute("aria-labelledby", `${groupId}-label`);
+
+                const header = el("div", "cp-group-header");
+                header.id = `${groupId}-label`;
+                header.setAttribute("aria-expanded", expanded ? "true" : "false");
+                const headerText = el("span", "cp-group-name");
+                appendHighlighted(headerText, entry.node.name, query);
+                header.appendChild(headerText);
+                header.appendChild(el("span", "cp-group-count", String(leaves.length)));
+                header.insertAdjacentHTML("beforeend", CHEVRON_SVG);
+                header.addEventListener("mousedown", (event) => event.preventDefault());
+                header.addEventListener("click", () => toggleGroup(entry.node.id));
+
+                const body = el("div", "cp-group-options");
+                body.hidden = !expanded;
+                leaves.forEach((leaf) => addOption(body, leaf, entry.node));
+
+                group.append(header, body);
+                list.appendChild(group);
             });
 
-            if (!anyMatch) {
-                const empty = el("p", "cp-empty", NO_MATCH_TEXT);
+            if (!results.length) {
+                const empty = el("p", "cp-empty", "No matching categories. Try a broader term or choose Other.");
                 empty.setAttribute("role", "presentation");
                 list.appendChild(empty);
                 // Keep "Other" one click away when nothing matches
-                entries.filter((entry) => entry.type === "leaf").forEach((entry) => {
-                    const option = buildOption(entry.node, null, "cp-option--top");
-                    list.appendChild(option);
-                    optionEls.push({ el: option, leaf: entry.node, parent: null, groupNodeId: null });
-                });
+                entries.filter((entry) => entry.type === "leaf").forEach((entry) => addOption(list, entry.node, null, "cp-option--top"));
             }
 
             // keep the active option if it is still listed
-            if (!optionEls.some((item) => item.el.id === activeOptionId)) {
-                activeOptionId = null;
-            }
-            if (activeOptionId) setActive(activeOptionId, { scroll: false });
-            search.setAttribute("aria-activedescendant", activeOptionId || "");
+            setActive(findOption(activeOptionId) ? activeOptionId : null, false);
         }
 
         function toggleGroup(nodeId) {
@@ -413,11 +370,11 @@ Works with:
             renderList();
         }
 
-        function setActive(optionId, { scroll }) {
+        function setActive(optionId, scroll) {
             optionEls.forEach((item) => item.el.classList.toggle("is-active", item.el.id === optionId));
             activeOptionId = optionId;
             search.setAttribute("aria-activedescendant", optionId || "");
-            const item = optionEls.find((entry) => entry.el.id === optionId);
+            const item = findOption(optionId);
             if (item && scroll) item.el.scrollIntoView({ block: "nearest" });
         }
 
@@ -431,15 +388,12 @@ Works with:
             }
             const item = optionEls[index];
             // Open a closed group when the arrow keys reach it
-            if (item.groupNodeId !== null && !queryTerms(query).length && !expandedGroups.has(item.groupNodeId)) {
-                expandedGroups.add(item.groupNodeId);
+            if (item.parent && !hasQuery() && !expandedGroups.has(item.parent.id)) {
+                expandedGroups.add(item.parent.id);
                 activeOptionId = item.el.id;
                 renderList();
-                const refreshed = optionEls.find((entry) => entry.el.id === activeOptionId);
-                if (refreshed) refreshed.el.scrollIntoView({ block: "nearest" });
-                return;
             }
-            setActive(item.el.id, { scroll: true });
+            setActive(item.el.id, true);
         }
 
         // ---------- open / close ----------
@@ -450,7 +404,7 @@ Works with:
             search.value = "";
             expandedGroups.clear();
             if (selection && selection.parent) expandedGroups.add(selection.parent.id);
-            activeOptionId = selection ? optionDomId(selection.leaf) : null;
+            activeOptionId = selection ? `${uid}-opt-${selection.leaf.id}` : null;
 
             popup.hidden = false;
             rootEl.classList.add("cp--open");
@@ -458,13 +412,11 @@ Works with:
             search.setAttribute("aria-expanded", "true");
             renderList();
             search.focus();
-            if (activeOptionId) {
-                const item = optionEls.find((entry) => entry.el.id === activeOptionId);
-                if (item) item.el.scrollIntoView({ block: "nearest" });
-            }
+            const item = findOption(activeOptionId);
+            if (item) item.el.scrollIntoView({ block: "nearest" });
         }
 
-        function close({ returnFocus }) {
+        function close(returnFocus) {
             if (!isOpen) return;
             isOpen = false;
             popup.hidden = true;
@@ -476,27 +428,15 @@ Works with:
         }
 
         function choose(next) {
-            applySelection(next, { notify: true });
-            close({ returnFocus: true });
-        }
-
-        // ---------- errors ----------
-        function setError(message) {
-            errorBox.textContent = message || "";
-            errorBox.hidden = !message;
-            trigger.setAttribute("aria-invalid", message ? "true" : "false");
-            rootEl.classList.toggle("cp--invalid", Boolean(message));
-            syncDescribedBy();
-        }
-
-        function clearError() {
-            setError("");
+            applySelection(next);
+            onChange();
+            close(true);
         }
 
         // ---------- events ----------
         trigger.addEventListener("click", () => {
             if (isOpen) {
-                close({ returnFocus: true });
+                close(true);
             } else {
                 open();
             }
@@ -513,9 +453,7 @@ Works with:
             query = search.value;
             activeOptionId = null;
             renderList();
-            if (queryTerms(query).length && optionEls.length) {
-                setActive(optionEls[0].el.id, { scroll: true });
-            }
+            if (hasQuery() && optionEls.length) setActive(optionEls[0].el.id, true);
         });
 
         search.addEventListener("keydown", (event) => {
@@ -527,41 +465,34 @@ Works with:
                 moveActive(-1);
             } else if (event.key === "Home" && optionEls.length && event.ctrlKey) {
                 event.preventDefault();
-                setActive(optionEls[0].el.id, { scroll: true });
+                setActive(optionEls[0].el.id, true);
             } else if (event.key === "Enter") {
                 event.preventDefault(); // never submit the form from the search box
-                const item = optionEls.find((entry) => entry.el.id === activeOptionId);
+                const item = findOption(activeOptionId);
                 if (item) choose({ leaf: item.leaf, parent: item.parent });
             } else if (event.key === "Escape") {
                 event.preventDefault();
                 event.stopPropagation();
-                close({ returnFocus: true });
+                close(true);
             } else if (event.key === "Tab") {
-                close({ returnFocus: false });
+                close(false);
             }
         });
 
         document.addEventListener("mousedown", (event) => {
-            if (isOpen && !rootEl.contains(event.target)) {
-                close({ returnFocus: false });
-            }
+            if (isOpen && !rootEl.contains(event.target)) close(false);
         });
 
         rootEl.addEventListener("focusout", (event) => {
-            if (isOpen && event.relatedTarget && !rootEl.contains(event.relatedTarget)) {
-                close({ returnFocus: false });
-            }
+            if (isOpen && event.relatedTarget && !rootEl.contains(event.relatedTarget)) close(false);
         });
 
         // ---------- data ----------
         function setTree(tree) {
             entries = buildEntries(tree);
             // Set the selected category before saying the picker is ready
-            if (pendingId !== null && pendingId !== undefined && pendingId !== "") {
-                applySelection(findSelection(entries, pendingId), { notify: false });
-            } else {
-                applySelection(selection ? findSelection(entries, selection.leaf.id) : null, { notify: false });
-            }
+            const hasPending = pendingId !== null && pendingId !== undefined && pendingId !== "";
+            applySelection(findSelection(entries, hasPending ? pendingId : selection && selection.leaf.id));
             pendingId = null;
             setStatus("ready");
             if (isOpen) renderList();
@@ -570,7 +501,7 @@ Works with:
         async function load() {
             setStatus("loading");
             try {
-                const response = await fetch(ENDPOINT, { headers: { Accept: "application/json" } });
+                const response = await fetch("/api/categories", { headers: { Accept: "application/json" } });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const tree = await response.json();
                 if (!Array.isArray(tree)) throw new Error("Unexpected category data.");
@@ -582,30 +513,21 @@ Works with:
         }
 
         setStatus("loading");
-        if (options.tree) {
-            setTree(options.tree);
-        } else if (options.autoLoad !== false) {
-            load();
-        }
+        if (options.autoLoad !== false) load();
 
         return {
             setValue,
             getValue: () => (selection ? Number(selection.leaf.id) : null),
             getSelection: () => (selection ? { ...selection, path: selectionPath(selection) } : null),
             hasValue: () => Boolean(selection),
-            isReady: () => status === "ready",
             setTree,
-            reload: load,
             setError,
-            clearError,
-            focus: () => trigger.focus(),
-            open,
-            close: () => close({ returnFocus: true })
+            focus: () => trigger.focus()
         };
     }
 
     window.CategoryPicker = {
         mount,
-        _internals: { normalize, queryTerms, leafMatches, buildEntries, filterEntries, findSelection, selectionPath, highlightChunks }
+        _internals: { normalize, buildEntries, filterEntries, findSelection, selectionPath, highlightChunks }
     };
 })();

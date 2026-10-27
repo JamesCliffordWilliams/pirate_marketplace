@@ -1,5 +1,5 @@
 # The Vault Campus Marketplace
-# Created by James Williams - 10/26/26 - landing, log in and sign up pages (no database needed)
+# Created by James Williams - 10/26/26 - landing, log in and sign up pages, no database needed
 
 import os
 import sys
@@ -50,9 +50,9 @@ class TestEntryPages(unittest.TestCase):
             response = self.client.post("/auth/login", data={"username": "pat", "password": "nope"})
         html = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn("That username and password don&#39;t match.", html)  # escaped by Jinja
+        self.assertIn("That username and password don&#39;t match.", html)  # Jinja escapes the apostrophe
         self.assertIn('value="pat"', html)          # keeps the username
-        self.assertNotIn('value="nope"', html)      # never echoes the password
+        self.assertNotIn('value="nope"', html)      # never shows the password again
         self.assertIn('<form', html)
 
     def test_signup_problem_shows_the_form_again_with_the_reason(self):

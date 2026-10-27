@@ -1,7 +1,7 @@
 # The Vault Campus Marketplace
-# Created by James Williams - 10/26/26 - create listing: one listing per request key, all-or-nothing
+# Created by James Williams - 10/26/26 - one listing per request key, and nothing saved if any step fails
 #
-# Runs in a throwaway schema on a local database with S3 stubbed.
+# This runs in a test schema on a local database with a fake S3.
 
 import io
 import os
@@ -23,7 +23,7 @@ from tests.hot_test_db import ThrowawaySchema
 
 
 class FakeS3:
-    """Stands in for utils.s3: records uploads and deletes, can fail on the Nth upload."""
+    """A fake S3 that keeps track of uploads and deletes and can fail on a chosen upload."""
 
     def __init__(self, fail_on=None, delay=0):
         self.fail_on = fail_on
@@ -190,7 +190,7 @@ class TestListingCreateIdempotency(unittest.TestCase):
         self.assertEqual(self.count("listings"), 1)
 
     def leave_pending(self, key, minutes_ago):
-        """A claim for this exact request, left PENDING by a request that stopped."""
+        """Leaves this request stuck as PENDING, like one that stopped partway."""
         self.use_s3(FakeS3(fail_on=1))
         self.assertEqual(self.post(key).status_code, 500)
         self.db.execute("""

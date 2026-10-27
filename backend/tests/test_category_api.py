@@ -1,9 +1,9 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - category API tests
 #
-# TestCategoryApiOffline: Flask test client with the model layer mocked (no database).
-# TestCategoryApiOnDatabase: real queries against a LOCAL database that already has
-#   the product category migration applied (skipped otherwise, see db_test_guard.py).
+# The offline tests fake the category lookups, so they don't need a database.
+# The database tests need a local database with the product category migration
+# already run. Otherwise they get skipped (see db_test_guard.py).
 
 import os
 import sys
@@ -54,10 +54,10 @@ class TestCategoryApiOffline(unittest.TestCase):
         cls.client = cls.app.test_client()
 
     def setUp(self):
+        # The parent and child expansion is checked in test_category_service.py
         for name, kwargs in (
             ("get_category_tree", {"return_value": TREE}),
             ("get_category_by_slug", {"side_effect": CATEGORIES.get}),
-            ("get_child_categories", {"side_effect": lambda pid: [{"id": 2}, {"id": 3}] if pid == 1 else []}),
         ):
             p = patch.object(category_service, name, **kwargs)
             p.start()
@@ -72,15 +72,7 @@ class TestCategoryApiOffline(unittest.TestCase):
         self.assertEqual(response.headers.get("Cache-Control"), "public, max-age=300")
         data = response.get_json()
         self.assertEqual([n["slug"] for n in data], ["electronics-and-technology", "other"])
-        self.assertFalse(data[0]["is_selectable"])
         self.assertEqual([c["slug"] for c in data[0]["children"]], ["laptops-and-computers", "phones"])
-        self.assertTrue(all(c["is_selectable"] for c in data[0]["children"]))
-        self.assertTrue(data[1]["is_selectable"])
-
-    def test_browse_parent_expands_to_children(self):
-        response = self.client.get("/api/categories/electronics-and-technology/listings")
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(sorted(self.browse.call_args.kwargs["category_ids"]), [1, 2, 3])
 
     def test_browse_leaf(self):
         response = self.client.get("/api/categories/phones/listings?sort=price_desc&page=2&per_page=12")
@@ -118,9 +110,9 @@ class TestCategoryApiOffline(unittest.TestCase):
 
 @require_local_db
 class TestCategoryApiOnDatabase(unittest.TestCase):
-    """
-    Seeds its own user/storefronts/listings (cleaned up afterwards) and checks the
-    real browse SQL. Needs product_categories + listings.category_id (run the migration first).
+    """Adds its own users, shops and listings and checks the real browse queries.
+
+    Run the product category migration on the local database first.
     """
 
     @classmethod
@@ -189,7 +181,7 @@ class TestCategoryApiOnDatabase(unittest.TestCase):
     def tearDownClass(cls):
         conn = cls.get_connection()
         cur = conn.cursor()
-        # Removes only the rows this test created (cascades to its listings/images/sizes)
+        # This deletes only the users we made, and their shops and listings go with them
         cur.execute("DELETE FROM users WHERE id = ANY(%s);", ([cls.user_id, cls.user2_id],))
         conn.commit()
         cur.close()

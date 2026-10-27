@@ -2,7 +2,7 @@
 # The Vault Campus Marketplace
 # Created by Day Ekoi - Iteration 5 4/10/26
 # Handles all S3 image upload functionality
-# Updated by James Williams - 10/26/26 - delete helper for failed creates
+# Updated by James Williams - 10/26/26 - added a delete function for when creating a listing fails
 
 import boto3
 import os
@@ -55,14 +55,14 @@ def upload_image_to_s3(file, folder="uploads"):
         print(f"S3 upload error: {e}")
         return None
 
-# Added by James Williams 10/26/26 - lets a failed create listing remove the images it uploaded
+# Added by James Williams 10/26/26 - lets a failed create listing delete the photos it uploaded
 def key_from_url(url):
-    """Returns the S3 object key for a URL made by upload_image_to_s3."""
+    """Gets the S3 key from a URL that upload_image_to_s3 made."""
     return url.split(".amazonaws.com/", 1)[1]
 
 
 def delete_image_from_s3(key):
-    """Deletes one object. Returns True on success, False otherwise (never raises)."""
+    """Deletes one image from S3. Returns True if it worked and False if it didn't."""
     try:
         s3_client.delete_object(Bucket=BUCKET_NAME, Key=key)
         return True

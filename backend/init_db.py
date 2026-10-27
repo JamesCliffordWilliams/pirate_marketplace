@@ -14,15 +14,15 @@ Run this file manually when:
 # The Vault Campus Marketplace
 # CSC 405 Sp 26'
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added contact_info, preview_image_1-4, categories columns to storefronts; added ALTER TABLE migrations
-# Updated by James Williams - 10/26/26 - product categories, listing_interest (Hot) and listing_create_requests tables
+# Updated by James Williams - 10/26/26 - added the product categories, listing_interest (Hot page) and listing_create_requests tables
 
 import psycopg2
 import os
 from dotenv import load_dotenv
 
-# Added by James Williams 10/26/26 - same category setup the migration uses
+# Added by James Williams 10/26/26 - uses the same category setup as the migration
 from migrations.add_product_categories import apply_product_categories
-# Added by James Williams 10/26/26 - engagement table for the Hot page
+# Added by James Williams 10/26/26 - the table that tracks shopper activity for the Hot page
 from migrations.add_listing_interest import apply_listing_interest
 from migrations.add_listing_create_requests import apply_listing_create_requests  # Added by James Williams 10/26/26
 
@@ -147,7 +147,7 @@ def create_vault_tables():
         # Creates product_categories and adds listings.category_id
         # ________________________________________________________
         apply_product_categories(cur)
-        apply_listing_create_requests(cur)  # Added by James Williams 10/26/26 - safe retries for create listing
+        apply_listing_create_requests(cur)  # Added by James Williams 10/26/26 - so a retried create can't make two listings
 
         # ________________________________________________________
         # LISTING IMAGES TABLE (Multiple images per listing)
@@ -406,7 +406,7 @@ def create_vault_tables():
 
         print(f"DATABASE INITIALIZED: {', '.join(tables)} tables are ready.")
         # ________________________________________________________
-        # LISTING INTEREST (Hot page engagement)
+        # LISTING INTEREST (shopper activity for the Hot page)
         # Added by James Williams 10/26/26
         # ________________________________________________________
         apply_listing_interest(cur)

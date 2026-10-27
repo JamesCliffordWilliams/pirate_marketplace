@@ -1,7 +1,7 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - the bag page: quantity changes and item photos
 #
-# Runs in a throwaway schema on a local database.
+# This runs in a test schema on a local database.
 
 import os
 import sys

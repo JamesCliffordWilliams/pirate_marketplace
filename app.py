@@ -4,7 +4,7 @@ from datetime import timedelta
 
 from flask import Flask, render_template, redirect, request, url_for, session
 
-# Added back by James Williams 10/27/26 - lets `python3 app.py` find backend/ outside PyCharm
+# Added back by James Williams 10/27/26 - lets python3 app.py find the backend folder outside PyCharm
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend')))
 
 # Billy: Rewrite
@@ -73,7 +73,7 @@ def register_pages(app):
 # Billy: Rewrite
 def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
-    app.secret_key = os.getenv('SECRET_KEY') # James: remove exposed secret key for security reasons. Use environment variable instead.
+    app.secret_key = os.getenv('SECRET_KEY') # James: the secret key comes from an environment variable so it isn't sitting in the code
 
     if not app.secret_key:
         raise RuntimeError("SECRET_KEY is not set.")
@@ -87,15 +87,15 @@ def create_app():
         if session.get("user"):
             session.permanent = True
 
-    # Added by James Williams 10/26/26 - cap uploads with a clear message (4 photos fit easily)
+    # Added by James Williams 10/26/26 - limits upload size and shows a clear message if it's too big
     app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
 
     @app.errorhandler(413)
     def upload_too_large(_error):
         return {"error": "That upload is too large. Photos must add up to less than 32 MB."}, 413
 
-    # Added by James Williams 10/26/26 - every url_for('static', ...) gets ?v=<file time>,
-    # so browsers pick up new CSS/JS after a deploy without a hard refresh
+    # Added by James Williams 10/26/26 - adds the file's last saved time to static links
+    # so browsers load the new CSS and JS after a deploy
     static_versions = {}
 
     @app.url_defaults
@@ -121,13 +121,13 @@ def create_app():
                 bag_count += 1
         return {"bag_count": bag_count}
 
-    # Added by James Williams 10/26/26 - component reference, dev only
+    # Added by James Williams 10/26/26 - style guide page, only turned on for development
     if app.debug or os.getenv("PM_STYLEGUIDE") == "1":
         @app.get("/dev/styleguide")
         def styleguide():
             return render_template("dev/styleguide.html")
 
-    # Added by James Williams 10/27/26 - same rule as PRIVATE_PAGES for the blueprint pages
+    # Added by James Williams 10/27/26 - sends logged out users to login, same as PRIVATE_PAGES
     @app.before_request
     def require_login():
         if request.blueprint in LOGIN_REQUIRED_BLUEPRINTS and not session.get("user"):

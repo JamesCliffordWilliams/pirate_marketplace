@@ -3,12 +3,12 @@
 
     The Vault Campus Marketplace
     Created by James Williams - 10/26/26 (moved out of storefront_view.css)
-    Updated by James Williams - 10/26/26 - the card is now the compact product tile; its styles
-    live in theme.css (.pm-tile). Only tile details specific to listing_card.js stay here.
+    Updated by James Williams - 10/26/26 - the card is now the small product tile from theme.css.
+    This file only keeps a few extras for listing_card.js.
 */
 
-/* a tile that was linked to (e.g. back from the product page) */
+/* This outlines the tile you came back to from the product page */
 .pm .pm-tile:target .pm-tile__photo { outline: 2px solid var(--pm-brass); outline-offset: 3px; }
 
-/* toasts from listing_card.js sit above the sticky header */
+/* This keeps the pop-up messages above the sticky header */
 .pm-toasts { z-index: 60; }

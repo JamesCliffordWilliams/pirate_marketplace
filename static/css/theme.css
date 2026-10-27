@@ -3,10 +3,9 @@
 
     Pirate Market
     Created by James Williams - 10/26/26
-    "Harbor and brass": navy from the crest logo, brass only for the one primary action,
-    focus, prices and fine rings. Pages opt in by adding class="pm" to <body>, so nothing
-    changes on a page until it is moved over. Component reference: /dev/styleguide (dev only).
-    Fonts: Gloock (display) and Instrument Sans (UI), self-hosted, SIL OFL (fonts/OFL.txt).
+    This sets the colors, fonts and shared pieces for the redesign.
+    Pages turn it on by adding class pm to the body tag. You can see every piece at /dev/styleguide (dev only).
+    Fonts are Gloock for headings and Instrument Sans for everything else. Both are saved in fonts/ (license in fonts/OFL.txt).
 */
 
 @font-face {
@@ -24,22 +23,22 @@
 }
 
 :root {
-    /* color */
+    /* colors */
     --pm-harbor: #0B1B36;
     --pm-hull: #10254A;
     --pm-hull-raised: #163060;
-    --pm-rigging: #26426F;      /* dividers */
-    --pm-control-line: #5B729A; /* input, chip and button borders (3:1 on navy) */
+    --pm-rigging: #26426F;      /* divider lines */
+    --pm-control-line: #5B729A; /* borders for inputs, chips and buttons */
     --pm-brass: #D4A934;
     --pm-brass-hover: #E3BE57;
     --pm-sail: #F4F2EC;
     --pm-fog: #A3B2CB;
     --pm-mat: #EEF1F5;
     --pm-signal: #E5484D;
-    --pm-signal-text: #FF8A8D;   /* readable on navy */
+    --pm-signal-text: #FF8A8D;   /* error text that is easy to read on navy */
     --pm-kelp: #3DBE8B;
 
-    /* type */
+    /* fonts and text sizes */
     --pm-display: "Gloock", Georgia, serif;
     --pm-sans: "Instrument Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --pm-t13: 0.8125rem;
@@ -50,7 +49,7 @@
     --pm-t31: 1.9375rem;
     --pm-t39: 2.4375rem;
 
-    /* shape and space: radius grows with the size of the thing */
+    /* corners and spacing: bigger things get rounder corners */
     --pm-r-control: 4px;
     --pm-r-tile: 8px;
     --pm-r-sheet: 16px;
@@ -59,7 +58,7 @@
     --pm-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* ---------- base (opt-in) ---------- */
+/* ---------- base (pages turn it on by adding class pm) ---------- */
 
 .pm,
 .pm *,
@@ -103,7 +102,7 @@ body.pm {
     outline-offset: 2px;
 }
 
-/* components set display; the hidden attribute must still win */
+/* This keeps anything with the hidden attribute hidden */
 .pm [hidden] { display: none !important; }
 
 .pm .pm-visually-hidden {
@@ -179,7 +178,7 @@ body.pm {
 .pm .pm-icon-btn:hover { background: var(--pm-hull-raised); }
 .pm .pm-icon-btn svg { width: 22px; height: 22px; }
 
-/* ---------- form fields: spacing and labels, not a box per field ---------- */
+/* ---------- form fields ---------- */
 
 .pm .pm-field {
     display: grid;
@@ -300,7 +299,7 @@ body.pm {
 .pm .pm-switch input:checked { background: var(--pm-brass); }
 .pm .pm-switch input:checked::after { transform: translateX(16px); background: var(--pm-harbor); }
 
-/* ---------- quantity stepper ---------- */
+/* ---------- quantity plus and minus buttons ---------- */
 
 .pm .pm-stepper {
     display: inline-flex;
@@ -332,7 +331,7 @@ body.pm {
 .pm .pm-stepper input::-webkit-inner-spin-button,
 .pm .pm-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
-/* ---------- product grid and tile (borderless: photo, then text) ---------- */
+/* ---------- product grid and tiles ---------- */
 
 .pm .pm-grid {
     display: grid;
@@ -403,7 +402,7 @@ body.pm {
     white-space: nowrap;
 }
 
-/* the whole tile is one link; the link's ::after covers the tile */
+/* This makes the whole tile one big link */
 .pm .pm-tile__link { color: inherit; text-decoration: none; }
 .pm .pm-tile__link::after { content: ""; position: absolute; inset: 0; border-radius: var(--pm-r-tile); }
 .pm .pm-tile__link:focus-visible { outline: none; }
@@ -430,7 +429,7 @@ body.pm {
 .pm .pm-heart[aria-pressed="true"] { color: var(--pm-brass); }
 .pm .pm-heart[aria-pressed="true"] svg { fill: currentColor; }
 
-/* ---------- storefront facade + medallion (the signature element) ---------- */
+/* ---------- store cover and round store logo ---------- */
 
 .pm .pm-facades {
     display: grid;
@@ -470,7 +469,7 @@ body.pm {
 .pm .pm-facade__cover[data-count="banner"] img { grid-column: 1 / -1; grid-row: 1 / -1; }
 .pm .pm-facade__cover[data-count="2"] img { grid-row: span 2; }
 
-/* no photos at all: a quiet navy wash; the medallion carries the monogram */
+/* This is the plain navy cover for stores with no photos */
 .pm .pm-facade__cover[data-count="0"] {
     background:
         radial-gradient(circle at 50% 130%, rgba(212, 169, 52, 0.16), transparent 60%),
@@ -520,7 +519,7 @@ body.pm {
 .pm .pm-facade__link:focus-visible::after { outline: 2px solid var(--pm-brass); outline-offset: 3px; }
 .pm .pm-facade:hover .pm-facade__name { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 
-/* ---------- page toolbar, sort, pager ---------- */
+/* ---------- page toolbar, sort and page buttons ---------- */
 
 .pm .pm-toolbar {
     display: flex;
@@ -556,7 +555,7 @@ body.pm {
 .pm .pm-pager[hidden] { display: none; }
 
 
-/* ---------- section header, empty state ---------- */
+/* ---------- section headers and empty messages ---------- */
 
 .pm .pm-section { margin-top: 48px; }
 
@@ -583,7 +582,7 @@ body.pm {
 .pm .pm-empty p { color: var(--pm-fog); }
 .pm .pm-empty .pm-btn { margin-top: 8px; }
 
-/* ---------- skeleton ---------- */
+/* ---------- loading placeholders ---------- */
 
 .pm .pm-skeleton {
     border-radius: var(--pm-r-control);
@@ -600,7 +599,7 @@ body.pm {
     to { background-position: -200% 0; }
 }
 
-/* ---------- toast ---------- */
+/* ---------- pop-up messages ---------- */
 
 .pm-toasts {
     position: fixed;
@@ -629,7 +628,7 @@ body.pm {
     from { opacity: 0; transform: translateY(8px); }
 }
 
-/* ---------- drawer (narrow-screen menu, filters) ---------- */
+/* ---------- slide-out panel (side menu and filters) ---------- */
 
 .pm .pm-overlay {
     position: fixed;

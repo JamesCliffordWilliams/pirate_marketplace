@@ -4,17 +4,17 @@
 """
 controllers/category_controller.py
 
-Purpose:
-Routes for product categories. Anyone can browse; no login needed.
+This file has the routes for product categories.
+The API routes are open to anyone. The pages need a login (app.py handles that).
 
 API:
-- GET /api/categories                   -> all categories
-- GET /api/categories/<slug>/listings   -> listings in a category
+- GET /api/categories gives all the categories
+- GET /api/categories/<slug>/listings gives the listings in a category
 
 Pages:
-- GET /categories                        -> All Categories page
-- GET /categories/<parent>               -> listings in a main category
-- GET /categories/<parent>/<sub>         -> listings in a subcategory
+- GET /categories is the All Categories page
+- GET /categories/<parent> shows the listings in a main category
+- GET /categories/<parent>/<sub> shows the listings in a subcategory
 """
 
 import re
@@ -35,11 +35,12 @@ category_bp = Blueprint("category_bp", __name__, url_prefix="/api/categories")
 # Page blueprint
 category_pages_bp = Blueprint("category_pages_bp", __name__)
 
+# Slugs are lowercase letters, numbers and dashes, so anything else is a 404 before we ask the database
 SLUG_RE = re.compile(r"^[a-z0-9-]{1,80}$")
 
 
 def _valid_slug(slug):
-    return bool(slug) and SLUG_RE.match(slug) is not None
+    return SLUG_RE.match(slug) is not None
 
 
 #_________________________________________________________
@@ -81,13 +82,10 @@ def get_category_listings_route(slug):
 # Page Routing
 #_________________________________________________________
 
+# Shows the All Categories grid, with a "not found" note and a 404 when the category doesn't exist
 def _render_categories_grid(not_found=False):
-    status = 404 if not_found else 200
-    return render_template(
-        "categories.html",
-        categories=get_category_tree_service(),
-        not_found=not_found,
-    ), status
+    html = render_template("categories.html", categories=get_category_tree_service(), not_found=not_found)
+    return html, (404 if not_found else 200)
 
 
 @category_pages_bp.route("/categories")
@@ -104,6 +102,7 @@ def category_listings_page(parent_slug, sub_slug=None):
     try:
         page = get_category_page_service(parent_slug, sub_slug)
     except CategoryRedirect as moved:
+        # Sends /categories/<sub> to /categories/<parent>/<sub> and keeps the ?sort= part
         target = url_for(
             "category_pages_bp.category_listings_page",
             parent_slug=moved.parent_slug,

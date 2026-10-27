@@ -8,7 +8,7 @@
     Updated by Day Ekoi - Iteration 5 4/16/26 - S3 image upload integration
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - drag-drop zones, image preview thumbnails, preview_image_1-4 upload support
     Updated by James Williams - 10/26/26 - shared photo picker, one request per submit
-    Updated by James Williams - 10/26/26 - redesign: live facade preview, inline errors instead of alerts
+    Updated by James Williams - 10/26/26 - redesign with a live store cover preview and errors on the page instead of pop-ups
 */
 
 const form = document.getElementById("storefrontForm");
@@ -70,7 +70,7 @@ function setupCategoryLimitGuard() {
         });
 
         if (sfRes.ok) {
-            window.location.replace("/storefronts/dashboard"); // one storefront per seller
+            window.location.replace("/storefronts/dashboard"); // each seller only gets one storefront
         }
     } catch (err) {
         // silently allow page to load if check fails
@@ -78,7 +78,7 @@ function setupCategoryLimitGuard() {
 })();
 
 
-// Added by James Williams 10/26/26 - shared picker (js/image_uploader.js) and the live facade preview
+// Added by James Williams 10/26/26 - the shared photo picker and the live store cover preview
 const { showError, clearErrors, renderFacade } = window.SellerForm;
 const brandNameInput = document.getElementById("brandName");
 

@@ -1,5 +1,5 @@
 # The Vault Campus Marketplace
-# Created by James Williams - 10/26/26 - theme assets, static versioning, dev-only styleguide
+# Created by James Williams - 10/26/26 - theme files, versioned static links and the dev styleguide
 
 import os
 import re
@@ -45,7 +45,8 @@ class TestDesignSystem(unittest.TestCase):
         self.assertIn('class="pm"', response.get_data(as_text=True))
 
     def test_fonts_are_self_hosted_with_license(self):
-        css = open(os.path.join(PROJECT_ROOT, "static", "css", "theme.css"), encoding="utf-8").read()
+        with open(os.path.join(PROJECT_ROOT, "static", "css", "theme.css"), encoding="utf-8") as f:
+            css = f.read()
         for font in re.findall(r'url\("\.\./fonts/([^"]+)"\)', css):
             self.assertTrue(os.path.exists(os.path.join(PROJECT_ROOT, "static", "fonts", font)), font)
         self.assertNotIn("fonts.googleapis.com", css)

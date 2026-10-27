@@ -8,15 +8,15 @@
     - Per-size quantity inputs
     - Made-to-Order toggle
     Updated by Day E - April 22nd - multi-image edit management using existing S3 and listing image routes
-    Updated by James Williams - 10/26/26 - added the category picker; saving no longer
-    reactivates INACTIVE listings
+    Updated by James Williams - 10/26/26 - added the category picker, and saving doesn't turn
+    hidden listings back on anymore
     Updated by James Williams - 10/26/26 - shared photo picker, one request per save
-    Updated by James Williams - 10/26/26 - redesign: saved photos as tiles, only free photo spots shown,
-    live preview, inline errors instead of alerts. Requests are unchanged.
+    Updated by James Williams - 10/26/26 - redesign with saved photos as tiles, a live preview, and errors
+    on the page instead of pop-ups. The requests didn't change.
 */
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const { photoTiles, showError, clearErrors, renderPreview } = window.SellerForm;
+    const { photoTiles, watchSizeBoxes, readSizes, showError, clearErrors, renderPreview } = window.SellerForm;
 
     const form = document.getElementById("editListingForm");
     const cancelBtn = document.getElementById("cancelBtn");
@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         submitBtn.disabled = !categoriesReady || !loadedListing;
     }
 
-    // If the listing's category was removed from the list, tell the seller (saving still keeps it)
+    // If the listing's category isn't in the list anymore, this tells the seller. Saving still keeps the old one
     function noteRetiredCategory() {
         if (!categoriesReady || !loadedListing || !loadedListing.category_id || categoryPicker.hasValue()) return;
         let note = document.getElementById("retiredCategoryNote");
@@ -83,7 +83,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
     updateSubmitState();
 
-    // Don't send a status for INACTIVE/DELETED listings so saving never reactivates them
+    // Hidden or deleted listings don't send a status, so saving doesn't turn them back on
     function computeSaveStatus(currentStatus, isMadeToOrder, totalQty) {
         if (currentStatus !== "ACTIVE" && currentStatus !== "SOLD_OUT") {
             return undefined; // server keeps the current status
@@ -113,17 +113,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     oneSizeToggle.addEventListener("change", () => applyOneSizeMode(oneSizeToggle.checked));
-
-    multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach((cb) => {
-        cb.addEventListener("change", () => {
-            const qtyInput = cb.closest(".size-qty-row").querySelector(".size-qty-input");
-            qtyInput.style.display = cb.checked ? "inline-block" : "none";
-            if (cb.checked) qtyInput.focus(); else qtyInput.value = "";
-        });
-    });
+    watchSizeBoxes(multiSizeGrid);
 
     // ── Photos: saved ones, plus a tile for each free spot ──────
-    const imagePickers = photoTiles(previewInputs, { onChange: updatePreview });
+    const imagePickers = photoTiles(previewInputs, updatePreview);
 
     function queuedFiles() {
         return imagePickers.map((picker) => picker.file).filter(Boolean);
@@ -316,7 +309,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ── Save ─────────────────────────────────────────────────────
     form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Saving…", async () => {
         clearErrors(form);
-        const isOneSizeMode = oneSizeToggle.checked;
         const isMadeToOrder = madeToOrderToggle.checked;
         const price = Number(priceInput.value);
         const title = listingName.value.trim();
@@ -331,28 +323,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!title) fail("nameError", "Enter a listing name.", listingName);
         if (priceInput.value === "" || isNaN(price) || price < 0) fail("priceError", "Enter a price of 0 or more.", priceInput);
 
-        let checkedSizes = [];
-        const sizeQuantities = {};
-        if (isOneSizeMode) {
-            const qty = parseInt(oneSizeQty.value || "0", 10);
-            if (!isMadeToOrder && (isNaN(qty) || qty < 0)) fail("sizesError", "Enter how many you have (0 or more).", oneSizeQty);
-            checkedSizes = ["One Size"];
-            sizeQuantities["One Size"] = isMadeToOrder ? 0 : (qty || 0);
-        } else {
-            checkedSizes = Array.from(multiSizeGrid.querySelectorAll('input[name="sizes"]:checked')).map((cb) => cb.value);
-            if (!checkedSizes.length) {
-                fail("sizesError", "Pick at least one size, or turn on One size.", multiSizeGrid.querySelector('input[name="sizes"]'));
-            }
-            for (const size of checkedSizes) {
-                const qtyInput = multiSizeGrid.querySelector(`.size-qty-input[data-size="${size}"]`);
-                const qty = parseInt(qtyInput.value, 10);
-                if (!isMadeToOrder && (isNaN(qty) || qty < 0)) {
-                    fail("sizesError", `Enter how many you have in size ${size} (0 or more).`, qtyInput);
-                    break;
-                }
-                sizeQuantities[size] = isMadeToOrder ? 0 : (isNaN(qty) ? 0 : qty);
-            }
-        }
+        const { sizes: checkedSizes, sizeQuantities, totalQty } = readSizes({ oneSizeToggle, oneSizeQty, multiSizeGrid, isMadeToOrder }, fail);
 
         const categoryId = document.getElementById("categoryId").value.trim();
         if (!categoryId && !loadedListing.category_id) {
@@ -364,7 +335,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
 
-        const totalQty = isMadeToOrder ? 0 : Object.values(sizeQuantities).reduce((a, b) => a + b, 0);
         const updateBody = {
             title,
             price,
@@ -375,7 +345,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         };
         const saveStatus = computeSaveStatus(loadedListing.status, isMadeToOrder, totalQty);
         if (saveStatus) updateBody.status = saveStatus;
-        // No value means the old category was removed; leaving it out keeps it
+        // If the old category was removed, leaving it out keeps it
         if (categoryId) updateBody.category_id = /^\d+$/.test(categoryId) ? Number(categoryId) : categoryId;
 
         try {

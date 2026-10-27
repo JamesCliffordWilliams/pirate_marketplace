@@ -4,18 +4,18 @@
     The Vault Campus Marketplace
     CSC 405 Sp 26'
     Created by James Williams - 10/26/26
-    Updated by James Williams - 10/26/26 - rewritten for the Pirate Market redesign (body.pm);
-    product tiles and the grid come from theme.css
+    Updated by James Williams - 10/26/26 - rewritten for the Pirate Market redesign
 
 Description:
-Styles for the All Categories page, the category listing pages and the frame of the Hot page.
+This styles the All Categories page, the category pages and the Hot page layout.
+The product tiles and grid come from theme.css.
 
 Works with:
 - categories.html, category_listings.html, hot.html
 - category_listings.js, hot.js
 */
 
-/* ---------- page frame ---------- */
+/* ---------- page layout ---------- */
 
 .pm .cat-hero,
 .pm .cat-page {
@@ -186,9 +186,9 @@ Works with:
     cursor: pointer;
 }
 
-/* ---------- pages ---------- */
+/* ---------- page buttons ---------- */
 
-/* storefront.css pins .pagination to the bottom of the window; here it sits under the grid */
+/* This puts the page buttons under the grid instead of at the bottom of the window */
 .pm .pagination {
     position: static;
     padding: 0;

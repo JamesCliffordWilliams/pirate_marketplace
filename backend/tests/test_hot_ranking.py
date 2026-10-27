@@ -1,5 +1,5 @@
 # The Vault Campus Marketplace
-# Created by James Williams - 10/26/26 - Hot / Rising ranking tests (no database)
+# Created by James Williams - 10/26/26 - Hot and Rising ranking tests, no database needed
 
 import math
 import os
@@ -16,12 +16,10 @@ for path in (PROJECT_ROOT, BACKEND_ROOT):
 from config import hot_ranking as cfg
 from services.hot_service import (
     decay,
-    engager_contribution,
     rank_hot,
     rank_rising,
-    rising_score,
+    score_listings,
     select_hot,
-    select_rising,
     select_sections,
 )
 
@@ -44,13 +42,26 @@ def event(listing_id, storefront_id, kind, age_hours, user_id=None):
 
 
 def age_for(kind, contribution, half_life=cfg.RISING_HALF_LIFE_HOURS):
-    """Age at which one event of this kind is worth `contribution`."""
+    """How old one event of this kind has to be to be worth `contribution`."""
     return half_life * math.log2(cfg.WEIGHTS[kind] / contribution)
 
 
 def events_worth(listing_id, storefront_id, parts):
-    """One engager per (kind, contribution) pair."""
+    """Makes one shopper for each (kind, contribution) pair."""
     return [event(listing_id, storefront_id, kind, age_for(kind, value)) for kind, value in parts]
+
+
+def one_shopper_score(kinds_and_ages, half_life=48):
+    """The points one shopper gives a listing."""
+    user = new_user()
+    events = [event(1, 10, kind, age, user) for kind, age in kinds_and_ages]
+    return score_listings(events, 10_000, half_life)[1]["raw_score"]
+
+
+def rising_picks(events, reach):
+    """Rising on its own, with nothing in Hot and everything in stock."""
+    candidates = rank_rising(events, reach)
+    return select_sections([], candidates, {c["listing_id"] for c in candidates})["rising"]
 
 
 def hot_listing(listing_id, storefront_id, engagers=3, age=1.0):
@@ -75,19 +86,11 @@ class TestDecayAndWeights(unittest.TestCase):
         self.assertEqual(decay(-5, 48), 1.0)
 
     def test_strongest_action_wins_no_stacking(self):
-        events = [
-            {"kind": "detail_view", "age_hours": 0},
-            {"kind": "wishlist", "age_hours": 0},
-            {"kind": "cart", "age_hours": 0},
-        ]
-        self.assertAlmostEqual(engager_contribution(events, 48), 4.0)
+        self.assertAlmostEqual(one_shopper_score([("detail_view", 0), ("wishlist", 0), ("cart", 0)]), 4.0)
 
     def test_fresh_view_can_beat_stale_wishlist(self):
-        events = [
-            {"kind": "detail_view", "age_hours": 0},
-            {"kind": "wishlist", "age_hours": 48 * 3},   # 3 * 0.125 = 0.375
-        ]
-        self.assertAlmostEqual(engager_contribution(events, 48), 1.0)
+        # The wishlist is worth 3 * 0.125 = 0.375 by now
+        self.assertAlmostEqual(one_shopper_score([("detail_view", 0), ("wishlist", 48 * 3)]), 1.0)
 
     def test_one_engager_many_events_counts_once(self):
         user = new_user()
@@ -147,7 +150,7 @@ class TestHotSelection(unittest.TestCase):
         for i in range(4):
             events += hot_listing(10 + i, 1, engagers=9 - i)    # 10..13, scores high
         events += hot_listing(30, 2, engagers=3)                 # low score
-        # 10, 11 (cap), 30, then top up with 12 (next best remaining)
+        # 10 and 11 hit the shop limit, then 30, then 12 fills the last spot
         self.assertEqual(select_hot(rank_hot(events)), [10, 11, 12, 30])
 
     def test_limit_eight(self):
@@ -174,7 +177,7 @@ class TestRising(unittest.TestCase):
         self.assertEqual(self.rising_ids(events, {10: 2}), [])
 
     def test_stale_fails_even_above_floor(self):
-        # raw well above 2.5, but nothing in the last 72h
+        # The raw score is well above 2.5 but nothing happened in the last 72 hours
         events = [event(1, 10, "order", 80) for _ in range(4)]
         self.assertEqual(self.rising_ids(events, {10: 4}), [])
 
@@ -183,8 +186,10 @@ class TestRising(unittest.TestCase):
         self.assertEqual(self.rising_ids(events, {10: 1}), [])
 
     def test_rising_score_formula(self):
-        self.assertAlmostEqual(rising_score(9.37, 60), 4.685)
-        self.assertAlmostEqual(rising_score(4.0, 0), 4.0)
+        # rising score = raw score / sqrt(1 + reach / 20)
+        events = events_worth(1, 10, [("cart", 4.0), ("wishlist", 3.0)])
+        self.assertAlmostEqual(rank_rising(events, {10: 60})[0]["score"], 7.0 / 2)
+        self.assertAlmostEqual(rank_rising(events, {10: 0})[0]["score"], 7.0)
 
     def test_boost_never_makes_below_threshold_qualify(self):
         weak_small = events_worth(1, 10, [("wishlist", 1.4), ("detail_view", 1.0)])   # raw 2.4, reach 0
@@ -210,7 +215,7 @@ class TestRising(unittest.TestCase):
         ranked = rank_rising(events, reach)
         by_id = {c["listing_id"]: c for c in ranked}
 
-        # does not qualify: fresh views only, stale wishlists
+        # 1 only has views and 2 only has old wishlists, so neither makes it
         self.assertNotIn(1, by_id)
         self.assertNotIn(2, by_id)
 
@@ -224,7 +229,6 @@ class TestRising(unittest.TestCase):
     def test_raw_score_of_the_non_qualifiers(self):
         views = [event(1, 1, "detail_view", age_for("detail_view", 0.835)) for _ in range(2)]
         stale = [event(2, 2, "wishlist", age_for("wishlist", 0.37)) for _ in range(2)]
-        from services.hot_service import score_listings
         scored = score_listings(views + stale, cfg.RISING_WINDOW_DAYS * 24, cfg.RISING_HALF_LIFE_HOURS)
         self.assertAlmostEqual(scored[1]["raw_score"], 1.67, delta=0.01)
         self.assertAlmostEqual(scored[2]["raw_score"], 0.74, delta=0.01)
@@ -232,13 +236,13 @@ class TestRising(unittest.TestCase):
     def test_one_per_storefront_no_top_up(self):
         events = events_worth(1, 10, [("cart", 4.0), ("wishlist", 3.0)])
         events += events_worth(2, 10, [("cart", 4.0), ("detail_view", 1.0)])
-        self.assertEqual(select_rising(rank_rising(events, {10: 2}), exclude_ids=[]), [1])
+        self.assertEqual(rising_picks(events, {10: 2}), [1])
 
     def test_limit_eight(self):
         events = []
         for store in range(12):
             events += events_worth(100 + store, store, [("cart", 4.0), ("wishlist", 3.0)])
-        self.assertEqual(len(select_rising(rank_rising(events, {}), exclude_ids=[])), 8)
+        self.assertEqual(len(rising_picks(events, {})), 8)
 
 
 class TestSections(unittest.TestCase):
@@ -247,7 +251,7 @@ class TestSections(unittest.TestCase):
         events = []
         for i in range(4):
             events += hot_listing(10 + i, i, engagers=4, age=1)
-        sections = select_sections(rank_hot(events), rank_rising(events, {}), available_ids=None)
+        sections = select_sections(rank_hot(events), rank_rising(events, {}), available_ids={10, 11, 12, 13})
         self.assertEqual(sorted(sections["hot"]), [10, 11, 12, 13])
         self.assertEqual(sections["rising"], [])
 
@@ -255,7 +259,7 @@ class TestSections(unittest.TestCase):
         events = []
         for i in range(5):
             events += hot_listing(10 + i, 1, engagers=6 - i, age=1)
-        sections = select_sections(rank_hot(events), rank_rising(events, {}), available_ids=None)
+        sections = select_sections(rank_hot(events), rank_rising(events, {}), available_ids={10, 11, 12, 13, 14})
         self.assertEqual(sections["hot"], [10, 11, 12, 13])
         self.assertEqual(sections["rising"], [14])
         self.assertFalse(set(sections["hot"]) & set(sections["rising"]))
@@ -266,7 +270,7 @@ class TestSections(unittest.TestCase):
             events += hot_listing(10 + i, 1, engagers=6 - i)
         events += hot_listing(20, 2, engagers=3)
         hot = rank_hot(events)
-        # 10 sold out since ranking: 11 and 12 fill the store's two slots
+        # 10 sold out after ranking, so 11 and 12 take the shop's two spots
         sections = select_sections(hot, [], available_ids={11, 12, 20})
         self.assertEqual(sections["hot"], [11, 12, 20])
 

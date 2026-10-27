@@ -2,7 +2,7 @@
 # CSC 405 Sp 26'
 # Created by Day Ekoi - Iteration 3
 # Updated by Day Ekoi - Iteration 5 - 4/10/26 -4/20/26 - added preview_image_1-4 to all queries, added item_count via JOIN, fixed contact_info column
-# Updated by James Williams - 10/26/26 - cover_images for the storefront directory
+# Updated by James Williams - 10/26/26 - added cover_images for the storefront directory
 
 """
 models/storefront_model.py
@@ -345,7 +345,7 @@ def get_active_storefronts():
     rows = cur.fetchall()
 
     # Added by James Williams 10/26/26
-    # Up to 3 recent product photos per store for the directory cover, in one query
+    # Gets up to 3 recent product photos per store for the directory cover in one query
     covers = {}
     if rows:
         cur.execute("""

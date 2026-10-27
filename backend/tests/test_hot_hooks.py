@@ -1,7 +1,8 @@
 # The Vault Campus Marketplace
-# Created by James Williams - 10/26/26 - engagement hooks on wishlist, cart, checkout + interest API
+# Created by James Williams - 10/26/26 - tracking on wishlist, cart, checkout and the interest API
 #
-# Runs against a throwaway schema on a LOCAL database (skipped otherwise, see db_test_guard.py).
+# This runs in a test schema on a local database and gets skipped otherwise
+# (see db_test_guard.py).
 
 import os
 import sys
@@ -19,7 +20,7 @@ for path in (PROJECT_ROOT, BACKEND_ROOT):
 from tests.db_test_guard import require_local_db
 from tests.hot_test_db import ThrowawaySchema
 from app import create_app
-from config import hot_ranking as cfg
+from models import interest_model
 from services import interest_service
 
 BUYER = {
@@ -136,7 +137,7 @@ class TestCartHook(HookTestCase):
 
     def test_failed_insert_records_nothing(self):
         self.login(self.shopper)
-        response = self.add(price="-5")      # violates the price check; existing code still redirects
+        response = self.add(price="-5")      # bad price, but the page still redirects like before
         self.assertEqual(response.status_code, 302)
         self.assertEqual(self.db.scalar("SELECT COUNT(*) FROM cart_items;"), 0)
         self.assertEqual(self.kinds(), [])
@@ -177,7 +178,7 @@ class TestCheckoutHook(HookTestCase):
         real = interest_service.record_interests
 
         def check_then_record(listing_ids, user_id, kind):
-            # read from a separate connection: only committed rows are visible
+            # This reads on a separate connection, so it only sees saved rows
             seen.append((
                 self.db.scalar("SELECT COUNT(*) FROM orders WHERE user_id = %s;", (user_id,)),
                 self.db.scalar("SELECT COUNT(*) FROM order_items WHERE listing_id = ANY(%s);", (listing_ids,)),
@@ -223,7 +224,7 @@ class TestCheckoutHook(HookTestCase):
             self.assertEqual(sess["cart"], [])
 
     def test_tracker_crash_cannot_break_checkout(self):
-        # even if the tracking helper itself blew up, the order response stands
+        # Even if tracking crashes, the order still goes through
         self.login(self.shopper, cart=self.cart())
         with patch("controllers.checkout_controller.track_order", side_effect=RuntimeError("boom")):
             response = self.checkout()
@@ -234,7 +235,6 @@ class TestCheckoutHook(HookTestCase):
 class TestTrackingTimeouts(HookTestCase):
 
     def test_whole_order_uses_one_connection(self):
-        from models import interest_model
         others = [self.db.add_listing(self.store, f"Item {i}") for i in range(2)]
         real = interest_model.get_connection
         calls = []
@@ -249,11 +249,11 @@ class TestTrackingTimeouts(HookTestCase):
                 {"listing_id": self.listing},
             ])
         self.assertEqual(len(calls), 1)
-        self.assertEqual(calls[0].get("connect_timeout"), cfg.TRACKING_TIMEOUT_SECONDS)
+        self.assertEqual(calls[0].get("connect_timeout"), interest_model.TRACKING_TIMEOUT_SECONDS)
         self.assertEqual(sorted(r[0] for r in self.db.interest_rows()), sorted([self.listing] + others))
 
     def test_stuck_tracking_cannot_hold_up_checkout(self):
-        # another session holds a lock on listing_interest, so tracking can't write
+        # Another connection locks listing_interest so tracking can't write
         blocker = self.db.connect()
         blocker.cursor().execute("LOCK TABLE listing_interest IN ACCESS EXCLUSIVE MODE;")
         try:
@@ -267,7 +267,7 @@ class TestTrackingTimeouts(HookTestCase):
             blocker.close()
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.get_json()["success"])
-        self.assertLess(elapsed, cfg.TRACKING_TIMEOUT_SECONDS + 3)
+        self.assertLess(elapsed, interest_model.TRACKING_TIMEOUT_SECONDS + 3)
         self.assertEqual(self.kinds(), [])
 
 

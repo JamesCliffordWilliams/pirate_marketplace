@@ -1,8 +1,8 @@
 # The Vault Campus Marketplace
 # CSC 405 Sp 26'
 # Created by Day Ekoi - Iteration 3
-# Updated by James Williams - 10/26/26 - listings need a category; build_listing_fields() so the form create
-#   can check a listing before uploading its photos
+# Updated by James Williams - 10/26/26 - listings need a category now. Added build_listing_fields() so the
+#   form create can check a listing before uploading its photos
 
 """
 services/listing_service.py
@@ -22,8 +22,8 @@ Rules enforced:
 - IN_STOCK listings must have quantity_on_hand
 - PREORDER listings ignore quantity_on_hand
 - Auto mark SOLD_OUT when inventory hits 0
-- Every listing needs a subcategory (or "Other") - added by James Williams 10/26/26
-- Saving an edit never reactivates an INACTIVE or DELETED listing - added by James Williams 10/26/26
+- Every listing needs a subcategory or "Other" - added by James Williams 10/26/26
+- Editing an INACTIVE or DELETED listing doesn't make it active again - added by James Williams 10/26/26
 
 Image Notes:
 - Images are stored as URLs (typically AWS S3 links) in the database.
@@ -105,16 +105,16 @@ def _assert_can_manage_storefront(current_user, storefront):
 
 def create_listing_service(current_user, storefront_id, data):
     """
-    Creates a new listing under a storefront (rules in build_listing_fields).
+    Creates a new listing under a storefront. The rules are in build_listing_fields.
     """
     return create_listing(**build_listing_fields(current_user, storefront_id, data))
 
 
-# Updated by James Williams 10/26/26 - split out of create_listing_service so the form
-# create can check everything before uploading images
+# Updated by James Williams 10/26/26 - moved out of create_listing_service so the form
+# create can check everything before uploading photos
 def build_listing_fields(current_user, storefront_id, data):
     """
-    Validates a new listing and returns the create_listing() arguments.
+    Checks a new listing and returns the arguments for create_listing().
 
     Enforces:
     - User must be logged in
@@ -300,16 +300,13 @@ def update_listing_service(current_user, listing_id, data):
         if price < 0:
             raise Exception("price cannot be negative.")
 
-    # Updated by James Williams 10/26/26 - status no longer forced back to ACTIVE
+    # Updated by James Williams 10/26/26 - the status doesn't get set back to ACTIVE every time
     status = _resolve_edit_status(listing, data.get("status"), effective_mto, fulfillment_type, quantity_on_hand)
 
-    # Added by James Williams 10/26/26 - category only changes when a new one is sent
+    # Added by James Williams 10/26/26 - the category only changes if a different one is sent
     category_id = None
-    if "category_id" in data:
-        if is_same_category_id(data["category_id"], listing.get("category_id")):
-            category_id = None  # same category as before, nothing to change
-        else:
-            category_id = resolve_assignable_category(data["category_id"])["id"]
+    if "category_id" in data and not is_same_category_id(data["category_id"], listing.get("category_id")):
+        category_id = resolve_assignable_category(data["category_id"])["id"]
 
     return update_listing(
         listing_id=listing_id,
@@ -328,9 +325,9 @@ def update_listing_service(current_user, listing_id, data):
 # Added by James Williams 10/26/26
 def _resolve_edit_status(listing, requested_status, effective_mto, fulfillment_type, quantity_on_hand):
     """
-    Picks the status to save when a listing is edited (None = keep it).
-    - INACTIVE and DELETED listings stay that way (use reactivate/restore instead)
-    - Otherwise: 0 in stock and not made-to-order -> SOLD_OUT, else ACTIVE
+    Picks the status to save when a listing is edited. None means keep the current one.
+    INACTIVE and DELETED listings stay that way. Reactivate or restore is used for those.
+    Otherwise a listing with 0 in stock that isn't made to order is SOLD_OUT, and the rest are ACTIVE.
     """
     if listing.get("status") in ("INACTIVE", "DELETED"):
         return None

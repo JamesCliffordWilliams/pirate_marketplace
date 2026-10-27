@@ -3,8 +3,8 @@
 
     The Vault Campus Marketplace
     Created by Day Ekoi - Iteration 4
-    Updated by James Williams - 10/26/26 - rewritten for the redesign: wide cover, medallion
-    overlapping its edge, store name in the display face. Components come from theme.css.
+    Updated by James Williams - 10/26/26 - rewritten for the redesign. This styles the store page
+    with a wide cover photo, the round store logo and the store name.
 */
 
 .pm .pm-store { padding-top: 24px; }
@@ -24,7 +24,7 @@
     margin-top: 12px;
 }
 
-/* only the medallion crosses the cover's edge; the name sits below the photo */
+/* This moves the round logo up over the edge of the cover. The store name stays below the photo. */
 .pm .pm-store__head .pm-medallion { position: relative; margin-top: -64px; }
 .pm .pm-store__title { flex: 1; min-width: 0; padding-bottom: 4px; }
 .pm .pm-store__title h1 { font-size: var(--pm-t39); overflow-wrap: anywhere; }

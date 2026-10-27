@@ -6,7 +6,7 @@
     Created by Day Ekoi - Iteration 5 4/16/2026
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - drag-drop zones, image preview thumbnails, preview_image_1-4 upload + pre-fill, existing preview image display
     Updated by James Williams - 10/26/26 - shared photo picker, one request per save
-    Updated by James Williams - 10/26/26 - redesign: saved photos in their tiles, live facade preview, inline errors
+    Updated by James Williams - 10/26/26 - redesign with saved photos in their tiles, a live store cover preview and errors on the page
 
 Handles the Edit Storefront page:
 - Loads current storefront data and pre-fills the form
@@ -101,8 +101,8 @@ function configureStorefrontStatusButton(storefront, user) {
 }
 
 
-// Added by James Williams 10/26/26 - shared picker (js/image_uploader.js) and the live facade preview.
-// Saved photos show in their tiles until a new file replaces them.
+// Added by James Williams 10/26/26 - the shared photo picker and the live store cover preview.
+// Saved photos stay in their tiles until you pick a new one.
 const { showError, clearErrors, renderFacade } = window.SellerForm;
 const saved = { logo: null, banner: null, previews: [null, null, null, null] };
 let imagePickers = null;
@@ -166,7 +166,7 @@ async function loadStorefront(userId, userRole) {
     document.getElementById("storeDescription").value = sf.bio || "";
     document.getElementById("contactInfo").value = sf.contact_info || "";
 
-    // show the current banner, logo and previews in their tiles
+    // shows the saved banner, logo and preview photos in their tiles
     saved.logo = sf.logo_url || null;
     saved.banner = sf.banner_url || null;
     saved.previews = [sf.preview_image_1, sf.preview_image_2, sf.preview_image_3, sf.preview_image_4].map((url) => url || null);

@@ -4,8 +4,8 @@
     Pirate Marketplace
     CSC 405
     Created by Aniya Hopson - 10/26/26
-    Updated by James Williams - 10/27/26 - moved onto theme.css (Pirate Market redesign): same layout,
-    colors and type from the --pm-* tokens, buttons are .pm-btn
+    Updated by James Williams - 10/27/26 - moved onto theme.css for the redesign. Same layout
+    with the new colors, fonts and buttons.
 
 Description:
 Layout and styling for the public About page. Loaded AFTER theme.css and nav.css,

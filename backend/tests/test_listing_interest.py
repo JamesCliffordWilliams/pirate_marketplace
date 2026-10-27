@@ -1,7 +1,8 @@
 # The Vault Campus Marketplace
-# Created by James Williams - 10/26/26 - engagement tracking and Hot queries
+# Created by James Williams - 10/26/26 - tracking shopper activity and the Hot queries
 #
-# Runs against a throwaway schema on a LOCAL database (skipped otherwise, see db_test_guard.py).
+# This runs in a test schema on a local database and gets skipped otherwise
+# (see db_test_guard.py).
 
 import os
 import sys

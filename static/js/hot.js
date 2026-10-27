@@ -6,8 +6,8 @@
     Created by James Williams - 10/26/26
 
 Description:
-Loads the Hot page with one request and shows Hot Right Now and Rising
-as product cards. Shows loading, empty, and error states.
+This loads the Hot page with one request and shows Hot Right Now and Rising
+as product cards. It also shows the loading, empty and error screens.
 
 Works with:
 - hot.html, hot.css
@@ -16,27 +16,19 @@ Works with:
 
 (function () {
     const SECTION_KEYS = ["hot", "rising"];
-    const SKELETON_COUNT = 4;
 
     // ________________________________________________________
     // SECTION STATES
     // ________________________________________________________
 
-    // Hot and Rising collapse to one quiet line when empty
+    // If Hot or Rising is empty, it shrinks down to one short line
     function sectionStates(data) {
-        const counts = {};
-        SECTION_KEYS.forEach((key) => {
-            counts[key] = data && Array.isArray(data[key]) ? data[key].length : 0;
-        });
-
-        if (counts.hot + counts.rising === 0) {
+        const hasHot = Boolean(data && Array.isArray(data.hot) && data.hot.length);
+        const hasRising = Boolean(data && Array.isArray(data.rising) && data.rising.length);
+        if (!hasHot && !hasRising) {
             return { page: "empty", hot: "hidden", rising: "hidden" };
         }
-        return {
-            page: "content",
-            hot: counts.hot ? "cards" : "collapsed",
-            rising: counts.rising ? "cards" : "collapsed"
-        };
+        return { page: "content", hot: hasHot ? "cards" : "collapsed", rising: hasRising ? "cards" : "collapsed" };
     }
 
     window.VaultHot = { _internals: { sectionStates } };
@@ -49,49 +41,11 @@ Works with:
         hot: { section: document.getElementById("hotSection"), grid: document.getElementById("hotGrid") },
         rising: { section: document.getElementById("risingSection"), grid: document.getElementById("risingGrid") }
     };
-    const isLoggedIn = root.dataset.loggedIn === "true";
-
-    let viewerPromise = null;
     let requestToken = 0;
-
-    // ________________________________________________________
-    // CURRENT USER (for wishlist and cart)
-    // ________________________________________________________
-
-    function getViewer() {
-        if (!viewerPromise) {
-            viewerPromise = (async () => {
-                let userId = Number(root.dataset.userId) || null;
-                if (!userId && isLoggedIn) {
-                    const user = await VaultListingCard.getCurrentSessionUser();
-                    userId = user?.id || null;
-                }
-                const wishlistIds = await VaultListingCard.getWishlistIdSet(userId);
-                return { userId, wishlistIds };
-            })();
-        }
-        return viewerPromise;
-    }
 
     // ________________________________________________________
     // RENDERING
     // ________________________________________________________
-
-    function skeletonCards() {
-        const nodes = [];
-        for (let i = 0; i < SKELETON_COUNT; i += 1) {
-            const card = document.createElement("div");
-            card.className = "cat-skeleton-card";
-            card.setAttribute("aria-hidden", "true");
-            ["image", "line", "short", "button"].forEach((part) => {
-                const block = document.createElement("div");
-                block.className = `cat-skeleton-block cat-skeleton-block--${part}`;
-                card.appendChild(block);
-            });
-            nodes.push(card);
-        }
-        return nodes;
-    }
 
     function setSectionState(key, state, cards) {
         const { section, grid } = sections[key];
@@ -108,8 +62,8 @@ Works with:
     function showLoading() {
         pageState.hidden = true;
         pageState.replaceChildren();
-        setSectionState("hot", "loading", skeletonCards());
-        setSectionState("rising", "loading", skeletonCards());
+        setSectionState("hot", "loading", VaultListingCard.skeletonCards(4));
+        setSectionState("rising", "loading", VaultListingCard.skeletonCards(4));
     }
 
     function showPageMessage(title, actions) {
@@ -157,9 +111,7 @@ Works with:
     function buildCards(items, viewer) {
         return Promise.all(items.map((item) => VaultListingCard.create(item, {
             wishlistIds: viewer.wishlistIds,
-            currentUserId: viewer.userId,
-            showStorefront: true,
-            showCategory: true
+            currentUserId: viewer.userId
         })));
     }
 
@@ -172,8 +124,8 @@ Works with:
         showLoading();
 
         try {
-            // no-cache: never show a listing that sold out since the browser last asked
-            const [response, viewer] = await Promise.all([fetch("/api/hot", { cache: "no-cache" }), getViewer()]);
+            // skips the browser cache so we don't show something that already sold out
+            const [response, viewer] = await Promise.all([fetch("/api/hot", { cache: "no-cache" }), VaultListingCard.getViewer(root)]);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }

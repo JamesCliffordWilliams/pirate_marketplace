@@ -1,10 +1,9 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - JavaScript checks that don't need a browser
 #
-# - Every static/js file parses (JavaScriptCore `jsc`, ships with macOS; skipped if absent)
-# - Picker search/selection logic and card helpers (tests/js/frontend_logic_test.js)
-# - Static guards: the shared card never puts data into innerHTML; the nav toggle
-#   lives in nav_pane.js; templates reference static files that exist
+# This checks that every JS file parses and runs tests/js/frontend_logic_test.js.
+# It uses jsc, which comes with macOS, and skips those tests if jsc isn't there.
+# It also reads the JS and template files to catch unsafe innerHTML and missing static files.
 # Updated by James Williams - 10/26/26 - photo pickers use the shared uploader
 
 import glob
@@ -54,7 +53,7 @@ class TestFrontendStaticGuards(unittest.TestCase):
     def test_listing_card_innerhtml_is_constant_only(self):
         source = read("static/js/listing_card.js")
         allowed = {'""', '"&times;"', '"&#10094;"', '"&#10095;"', "WISHLIST_ICON_SVG"}
-        # value up to the end of the line (string literals here contain ";", e.g. "&times;")
+        # This grabs the rest of the line since some of the strings have ";" in them
         assignments = [value.rstrip().rstrip(";") for value in re.findall(r"\.innerHTML\s*=\s*(.+)$", source, re.M)]
         self.assertTrue(assignments)
         for value in assignments:
@@ -100,7 +99,7 @@ class TestFrontendStaticGuards(unittest.TestCase):
 
     # Added by James Williams 10/26/26
     def test_hot_page_never_renders_from_the_browser_cache(self):
-        # /api/hot is cacheable (max-age=60); the page itself always asks the server again
+        # The browser can cache /api/hot, so the Hot page asks the server again every time
         source = read("static/js/hot.js")
         self.assertRegex(source, r'fetch\("/api/hot",\s*\{\s*cache:\s*"no-cache"\s*\}\)')
 
@@ -111,11 +110,11 @@ class TestFrontendStaticGuards(unittest.TestCase):
             with self.subTest(page=page):
                 html = read(f"templates/{page}.html")
                 self.assertLess(html.index("js/image_uploader.js"), html.index(f"js/{page}.js"))
-                # each zone is a <label> around its input, so a click opens exactly one dialog
+                # Each photo box is a <label> around its input so one click opens one file dialog
                 self.assertNotIn('<div class="drop-zone"', html)
                 self.assertNotRegex(html, r'type="file"[^>]*\bhidden\b')
                 source = read(f"static/js/{page}.js")
-                if "SellerForm" in source:  # listing pages attach through seller_form.js photoTiles()
+                if "SellerForm" in source:  # The listing pages hook up through seller_form.js
                     self.assertIn("js/seller_form.js", html)
                     source += read("static/js/seller_form.js")
                 self.assertIn("ImageUploader.attach(", source)

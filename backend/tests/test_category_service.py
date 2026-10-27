@@ -1,7 +1,7 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - category rules tests
 #
-# These tests mock the model layer, so they run without a database.
+# These tests fake the database calls, so they run without a database.
 
 import os
 import sys
@@ -25,7 +25,7 @@ from services.category_service import (
     MSG_CATEGORY_MISSING,
 )
 
-# id -> category row as returned by models.category_model.get_category_by_id
+# Fake category rows by id, shaped like what get_category_by_id returns
 CATEGORIES = {
     1: {"id": 1, "slug": "electronics-and-technology", "name": "Electronics & Technology", "parent_id": None,
         "is_active": True, "child_count": 2, "description": None, "icon": "laptop",
@@ -103,17 +103,13 @@ class TestResolveAssignableCategory(unittest.TestCase):
 class TestBrowseParams(unittest.TestCase):
 
     def setUp(self):
-        for name, fake in (
-            ("get_category_by_slug", fake_get_category_by_slug),
+        for name, kwargs in (
+            ("get_category_by_slug", {"side_effect": fake_get_category_by_slug}),
+            ("get_child_categories", {"side_effect": lambda pid: [CATEGORIES[2], CATEGORIES[3]] if pid == 1 else []}),
         ):
-            patcher = patch.object(category_service, name, side_effect=fake)
+            patcher = patch.object(category_service, name, **kwargs)
             patcher.start()
             self.addCleanup(patcher.stop)
-
-        patcher = patch.object(category_service, "get_child_categories",
-                               side_effect=lambda pid: [CATEGORIES[2], CATEGORIES[3]] if pid == 1 else [])
-        patcher.start()
-        self.addCleanup(patcher.stop)
 
         patcher = patch.object(category_service, "browse_public_listings", return_value=([], 0))
         self.browse = patcher.start()
@@ -191,16 +187,19 @@ class TestCategoryTree(unittest.TestCase):
             self.assertEqual(
                 set(node), {"id", "slug", "name", "description", "icon", "is_selectable", "keywords", "children"}
             )
-        # search keywords come from config, e.g. "mac" -> Laptops & Computers
+        # Search keywords come from config, like "mac" for Laptops & Computers
         self.assertIn("mac", result[0]["children"][0]["keywords"])
         self.assertEqual(result[1]["keywords"], [])
 
 
 class TestListingServiceCategoryRules(unittest.TestCase):
-    """create/update listing services enforce the category rules."""
+    """Editing a listing follows the category rules.
+
+    The usual create and edit cases (missing, main category, subcategory, not the owner)
+    are checked through the routes in test_create_listing_category.py.
+    """
 
     OWNER = {"id": 7, "role": "user"}
-    STRANGER = {"id": 8, "role": "user"}
 
     def setUp(self):
         self.listing = {
@@ -214,8 +213,6 @@ class TestListingServiceCategoryRules(unittest.TestCase):
                                               side_effect=lambda _id: dict(self.listing)),
             "update_listing": patch.object(listing_service, "update_listing",
                                            side_effect=lambda **kw: {**self.listing, **{k: v for k, v in kw.items() if v is not None}}),
-            "create_listing": patch.object(listing_service, "create_listing",
-                                           side_effect=lambda **kw: {"id": 99, **kw}),
             "lookup": patch.object(category_service, "get_category_by_id", side_effect=fake_get_category_by_id),
         }
         self.mocks = {}
@@ -223,48 +220,8 @@ class TestListingServiceCategoryRules(unittest.TestCase):
             self.mocks[name] = p.start()
             self.addCleanup(p.stop)
 
-    def _create(self, **extra):
-        data = {"title": "Mac", "price": 100, "fulfillment_type": "IN_STOCK", "quantity_on_hand": 1}
-        data.update(extra)
-        return listing_service.create_listing_service(self.OWNER, 5, data)
-
-    def test_create_requires_category(self):
-        with self.assertRaises(Exception) as ctx:
-            self._create()
-        self.assertEqual(str(ctx.exception), MSG_CHOOSE_CATEGORY)
-        self.mocks["create_listing"].assert_not_called()
-
-    def test_create_rejects_parent(self):
-        with self.assertRaises(Exception) as ctx:
-            self._create(category_id=1)
-        self.assertEqual(str(ctx.exception), MSG_CHOOSE_SUBCATEGORY)
-        self.mocks["create_listing"].assert_not_called()
-
-    def test_create_with_leaf_passes_category_id(self):
-        created = self._create(category_id="2")
-        self.assertEqual(created["category_id"], 2)
-
-    def test_update_without_category_leaves_it_unchanged(self):
-        listing_service.update_listing_service(self.OWNER, 50, {"title": "New"})
-        self.assertIsNone(self.mocks["update_listing"].call_args.kwargs["category_id"])
-
-    def test_update_with_null_category_rejected(self):
-        with self.assertRaises(Exception) as ctx:
-            listing_service.update_listing_service(self.OWNER, 50, {"category_id": None})
-        self.assertEqual(str(ctx.exception), MSG_CHOOSE_CATEGORY)
-        self.mocks["update_listing"].assert_not_called()
-
-    def test_update_with_parent_rejected(self):
-        with self.assertRaises(Exception) as ctx:
-            listing_service.update_listing_service(self.OWNER, 50, {"category_id": 1})
-        self.assertEqual(str(ctx.exception), MSG_CHOOSE_SUBCATEGORY)
-
-    def test_update_with_leaf_changes_category(self):
-        listing_service.update_listing_service(self.OWNER, 50, {"category_id": 2})
-        self.assertEqual(self.mocks["update_listing"].call_args.kwargs["category_id"], 2)
-
     def test_update_keeping_inactive_category_still_saves(self):
-        self.listing["category_id"] = 4  # category was retired after the listing used it
+        self.listing["category_id"] = 4  # this category got turned off after the listing used it
         listing_service.update_listing_service(self.OWNER, 50, {"category_id": 4, "title": "Still here"})
         self.assertIsNone(self.mocks["update_listing"].call_args.kwargs["category_id"])
 
@@ -274,17 +231,11 @@ class TestListingServiceCategoryRules(unittest.TestCase):
             listing_service.update_listing_service(self.OWNER, 50, {"category_id": True})
         self.assertEqual(str(ctx.exception), MSG_CATEGORY_MISSING)
 
-    def test_non_owner_cannot_change_category(self):
-        with self.assertRaises(Exception) as ctx:
-            listing_service.update_listing_service(self.STRANGER, 50, {"category_id": 2})
-        self.assertIn("Unauthorized", str(ctx.exception))
-        self.mocks["update_listing"].assert_not_called()
-
 
 class TestEditStatusFix(unittest.TestCase):
-    """
-    The edit page used to always send status=ACTIVE, which silently reactivated
-    INACTIVE listings (and would push them into public category browse).
+    """The edit page used to always send ACTIVE, which turned hidden listings back on.
+
+    This made them show up in public category pages again.
     """
 
     OWNER = {"id": 7, "role": "user"}

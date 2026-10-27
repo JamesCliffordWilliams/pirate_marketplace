@@ -7,7 +7,7 @@
     - Displays items with size, qty, and subtotals
     - Submits buyer details to /api/checkout/complete
     - Redirects to order confirmation on success
-    Updated by James Williams - 10/26/26 - redesign: item rows built as text (no HTML strings), plain copy
+    Updated by James Williams - 10/26/26 - redesign, the item rows are added as plain text and the wording is simpler
 */
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const form = document.getElementById("checkoutForm");
     if (!form) return;
 
-    let placing = false; // one order per click, even if submit fires twice
+    let placing = false; // stops the same order from being placed twice if the button gets double clicked
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
         if (placing) return;

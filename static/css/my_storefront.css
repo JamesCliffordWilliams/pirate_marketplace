@@ -5,8 +5,8 @@
     CSC 405 Sp 26'
     Created by Day Ekoi - Iteration 4 - 3/22/2026
     Fully Integrated and Updated by Day Ekoi - Iteration 5 - 4/9/2026
-    Updated by James Williams - 10/26/26 - rewritten for the redesign: the store header comes from
-    storefront_view.css; this file styles the dashboard actions and the listings table.
+    Updated by James Williams - 10/26/26 - rewritten for the redesign. This styles the dashboard
+    buttons and the listings table. The store header comes from storefront_view.css.
 */
 
 .pm .pm-dashboard__actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -56,7 +56,7 @@
 .pm .pm-listing-row__actions .pm-btn { min-height: 36px; padding: 0 10px; }
 .pm .pm-listing-row__delete { color: var(--pm-signal-text); }
 
-/* status chips: shape and a small dot, so status never depends on color alone */
+/* This gives each status chip a shape and a small dot so it doesn't rely on color alone */
 .pm .pm-status {
     display: inline-flex;
     align-items: center;

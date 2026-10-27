@@ -3,13 +3,12 @@
 
     Pirate Market
     Created by James Williams - 10/26/26 (moved out of homepage.html)
-    Updated by James Williams - 10/26/26 - new header: storefront search, Sell, Bag, Account. The tabs
-    are the old menu's browse items with Home first; seller pages sit under Sell on the right.
-    On narrow screens everything moves into the drawer.
-    Needs css/theme.css, css/nav.css and js/nav_pane.js on the page; bag_count comes from app.py.
+    Updated by James Williams - 10/26/26 - This is the shared header with search, Sell, Bag and Account.
+    The tabs are the old menu links with Home first. On small screens everything moves into the side menu.
+    Pages need css/theme.css, css/nav.css and js/nav_pane.js. bag_count comes from app.py.
 #}
 {% set signed_in = session.get('user') %}
-{# label, link, pages that count as "here" #}
+{# Each tab has a label, a link and the pages that highlight it #}
 {% set menu = [
     ("Home", url_for('storefront_pages_bp.storefront_home_page'), ['storefront_pages_bp.storefront_home_page', 'storefront']),
     ("All categories", url_for('category_pages_bp.categories_page'), ['category_pages_bp.categories_page', 'category_pages_bp.category_listings_page']),

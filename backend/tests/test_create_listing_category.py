@@ -1,9 +1,9 @@
 # The Vault Campus Marketplace
 # Created by James Williams - 10/26/26 - category checks on create/update listing
-# Updated by James Williams - 10/26/26 - mocks the one-transaction create
+# Updated by James Williams - 10/26/26 - fakes the new one-step create
 #
-# Runs without a database or S3: the storefront lookup, category lookup,
-# model writes and utils.s3.upload_image_to_s3 are all mocked.
+# This runs without a database or S3. The lookups, saves and photo uploads
+# are all faked.
 
 import io
 import os
@@ -56,7 +56,7 @@ class TestCreateListingRouteCategory(unittest.TestCase):
             patch.object(listing_service, "get_images_for_listing", return_value=[]),
             patch.object(listing_service, "add_listing_image", return_value={}),
             patch.object(listing_service, "upsert_listing_size", return_value={}),
-            # Updated by James Williams 10/26/26 - the form route saves through create_listing_once
+            # Updated by James Williams 10/26/26 - the form page now saves with create_listing_once
             patch.object(listing_controller, "create_listing_once", side_effect=self._fake_create_once),
         ]
         for p in patches:
@@ -188,6 +188,8 @@ class TestUpdateListingRouteCategory(unittest.TestCase):
     def test_put_null_category_is_400(self):
         response = self._put({"category_id": None})
         self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.get_json()["error"], "Please choose a category.")
+        self.assertEqual(self.updates, [])
 
     def test_put_leaf_category(self):
         response = self._put({"category_id": 2, "quantity_on_hand": 2})
@@ -200,7 +202,7 @@ class TestUpdateListingRouteCategory(unittest.TestCase):
         self.assertIsNone(self.updates[-1]["category_id"])
 
     def test_edit_page_payload_keeps_inactive_listing_inactive(self):
-        # what the old edit page sent: always status ACTIVE
+        # This is what the old edit page sent, always with status ACTIVE
         response = self._put({"title": "Mac", "price": 10, "quantity_on_hand": 2, "fulfillment_type": "IN_STOCK",
                               "status": "ACTIVE", "sizes_available": ["M"], "is_made_to_order": False,
                               "category_id": 9})

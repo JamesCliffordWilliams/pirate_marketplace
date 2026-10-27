@@ -3,8 +3,8 @@
 
     Pirate Market
     Created by James Williams - 10/26/26 (moved out of account.html, original by Madison Boyd 3/23/2026)
-    Account page: Purchases (links to each order) and Saved items (product tiles; the heart unsaves).
-    Everything is added as text, never as HTML.
+    This is the account page. It shows your past orders and the items you saved.
+    Everything is added as plain text, never as HTML.
 */
 
 (function () {
@@ -17,7 +17,7 @@
 
     const sentenceCase = (text) => text ? text.charAt(0) + text.slice(1).toLowerCase().replace(/_/g, " ") : "";
 
-    // ---------- tabs (arrow keys move between them) ----------
+    // ---------- tabs, the arrow keys switch between them ----------
     const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
     const loaded = new Set();
 

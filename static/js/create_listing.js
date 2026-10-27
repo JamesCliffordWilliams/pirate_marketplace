@@ -9,7 +9,7 @@ Updated by Day Ekoi - Iteration 5 4/22/26 - One Size mode, per-size quantities, 
 Updated by James Williams - 10/26/26 - added the required category picker
 Updated by James Williams - 10/26/26 - shared photo picker, one request per submit
 Updated by James Williams - 10/26/26 - request key so a retried create can't make a duplicate
-Updated by James Williams - 10/26/26 - redesign: photo tiles, live preview, inline errors instead of alerts
+Updated by James Williams - 10/26/26 - redesign with photo tiles, a live preview, and errors on the page instead of pop-ups
 
 Purpose:
 Handles form submission for Create Listing page. Supports:
@@ -17,11 +17,11 @@ Handles form submission for Create Listing page. Supports:
 - Multi-size mode (per-size quantity inputs)
 - Made-to-Order flag (bypasses inventory limits)
 - Required product category
-The request sent to /api/listings/create is unchanged.
+The request it sends to /api/listings/create is the same as before.
 */
 
 document.addEventListener("DOMContentLoaded", function () {
-  const { photoTiles, showError, clearErrors, renderPreview } = window.SellerForm;
+  const { photoTiles, watchSizeBoxes, readSizes, showError, clearErrors, renderPreview } = window.SellerForm;
 
   const listingForm = document.getElementById("listingForm");
   const cancelBtn = document.getElementById("cancelBtn");
@@ -40,7 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const madeToOrderToggle = document.getElementById("madeToOrderToggle");
 
   // ── Category picker ─────────────────────────────────────────
-  // Category errors from the server show under the picker instead of in an alert
+  // If the server rejects the category, the error shows under the picker instead of in a pop-up
   const CATEGORY_ERROR_MESSAGES = [
     "Please choose a category.",
     "Choose a specific subcategory, not a main category.",
@@ -79,18 +79,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   oneSizeToggle.addEventListener("change", () => applyOneSizeMode(oneSizeToggle.checked));
-
-  // Show/hide the stock input beside a size chip
-  multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach(cb => {
-    cb.addEventListener("change", () => {
-      const qtyInput = cb.closest(".size-qty-row").querySelector(".size-qty-input");
-      qtyInput.style.display = cb.checked ? "inline-block" : "none";
-      if (cb.checked) qtyInput.focus(); else qtyInput.value = "";
-    });
-  });
+  watchSizeBoxes(multiSizeGrid);
 
   // ── Photos and live preview ──────────────────────────────────
-  const imagePickers = photoTiles(previewInputs, { onChange: updatePreview });
+  const imagePickers = photoTiles(previewInputs, updatePreview);
 
   function updatePreview() {
     const cover = imagePickers.find((picker) => picker.file);
@@ -109,7 +101,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   loadUserStorefronts();
 
-  // ── Validation (everything is checked before anything is sent) ──
+  // ── Checking the form before anything gets sent ──
   function collectListing() {
     clearErrors(listingForm);
     let firstInvalid = null;
@@ -121,7 +113,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const storefrontId = storefrontSelect.value;
     const title = listingName.value.trim();
     const price = parseFloat(priceInput.value);
-    const isOneSizeMode = oneSizeToggle.checked;
     const isMadeToOrder = madeToOrderToggle.checked;
     const categoryId = document.getElementById("categoryId").value.trim();
     const listingImages = imagePickers.map((picker) => picker.file).filter(Boolean);
@@ -135,40 +126,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (priceInput.value === "" || isNaN(price) || price < 0) fail("priceError", "Enter a price of 0 or more.", priceInput);
 
-    // sizes and per-size stock
-    let sizes = [];
-    const sizeQuantities = {};
-    if (isOneSizeMode) {
-      const qty = parseInt(oneSizeQty.value || "0", 10);
-      if (!isMadeToOrder && (isNaN(qty) || qty < 0)) fail("sizesError", "Enter how many you have (0 or more).", oneSizeQty);
-      sizes = ["One Size"];
-      sizeQuantities["One Size"] = isMadeToOrder ? 0 : (qty || 0);
-    } else {
-      sizes = Array.from(multiSizeGrid.querySelectorAll("input[name='sizes']:checked")).map(cb => cb.value);
-      if (!sizes.length) {
-        fail("sizesError", "Pick at least one size, or turn on One size.", multiSizeGrid.querySelector("input[name='sizes']"));
-      }
-      for (const size of sizes) {
-        const qtyInput = multiSizeGrid.querySelector(`.size-qty-input[data-size="${size}"]`);
-        const qty = parseInt(qtyInput.value, 10);
-        if (!isMadeToOrder && (isNaN(qty) || qty < 0)) {
-          fail("sizesError", `Enter how many you have in size ${size} (0 or more).`, qtyInput);
-          break;
-        }
-        sizeQuantities[size] = isMadeToOrder ? 0 : (isNaN(qty) ? 0 : qty);
-      }
-    }
+    // sizes and how many of each
+    const { sizes, sizeQuantities, totalQty } = readSizes({ oneSizeToggle, oneSizeQty, multiSizeGrid, isMadeToOrder }, fail);
 
     if (firstInvalid) {
       firstInvalid.focus();
       return null;
     }
-    const totalQty = isMadeToOrder ? 0 : Object.values(sizeQuantities).reduce((a, b) => a + b, 0);
     return { storefrontId, title, price, isMadeToOrder, categoryId, listingImages, sizes, sizeQuantities, totalQty };
   }
 
   // ── Form submission ──────────────────────────────────────────
-  // One request per submit; the user comes from page load
+  // This sends one request per submit, and the user was already loaded when the page opened
   listingForm.addEventListener("submit", window.ImageUploader.guardSubmit(listingForm, "Publishing…", async () => {
     const user = currentUser || await fetchCurrentUser();
     if (!user) {
@@ -223,11 +192,11 @@ document.addEventListener("DOMContentLoaded", function () {
     window.location.href = "/my-storefront";
   });
 
-  // One key per submit. The same key is only reused to retry when no response arrived,
-  // or the server says this listing is still being created (409), so it can't be made twice.
+  // Each submit gets its own key. We only reuse it to retry if nothing came back or the server
+  // says the listing is still being made (409), so the same listing can't get created twice
   function newRequestKey() {
     if (window.crypto.randomUUID) return window.crypto.randomUUID();
-    const bytes = window.crypto.getRandomValues(new Uint8Array(16)); // randomUUID needs https
+    const bytes = window.crypto.getRandomValues(new Uint8Array(16)); // randomUUID only works on https
     bytes[6] = (bytes[6] & 0x0f) | 0x40;
     bytes[8] = (bytes[8] & 0x3f) | 0x80;
     const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");

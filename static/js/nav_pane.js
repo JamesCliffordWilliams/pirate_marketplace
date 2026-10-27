@@ -4,10 +4,9 @@ nav_pane.js
   The Vault Campus Marketplace
   CSC 405 Sp 26
   Created by James Williams - 10/26/26 (moved out of storefront.js, original code by Day Ekoi 3/22/26)
-  Updated by James Williams - 10/26/26 - drawer for the new header: Esc, overlay click, focus trap,
-  scroll lock, focus goes back to the menu button
+  Updated by James Williams - 10/26/26 - menu drawer for the new header, Esc or clicking outside closes it
 
-Description: Opens and closes the menu drawer. Used by every page with the shared nav.
+Description: This opens and closes the menu drawer on every page that has the shared nav.
 */
 
 (function () {
@@ -29,7 +28,7 @@ Description: Opens and closes the menu drawer. Used by every page with the share
     document.body.classList.toggle("pm-scroll-locked", open);
     if (open) {
       navPane.hidden = navOverlay.hidden = false;
-      // next frame, so the slide-in transition runs
+      // waits one frame so the slide-in animation plays
       window.requestAnimationFrame(() => {
         navPane.dataset.open = navOverlay.dataset.open = "true";
         navPane.querySelector(FOCUSABLE).focus();
@@ -52,7 +51,7 @@ Description: Opens and closes the menu drawer. Used by every page with the share
       return;
     }
     if (event.key !== "Tab") return;
-    // keep Tab inside the drawer
+    // keeps the Tab key inside the drawer while it's open
     const items = Array.from(navPane.querySelectorAll(FOCUSABLE));
     const first = items[0];
     const last = items[items.length - 1];
@@ -65,7 +64,7 @@ Description: Opens and closes the menu drawer. Used by every page with the share
     }
   });
 
-  // the drawer is only for narrow screens; close it if the window gets wide
+  // The drawer is only for small screens, so this closes it if the window gets wide
   window.matchMedia("(min-width: 900px)").addEventListener("change", (query) => {
     if (query.matches && isOpen()) setOpen(false);
   });

@@ -7,11 +7,10 @@ storefront.js
   Date: 3/18/2026 - 3/22/2026
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - fetchStorefronts now maps preview_image_1-4 to card carousel; falls back to banner_url if no previews set
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - removed add-to-cart form from storefront cards (size, qty, add to bag); kept version history via comments
-  Updated by James Williams - 10/26/26 - storefront facades (cover: previews, then banner, then the
-  store's product photos, then a monogram), sort, header search, inline pages
+  Updated by James Williams - 10/26/26 - store covers, sorting, header search and page numbers
 
-Description: the storefront directory (homepage.html). Store names and other text are set with
-textContent, never as HTML.
+Description: This is the storefront directory on homepage.html. Store names and other text
+are added as plain text, never as HTML.
 */
 
 (function () {
@@ -37,7 +36,8 @@ textContent, never as HTML.
     return (String(name).trim()[0] || "?").toUpperCase();
   }
 
-  // Cover photos, in order of preference; a banner fills the whole cover
+  // Picks the cover photos. It tries the preview photos first, then the banner, then the store's
+  // product photos. A banner takes up the whole cover
   function coverFor(store) {
     const previews = [store.preview_image_1, store.preview_image_2, store.preview_image_3, store.preview_image_4].filter(Boolean);
     if (previews.length) return { images: previews.slice(0, 3), count: String(Math.min(previews.length, 3)) };

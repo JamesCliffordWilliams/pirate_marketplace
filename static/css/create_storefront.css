@@ -313,7 +313,7 @@ textarea:focus {
 
 
 /* photo pickers (js/image_uploader.js) - Added by James Williams 10/26/26
-   The file input stays focusable but invisible; its <label class="drop-zone"> opens it. */
+   This hides the file input but keeps it focusable. Clicking the drop zone opens it. */
 .drop-zone {
     display: block;
     position: relative;

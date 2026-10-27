@@ -3,8 +3,8 @@
 
     Pirate Market
     Created by James Williams - 10/26/26
-    Landing, log in, sign up and admin log in. The crest is the hero; forms are a single
-    calm column. Components come from theme.css.
+    This styles the landing, log in, sign up and admin log in pages.
+    The crest logo sits at the top and the forms are one simple column.
 */
 
 body.pm.pm-entry {

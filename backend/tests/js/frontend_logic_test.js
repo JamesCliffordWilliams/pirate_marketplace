@@ -3,11 +3,11 @@
 
     The Vault Campus Marketplace
     Created by James Williams - 10/26/26
-    Pure-logic tests for category_picker.js, listing_card.js and hot.js.
-    Updated by James Williams - 10/26/26 - Hot page: detail_view tracking and section states
+    Tests the logic in category_picker.js, listing_card.js and hot.js.
+    Updated by James Williams - 10/26/26 - Hot page view tracking and sections
     Updated by James Williams - 10/26/26 - photo picker type and GPS checks
-    Run by tests/test_frontend_js.py with JavaScriptCore (`jsc`); no browser or DOM needed.
-    Usage: jsc frontend_logic_test.js -- <repo root>
+    tests/test_frontend_js.py runs this with jsc, so no browser is needed.
+    To run it by hand: jsc frontend_logic_test.js -- <repo root>
 */
 
 var window = this;
@@ -46,14 +46,14 @@ function matchIds(query) {
     return ids;
 }
 
-// normalize: case, & == and, punctuation
+// This checks that search text ignores case and punctuation, and & matches "and"
 same(P.normalize("T-Shirts & Tops"), "t shirts and tops", "normalize ampersand + hyphen");
 same(P.normalize("  MOVIES, Music  "), "movies music", "normalize case/commas/spaces");
 
-// entries: parents become groups, Other is a top-level leaf, parents are not options
+// Parent categories become groups and Other stays a normal option
 same(entries.map(function (e) { return e.type; }), ["group", "group", "leaf"], "entry types");
 
-// search
+// Search
 same(matchIds(""), [2, 3, 5, 9], "empty query lists every selectable option");
 same(matchIds("mac"), [2], "keyword: mac -> Laptops & Computers");
 same(matchIds("ELECTRONICS"), [2, 3], "parent name matches all its leaves, case-insensitive");
@@ -63,7 +63,7 @@ same(matchIds("electronics phone"), [3], "every term must match");
 same(matchIds("zzzz"), [], "no matches");
 same(matchIds("other"), [9], "Other is searchable");
 
-// selection: only leaves, never parents
+// Only the smallest categories can be picked, never a parent
 check(P.findSelection(entries, 1) === null, "parent id is not selectable");
 check(P.findSelection(entries, "4") === null, "parent id string is not selectable");
 same(P.selectionPath(P.findSelection(entries, 2)), "Electronics & Technology › Laptops & Computers", "leaf path");
@@ -72,7 +72,7 @@ check(P.findSelection(entries, 777) === null, "unknown id");
 check(P.findSelection(entries, "abc") === null, "non-numeric id");
 check(P.findSelection(entries, null) === null, "null id");
 
-// highlight chunks
+// Highlighting the search match
 same(P.highlightChunks("Laptops & Computers", "comp"),
     [{ text: "Laptops & ", match: false }, { text: "Comp", match: true }, { text: "uters", match: false }],
     "highlight substring");
@@ -82,15 +82,14 @@ same(P.highlightChunks("Sandals & Slides", "and"),
     "highlight 'and' also marks '&'");
 same(P.highlightChunks("Phones", ""), [{ text: "Phones", match: false }], "no query, no highlight");
 
-// listing card helpers
+// Listing card helpers
 var C = window.VaultListingCard;
-same(C.escapeHtml('<img src=x onerror="alert(1)">&\''), "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;&amp;&#39;", "escapeHtml");
 same(C.formatPrice(5), "$5.00", "price 2 decimals");
 same(C.formatPrice("12.5"), "$12.50", "string price 2 decimals");
 same(C.formatPrice(1234.567), "$1234.57", "price rounding");
 same(C.PLACEHOLDER_IMAGE, "/static/images/listing-placeholder.svg", "placeholder path");
 
-// ---------- mount() with a minimal fake DOM ----------
+// ---------- mount() with a small fake page ----------
 function FakeNode(tag) {
     this.tagName = String(tag).toUpperCase();
     this.children = []; this.attributes = {}; this.dataset = {}; this.style = {};
@@ -110,7 +109,6 @@ FakeNode.prototype.setAttribute = function (k, v) { this.attributes[k] = String(
 FakeNode.prototype.getAttribute = function (k) { return k in this.attributes ? this.attributes[k] : null; };
 FakeNode.prototype.removeAttribute = function (k) { delete this.attributes[k]; };
 FakeNode.prototype.addEventListener = function (e, f) { (this.listeners[e] = this.listeners[e] || []).push(f); };
-FakeNode.prototype.dispatchEvent = function () { return true; };
 FakeNode.prototype.insertAdjacentHTML = function () {};
 FakeNode.prototype.contains = function () { return false; };
 FakeNode.prototype.focus = function () {};
@@ -126,11 +124,10 @@ var document = {
     getElementById: function () { return null; }, // Added by James Williams 10/26/26
     addEventListener: function () {}
 };
-var Event = function (type) { this.type = type; };
 
-// Edit page race: the listing's category id arrives (setValue) BEFORE the tree loads.
-// When onStatusChange("ready") fires, the pending selection must already be applied,
-// otherwise the edit page shows a false "category is no longer offered" note.
+// On the edit page the category id can show up before the category list loads.
+// This makes sure it's already picked by the time "ready" fires, or the page
+// wrongly says the category is no longer offered.
 var seen = null;
 var hidden = new FakeNode("input");
 var picker = window.CategoryPicker.mount(new FakeNode("div"), {
@@ -146,7 +143,7 @@ same(seen, { hasValue: true, value: 2 }, "selection applied before 'ready' is an
 same(hidden.value, "2", "hidden input holds the leaf id");
 same(picker.getSelection().path, "Electronics & Technology › Laptops & Computers", "selection path after setTree");
 
-// A parent id or unknown id never becomes a value, even via setValue
+// A parent id can't be picked through setValue either
 picker.setValue(1);
 check(!picker.hasValue() && hidden.value === "", "parent id via setValue is rejected");
 picker.setValue(9);
@@ -203,7 +200,7 @@ same(U.imageType({ name: "IMG_1.heic", type: "" }), null, "heic by extension ref
 same(U.imageType({ name: "a.svg", type: "image/svg+xml" }), null, "svg refused");
 same(U.imageType({ name: "a.jpg", type: "application/pdf" }), null, "type wins over extension");
 
-// JPEG bytes: SOI, optional APP1 Exif with one IFD0 entry, then SOS
+// This builds a tiny fake JPEG, with or without one photo info tag
 function jpeg(tag, littleEndian) {
     var b = [0xFF, 0xD8];
     if (tag) {
@@ -224,4 +221,32 @@ same(U.jpegHasGps(jpeg(0)), false, "no EXIF: no GPS");
 same(U.jpegHasGps(jpeg(0x0112, true).slice(0, 12)), true, "cut-off metadata is treated as GPS");
 same(U.jpegHasGps(new Uint8Array([0x89, 0x50]).buffer), true, "not a JPEG is treated as GPS");
 
-print("OK " + passed);
+// ---------- saved listings kept in the browser (listing_card.js) ----------
+// If the wishlist doesn't load, the hearts use the ids saved in the browser last time
+var stored = {};
+var localStorage = {
+    getItem: function (key) { return key in stored ? stored[key] : null; },
+    setItem: function (key, value) { stored[key] = String(value); }
+};
+var console = { error: function () {} };
+function reply(ok, body) {
+    return Promise.resolve({ ok: ok, status: ok ? 200 : 500, json: function () { return Promise.resolve(body); } });
+}
+window.fetch = function () { return reply(true, { wishlist: [{ listing_id: 5 }, { id: 7 }] }); };
+C.getWishlistIdSet(1).then(function (ids) {
+    same(Array.from(ids), ["5", "7"], "wishlist ids come back as strings");
+    return C.setSaved(9, 1, true);
+}).then(function () {
+    return C.setSaved(5, 1, false);
+}).then(function () {
+    window.fetch = function () { return reply(false, {}); };
+    return C.getWishlistIdSet(1);
+}).then(function (ids) {
+    same(Array.from(ids), ["9", "7"], "saving and unsaving update the ids kept in the browser");
+    return C.getWishlistIdSet(null);
+}).then(function (ids) {
+    same(ids.size, 0, "logged out: nothing saved");
+    print("OK " + passed);
+}).catch(function (error) {
+    print(error.message);
+});

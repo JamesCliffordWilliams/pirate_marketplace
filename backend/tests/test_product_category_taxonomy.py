@@ -1,5 +1,5 @@
 # The Vault Campus Marketplace
-# Created by James Williams - 10/26/26 - category list tests (no database needed)
+# Created by James Williams - 10/26/26 - category list tests, no database needed
 
 import os
 import re
@@ -20,7 +20,7 @@ SLUG_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
 
 def author_slug(name):
-    """The authoring rule from the spec: lowercase, & -> and, commas dropped, other non-alphanumerics -> -."""
+    """Makes a slug the way the spec says to: lowercase, & becomes "and", no commas, and dashes between words."""
     value = name.lower().replace("&", "and").replace(",", "")
     value = re.sub(r"[^a-z0-9]+", "-", value)
     return value.strip("-")
@@ -86,11 +86,6 @@ class TestProductCategoryTaxonomy(unittest.TestCase):
                 for keyword in keywords:
                     self.assertIsInstance(keyword, str)
                     self.assertEqual(keyword, keyword.strip().lower(), node["slug"])
-
-    def test_laptops_findable_by_mac(self):
-        electronics = next(p for p in PRODUCT_CATEGORIES if p["slug"] == "electronics-and-technology")
-        laptops = next(c for c in electronics["children"] if c["slug"] == "laptops-and-computers")
-        self.assertIn("mac", laptops["keywords"])
 
     def test_names_fit_column(self):
         for parent in PRODUCT_CATEGORIES:

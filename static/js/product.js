@@ -3,9 +3,9 @@
 
     Pirate Market
     Created by James Williams - 10/26/26
-    Product page: photo thumbnails, size and quantity, Add to bag and Save.
-    Uses VaultListingCard.addToBag / setSaved, so the requests match the old card exactly.
-    Opening the page counts as a detail_view for the Hot page.
+    This is the product page with the photos, size and quantity, Add to bag and Save.
+    It uses the same Add to bag and Save code as the product tiles in listing_card.js.
+    Opening the page counts as a view for the Hot page.
 */
 
 (function () {
@@ -16,12 +16,6 @@
     const userId = Number(page.dataset.userId) || null;
     const madeToOrder = page.dataset.madeToOrder === "true";
     const title = page.dataset.title;
-    const meta = {
-        title,
-        price: page.dataset.price,
-        image_url: page.dataset.image || VaultListingCard.PLACEHOLDER_IMAGE,
-        storefront_name: page.dataset.store
-    };
 
     VaultListingCard.trackDetailView(listingId, userId);
 
@@ -61,7 +55,7 @@
         form.querySelector('[data-step="1"]').disabled = qty >= max;
     }
 
-    // one in-stock size: pick it for the shopper
+    // Picks the size for the shopper if there's only one in stock
     const available = sizeInputs.filter((input) => input.type === "radio" && !input.disabled);
     if (available.length === 1) available[0].checked = true;
 
@@ -132,7 +126,7 @@
         const save = saveButton.getAttribute("aria-pressed") !== "true";
         saveButton.disabled = true;
         try {
-            await VaultListingCard.setSaved(listingId, userId, save, meta);
+            await VaultListingCard.setSaved(listingId, userId, save);
             renderSaved(save);
         } catch (error) {
             VaultListingCard.showToast(error.message, "error");

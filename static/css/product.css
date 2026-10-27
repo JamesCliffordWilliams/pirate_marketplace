@@ -3,11 +3,11 @@
 
     Pirate Market
     Created by James Williams - 10/26/26
-    Product page layout: photos on the left, buying on the right (stacked on narrow screens).
-    Components come from theme.css.
+    This styles the product page. The photos are on the left and the buying options are on the right.
+    On small screens they stack.
 */
 
-/* the photo column is as wide as a 4:5 photo that fits the window height */
+/* This makes the photo column as wide as a 4:5 photo that fits in the window */
 .pm .pm-product {
     display: grid;
     grid-template-columns: minmax(0, min(640px, calc((100vh - 180px) * 0.8))) minmax(320px, 420px);
@@ -54,7 +54,7 @@
 .pm .pm-gallery__thumb img { width: 100%; height: 100%; object-fit: cover; }
 .pm .pm-gallery__thumb[aria-pressed="true"] { border-color: var(--pm-brass); }
 
-/* ---------- buying ---------- */
+/* ---------- buying options ---------- */
 
 .pm .pm-product__info {
     position: sticky;

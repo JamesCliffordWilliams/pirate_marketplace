@@ -3,7 +3,7 @@
 # Created by Day Ekoi - Iteration 3
 # Updated by Day Ekoi - Iteration 4 3/25/26
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added edit storefront route, create listing route, S3 image upload endpoint, fixed session key
-# Updated by James Williams - 10/26/26 - product page route (/listings/<id>)
+# Updated by James Williams - 10/26/26 - added the product page route at /listings/<id>
 
 """
 storefront_controller.py
@@ -241,7 +241,7 @@ def edit_storefront_page(storefront_id):
     return render_template("edit_storefront.html", storefront_id=storefront_id)
 
 
-# Added by James Williams 10/26/26 - product page (buying moved here from the cards)
+# Added by James Williams 10/26/26 - the product page. Buying happens here now instead of on the cards
 SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "One Size"]
 
 
@@ -252,17 +252,25 @@ def product_page(listing_id):
 
     listing = get_listing_by_id(listing_id)
     storefront = get_storefront_by_id(listing["storefront_id"]) if listing else None
+    if listing is None or storefront is None:
+        return render_template("product.html", listing=None), 404
+
+    # Shoppers see ACTIVE and SOLD_OUT listings in open stores. The owner can also preview their hidden ones
     viewer_id = session.get("user_id")
-    is_public = (listing is not None and storefront is not None
-                 and listing["status"] in ("ACTIVE", "SOLD_OUT") and storefront.get("is_active") is not False)
-    is_owner_preview = (listing is not None and storefront is not None and viewer_id == storefront["owner_id"]
-                        and listing["status"] != "DELETED")
+    is_public = listing["status"] in ("ACTIVE", "SOLD_OUT") and storefront.get("is_active") is not False
+    is_owner_preview = viewer_id == storefront["owner_id"] and listing["status"] != "DELETED"
     if not (is_public or is_owner_preview):
         return render_template("product.html", listing=None), 404
 
-    image_urls = [image["image_url"] for image in get_images_for_listing(listing_id)][:4] or ([listing["image_url"]] if listing.get("image_url") else [])
-    sizes = sorted(get_sizes_for_listing(listing_id),
-                   key=lambda row: SIZE_ORDER.index(row["size"]) if row["size"] in SIZE_ORDER else len(SIZE_ORDER))
+    # Up to 4 photos. Falls back to the main photo if the images table has none
+    image_urls = [image["image_url"] for image in get_images_for_listing(listing_id)][:4]
+    if not image_urls and listing.get("image_url"):
+        image_urls = [listing["image_url"]]
+
+    # Sorts sizes from small to large, with sizes we don't know at the end
+    def size_rank(row):
+        return SIZE_ORDER.index(row["size"]) if row["size"] in SIZE_ORDER else len(SIZE_ORDER)
+    sizes = sorted(get_sizes_for_listing(listing_id), key=size_rank)
     made_to_order = bool(listing.get("is_made_to_order"))
     sold_out = not made_to_order and (listing["status"] == "SOLD_OUT" or listing.get("quantity_on_hand") == 0)
     return render_template("product.html", listing=listing, storefront=storefront, images=image_urls, sizes=sizes,

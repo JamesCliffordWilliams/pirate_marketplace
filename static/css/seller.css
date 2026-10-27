@@ -3,12 +3,11 @@
 
     Pirate Market
     Created by James Williams - 10/26/26
-    Seller pages: create/edit listing and storefront (form beside a live preview), and the
-    My storefront dashboard. Components come from theme.css. Loaded after the pages' older CSS,
-    so a few rules reset styles that create_storefront.css sets on plain elements.
+    This styles the seller pages: the listing and storefront forms and the My storefront dashboard.
+    It loads after the older CSS, so a few rules undo styles from create_storefront.css.
 */
 
-/* ---------- form + sticky preview ---------- */
+/* ---------- form and preview ---------- */
 
 .pm .pm-editor {
     display: grid;
@@ -27,7 +26,7 @@
     gap: 12px;
 }
 
-/* the preview is a picture of a tile, not something to click */
+/* This makes the preview tile not clickable */
 .pm .pm-preview-tile { pointer-events: none; }
 .pm .pm-preview-tile .pm-tile__link::after { display: none; }
 
@@ -55,13 +54,13 @@
 
 .pm .pm-notice a { color: var(--pm-brass); font-weight: 600; }
 
-/* create_storefront.css styles plain inputs and selects; theme controls win here */
+/* This makes the theme inputs win over the old create_storefront.css styles */
 .pm input.pm-input,
 .pm select.pm-select,
 .pm textarea.pm-textarea { width: 100%; margin: 0; font-size: var(--pm-t16); box-shadow: none; }
 .pm .pm-prefix input.pm-input { border: 0; background: none; }
 
-/* ---------- photo tiles (Cover + 3) ---------- */
+/* ---------- photo tiles (cover and 3 more) ---------- */
 
 .pm .pm-photos {
     display: grid;
@@ -105,7 +104,7 @@
 .pm .pm-photo__zone .drop-text { display: grid; justify-items: center; gap: 6px; }
 .pm .pm-photo__zone svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 
-/* processing: a quiet shimmer over the tile */
+/* This shows a shimmer on the tile while the photo loads */
 .pm .pm-photo__zone.is-processing {
     opacity: 1;
     background-image: linear-gradient(90deg, var(--pm-hull) 0%, var(--pm-hull-raised) 50%, var(--pm-hull) 100%);
@@ -160,7 +159,7 @@
 
 /* ---------- photos already saved (edit listing) ---------- */
 
-/* saved photos and free spots share one row of four */
+/* This puts saved photos and empty spots in one row of four */
 .pm .pm-photos-all { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; }
 .pm .pm-photos-all > .pm-saved-photos,
 .pm .pm-photos-all > .pm-photos { display: contents; }
@@ -190,7 +189,7 @@
     .pm .pm-form-actions .pm-btn--primary { flex: 1; }
 }
 
-/* category picker (category_picker.css) inside the redesigned form */
+/* This styles the category picker inside the new form */
 .pm .pm-field .cp { width: 100%; max-width: none; margin: 0; }
 
 .pm .pm-field .cp-trigger {
@@ -211,7 +210,7 @@
 .pm .pm-field .cp-group-header { color: var(--pm-fog); font-size: var(--pm-t13); letter-spacing: normal; text-transform: none; }
 .pm .pm-field .cp-option { font-family: var(--pm-sans); }
 
-/* in Edit listing the cover is a saved photo, so new tiles never get the Cover label */
+/* In Edit listing the cover is already saved, so new photos don't get the Cover label */
 .pm .pm-photos-all .pm-photo.has-photo::after { content: none; }
 
 /* ---------- storefront forms ---------- */

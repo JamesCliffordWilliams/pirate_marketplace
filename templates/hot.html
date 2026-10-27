@@ -4,11 +4,11 @@
     The Vault Campus Marketplace
     CSC 405 Sp 26'
     Created by James Williams - 10/26/26
-    Updated by James Williams - 10/26/26 - redesign: product tiles in the shared grid
+    Updated by James Williams - 10/26/26 - redesign with product tiles in the shared grid
 
 Description:
-The Hot page: Hot Right Now and Rising.
-The server builds the page layout, and hot.js loads the products.
+This is the Hot page with Hot Right Now and Rising.
+The server builds the layout and hot.js loads the products.
 -->
 {% macro section_header(key, title, description, icon) -%}
 <header class="hot-section-header">
@@ -47,7 +47,7 @@ The server builds the page layout, and hot.js loads the products.
 
 {% include 'partials/site_nav.html' %}
 
-  <!-- Page header, in the All Categories style -->
+  <!-- This is the page title, styled like All Categories -->
   <section class="cat-hero hot-hero">
     <h1 class="cat-title">Hot</h1>
     <p class="cat-subtitle">What shoppers across campus are into right now.</p>
@@ -68,7 +68,7 @@ The server builds the page layout, and hot.js loads the products.
     data-logged-in="{{ 'true' if session.get('user') else 'false' }}"
   >
 
-    <!-- Page-level message: everything empty, or couldn't load -->
+    <!-- This message shows when there is nothing to show or the page couldn't load -->
     <div class="hot-page-state" id="hotPageState" hidden></div>
 
     <section class="hot-section" id="hotSection" data-section="hot" aria-labelledby="hotHeading">

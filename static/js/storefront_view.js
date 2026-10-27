@@ -9,12 +9,12 @@
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - fixed wishlistIds undefined crash and isWishlisted undefined in createListingCard
     Updated by Day E - April 22nd - multi-image listing display, lightbox preview, and contain-based image handling
     Updated by James Williams - 10/26/26 - card code moved to listing_card.js; added ?listing= scroll and highlight
-    Updated by James Williams - 10/26/26 - redesign: cover (banner, else the store's product photos),
-    medallion, sortable product tiles; old ?listing= links open the product page
+    Updated by James Williams - 10/26/26 - redesign with a store cover, the logo, and product tiles you can sort.
+    Old ?listing= links now open the product page
 
 Description:
-The public storefront page. Loads the storefront and its listings from the API.
-All store text is set with textContent.
+This is the public storefront page. It loads the storefront and its listings from the API.
+All store text is added as plain text.
 */
 
 (function () {
@@ -28,7 +28,7 @@ All store text is set with textContent.
     let listings = [];
     let viewer = { wishlistIds: new Set(), currentUserId: userId };
 
-    // Links from before the product page existed pointed here with ?listing=<id>
+    // Old links used ?listing=<id> to point here, so this sends them to the product page
     const linkedId = new URLSearchParams(window.location.search).get("listing");
     if (linkedId && /^\d+$/.test(linkedId)) {
         window.location.replace(`/listings/${linkedId}`);

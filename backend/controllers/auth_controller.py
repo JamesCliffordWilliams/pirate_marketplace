@@ -69,11 +69,11 @@ def signup():
             flash("Account created. Log in to start shopping.", "success")
             return redirect(url_for('auth.login'))
         # Updated by James Williams 10/26/26 - show the form again with the reason
-        reasons = {
-            "You Must Use a Hampton University Associated Email": "Use your Hampton University email (@hamptonu.edu or @my.hamptonu.edu).",
-        }
-        return render_template('signup.html', error=reasons.get(message, "Your account wasn't created. That username or email may already be taken."),
-                               username=user, email=email)
+        if message == "You Must Use a Hampton University Associated Email":
+            error = "Use your Hampton University email (@hamptonu.edu or @my.hamptonu.edu)."
+        else:
+            error = "Your account wasn't created. That username or email may already be taken."
+        return render_template('signup.html', error=error, username=user, email=email)
     
     return render_template('signup.html')
 
@@ -98,7 +98,7 @@ def logout():
 def view_cart():
     if 'cart' not in session:
         session['cart'] = []
-    # Added by James Williams 10/26/26 - each item's main photo, in one query
+    # Added by James Williams 10/26/26 - gets the main photo for each item in one query
     photos = {}
     item_ids = [int(item['id']) for item in session['cart'] if str(item.get('id', '')).isdigit()]
     if item_ids:
@@ -165,7 +165,7 @@ def add_to_cart():
     except Exception as e:
         print(f"DB Error adding to cart: {e}")
 
-    # Added by James Williams 10/26/26 - Hot page, only once the cart row is saved
+    # Added by James Williams 10/26/26 - counts this for the Hot page, but only after the cart row is saved
     if cart_saved:
         track_interest(item_id, session['user_id'], "cart")
 
@@ -213,7 +213,7 @@ def remove_from_cart(index):
             flash(f"Removed {removed_item['name']} from bag.", "info")
     return redirect(url_for('auth.view_cart'))
 
-# Added by James Williams 10/26/26 - the bag's quantity stepper (1 to what's in stock)
+# Added by James Williams 10/26/26 - changes an item's quantity in the bag, from 1 up to what's in stock
 @auth_bp.route('/update_cart/<int:index>', methods=['POST'])
 def update_cart(index):
     if 'user_id' not in session:
@@ -235,7 +235,7 @@ def update_cart(index):
         if row and not row[1] and row[0] is not None:
             quantity = min(quantity, max(int(row[0]), 1))
         quantity = min(quantity, 99)
-        # same row that remove_from_cart deletes
+        # This updates the same row that remove_from_cart would delete
         cur.execute("""
             UPDATE cart_items SET quantity = %s
             WHERE id = (
