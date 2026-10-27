@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Vault | Account Console</title>
+    <title>Account | Pirate Market</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}">
     <style>
         :root { --gold: #B8860B; --dark-bg: #121212; }
@@ -137,8 +137,11 @@
 
         .back-btn { color: var(--gold); text-decoration: none; font-size: 0.9rem; }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 <body>
+{% include 'partials/site_nav.html' %} {# Added by James Williams 10/26/26 #}
 
 <div class="account-container">
     <a href="{{ url_for('storefront_pages_bp.my_storefront_page') }}" class="back-btn">← BACK TO STOREFRONT</a>
@@ -407,7 +410,7 @@
         const visibleListings = listings.filter((item) => item.status !== "DELETED");
 
         if (!visibleListings.length) {
-            emptyState.textContent = "No active listings found in the vault.";
+            emptyState.textContent = "You have no active listings.";
             emptyState.style.display = "block";
             return;
         }
@@ -543,5 +546,7 @@
     document.addEventListener("DOMContentLoaded", loadWishlist);
 </script>
 
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>

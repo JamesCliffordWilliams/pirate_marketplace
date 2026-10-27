@@ -148,11 +148,11 @@ class TestCategoryPagesOffline(unittest.TestCase):
         response = self.client.get("/storefronts")
         self.assertEqual(response.status_code, 200)
         html = response.get_data(as_text=True)
-        self.assertRegex(html, r'<a class="nav-item" href="/categories">All Categories <span>→</span></a>')
-        # the rest of the menu is unchanged (Hot! links to /hot - James Williams 10/26/26)
-        for item in ("Explore Brands", "New Drops"):
-            self.assertIn(f'<div class="nav-item">{item} <span>→</span></div>', html)
-        self.assertIn('<a class="nav-item" href="/hot">Hot! <span>→</span></a>', html)
+        # Updated by James Williams 10/26/26 - new header: links only to pages that exist
+        self.assertIn('href="/categories">All categories</a>', html)
+        self.assertIn('href="/hot"', html)
+        for dead in ("Explore Brands", "New Drops", "Sitemap"):
+            self.assertNotIn(dead, html)
         self.assertIn("js/nav_pane.js", html)
         self.assertIn("js/storefront.js", html)
 
@@ -161,7 +161,8 @@ class TestCategoryPagesOffline(unittest.TestCase):
             with self.subTest(path=path):
                 html = self.client.get(path).get_data(as_text=True)
                 self.assertIn('id="navPane"', html)
-                self.assertIn('class="icon-btn menu-btn"', html)
+                self.assertIn("menu-btn", html)  # Updated by James Williams 10/26/26 - new header
+                self.assertIn("css/nav.css", html)
                 self.assertIn("js/nav_pane.js", html)
                 self.assertIn("css/storefront.css", html)
                 self.assertIn("css/categories.css", html)

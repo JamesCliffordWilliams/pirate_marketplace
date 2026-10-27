@@ -17,11 +17,13 @@ and category_listings.js loads the products.
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Vault | {{ current.name }}</title>
+  <title>{{ current.name }} | Pirate Market</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/listing_card.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/categories.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 
 <body>
@@ -121,5 +123,6 @@ and category_listings.js loads the products.
   <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
   <script src="{{ url_for('static', filename='js/listing_card.js') }}"></script>
   <script src="{{ url_for('static', filename='js/category_listings.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>

@@ -8,7 +8,7 @@ Updated by Day Ekoi 4/22/26 - JS-driven, loads order data from API
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Confirmed | The Vault</title>
+    <title>Order confirmed | Pirate Market</title>
     <style>
         :root { --gold: #B8860B; --gold-light: #d4af37; }
 
@@ -175,8 +175,11 @@ Updated by Day Ekoi 4/22/26 - JS-driven, loads order data from API
             .conf-card { padding: 22px; }
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 <body>
+{% include 'partials/site_nav.html' %} {# Added by James Williams 10/26/26 #}
     <div class="page-wrapper">
         <div class="conf-card" id="confCard">
             <p class="loading-msg" id="loadingMsg">Loading your order confirmation...</p>
@@ -233,7 +236,7 @@ Updated by Day Ekoi 4/22/26 - JS-driven, loads order data from API
         card.innerHTML = `
             <div class="conf-header">
                 <div class="success-badge">&#10003; Order Submitted</div>
-                <h1><span>The</span> Vault — Thank You!</h1>
+                <h1>Thank you for your order</h1>
                 <p class="conf-number">Confirmation: <strong>${order.confirmation_number}</strong></p>
             </div>
 
@@ -301,5 +304,7 @@ Updated by Day Ekoi 4/22/26 - JS-driven, loads order data from API
         `;
     })();
     </script>
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>

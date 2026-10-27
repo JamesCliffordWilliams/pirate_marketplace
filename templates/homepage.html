@@ -39,9 +39,11 @@ Start of Code w/ comments
 <!-- stores info that isnt actually shown on the page itself. Includes metadata, browser tab title, and links to the css file -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- ensures the screensize is consistent on different types of devices -->
-  <title>The Vault | Storefronts</title> <!-- Simple, this is the Title of the page -->
+  <title>Storefronts | Pirate Market</title> 
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" /> <!-- Updated by Day E 3/22/26 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head> <!-- end of head -->
 
 
@@ -59,18 +61,8 @@ Start of Code w/ comments
 
     <h1 class="brand-title"> Pirate Market </h1>
 
-    <p class="brand-subtitle">Fashion Marketplace</p>
-
-    <!-- Search Bar input that allows users to type their search queries. As of right now there isnt any actual functionality -->
-
-    <div class="search-wrap">
-      <input
-        type="text"
-        id="searchInput"
-        class="search-input"
-        placeholder="Search"
-      />
-    </div>
+    <p class="brand-subtitle">The campus marketplace</p>
+    <!-- Search moved to the header ("Search storefronts") - James Williams 10/26/26 -->
   </section>
 
   <!-- Main page content: Holds the storefrotn cards and pagination -->
@@ -98,5 +90,6 @@ Start of Code w/ comments
   <script src="{{ url_for('static', filename='js/storefront.js') }}"></script> <!-- Updated by Day E 3/22/26 -->
   <!-- This line links this file to storefront.js 
    Placed at the bottom so that all HTML loads correctly first and then JS. This ensures everything runs correctly -->
+{% include 'partials/site_footer.html' %}
 </body> <!-- end of body -->
 </html>

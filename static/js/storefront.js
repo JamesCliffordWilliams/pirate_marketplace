@@ -233,7 +233,7 @@ async function fetchStorefronts() {
       };
     });
 
-    renderStorefronts();
+    applySearch(); // Updated by James Williams 10/26/26 - keeps a ?q= search from the header
   } catch (error) {
     console.error("Error fetching storefronts from Flask API:", error);
     if (grid) grid.innerHTML = `<p style="color:#888; font-style:italic; text-align:center; grid-column:1/-1; padding:2rem;">Could not load storefronts. Please try again.</p>`;
@@ -247,9 +247,10 @@ console.log(grid); // logs the storefront grid element to the console for debugg
 
 // SEARCH BAR FUNCTIONALITY
 // Added by Day E 4/9/26
-// filters storefront cards in real time as the user types in the search bar
+// Updated by James Williams 10/26/26 - the header's "Search storefronts" box filters this page
+// (other pages send ?q=); the no-results message uses textContent so a query can't inject HTML
 
-const searchInput = document.getElementById("searchInput");
+const searchInput = document.getElementById("siteSearch");
 
 // filters storefronts by name based on search input
 function filterStorefronts(query) {
@@ -261,7 +262,10 @@ function filterStorefronts(query) {
     grid.innerHTML = "";
 
     if (!filtered.length) {
-        grid.innerHTML = `<p style="color:#c9c9c9; font-style:italic; text-align:center; grid-column:1/-1; padding: 2rem;">No storefronts found for "${query}"</p>`;
+        const message = document.createElement("p");
+        message.style.cssText = "color:#c9c9c9; font-style:italic; text-align:center; grid-column:1/-1; padding: 2rem;";
+        message.textContent = `No storefronts found for "${query}"`;
+        grid.appendChild(message);
         return;
     }
 
@@ -271,15 +275,20 @@ function filterStorefronts(query) {
     });
 }
 
-//  input changes
-if (searchInput) {
-    searchInput.addEventListener("input", () => {
-        const query = searchInput.value.trim();
-        if (!query) {
-            renderStorefronts(); // show all if search is cleared
-        } else {
-            filterStorefronts(query);
-        }
+function applySearch() {
+    const query = searchInput ? searchInput.value.trim() : "";
+    if (!query) {
+        renderStorefronts(); // show all if search is cleared
+    } else {
+        filterStorefronts(query);
+    }
+}
+
+if (searchInput && grid) {
+    searchInput.addEventListener("input", applySearch);
+    searchInput.form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        applySearch();
     });
 }
 

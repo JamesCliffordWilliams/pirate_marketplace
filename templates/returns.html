@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Returns</title>
+    <title>Returns | Pirate Market</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/create_storefront.css') }}">
     <style>
         .back-row {
@@ -95,8 +95,11 @@
             justify-content: center;
         }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 <body>
+{% include 'partials/site_nav.html' %} {# Added by James Williams 10/26/26 #}
     <div class="back-row">
         <button class="back-btn" id="backBtn">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -107,10 +110,6 @@
     </div>
 
     <header class="create-header">
-        <div class="brand-block">
-            <h1 class="brand-title"><span class="gold">The</span> Vault</h1>
-            <p class="brand-subtitle">Fashion Marketplace</p>
-        </div>
         <h2 class="page-title">Returns</h2>
     </header>
 
@@ -125,7 +124,7 @@ Please contact the seller first to request your return.
 
 If you are unable to reach the seller, email TheVaultAdmins@my.hamptonu.edu.
 
-Please still complete this form so The Vault can track the return request.
+Please still complete this form so Pirate Market can track the return request.
                 </textarea>
             </section>
 
@@ -172,5 +171,7 @@ Please still complete this form so The Vault can track the return request.
 
     <script src="{{ url_for('static', filename='js/image_uploader.js') }}"></script> <!-- Added by James Williams 10/26/26 -->
     <script src="{{ url_for('static', filename='js/returns.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>

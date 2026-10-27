@@ -8,20 +8,19 @@ Updated by Day Ekoi 4/22/26 - wired to checkout.js, added field IDs, error displ
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout | The Vault</title>
+    <title>Checkout | Pirate Market</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 <body>
+{% include 'partials/site_nav.html' %} {# Added by James Williams 10/26/26 #}
     <header class="storefront-top">
         <div class="storefront-banner">
            <a href="{{ url_for('auth.view_cart') }}" style="text-decoration: none;">
                 <button class="secondary-btn">&larr; BACK TO CART</button>
             </a>
 
-            <div class="brand-block">
-                <h1 class="brand-title"><span class="gold">The</span> Vault</h1>
-                <p class="brand-subtitle">Finalize Purchase</p>
-            </div>
         </div>
     </header>
 
@@ -67,5 +66,7 @@ Updated by Day Ekoi 4/22/26 - wired to checkout.js, added field IDs, error displ
     </main>
 
     <script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>

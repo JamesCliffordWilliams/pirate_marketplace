@@ -1,0 +1,20 @@
+{# Created by James Williams - 10/26/26 - shared footer: seller links and returns #}
+<footer class="pm pm-footer">
+    <div class="pm-footer__inner">
+        <div>
+            <p class="pm-footer__brand">Pirate Market</p>
+            <p class="pm-muted">The campus marketplace</p>
+        </div>
+        <nav aria-label="Selling">
+            <p class="pm-footer__heading">Selling</p>
+            <a href="{{ url_for('my_storefront') }}">My storefront</a>
+            <a href="{{ url_for('storefront_pages_bp.create_listing_page') }}">Create listing</a>
+            <a href="{{ url_for('storefront_pages_bp.create_storefront_page') }}">Create storefront</a>
+        </nav>
+        <nav aria-label="Help">
+            <p class="pm-footer__heading">Help</p>
+            <a href="{{ url_for('returns_bp.returns_page') }}">Returns</a>
+            <a href="{{ url_for('category_pages_bp.categories_page') }}">All categories</a>
+        </nav>
+    </div>
+</footer>

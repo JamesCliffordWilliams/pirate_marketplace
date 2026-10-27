@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Vault | Your Bag</title>
+    <title>Bag | Pirate Market</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}">
     <style>
         :root { --gold: #B8860B; --dark-bg: #121212; }
@@ -51,8 +51,11 @@
         
         .back-link { color: var(--gold); text-decoration: none; font-size: 0.9rem; margin-top: 20px; display: inline-block; }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 <body>
+{% include 'partials/site_nav.html' %} {# Added by James Williams 10/26/26 #}
 
 <div class="cart-container">
     <div class="cart-header">
@@ -118,11 +121,13 @@
         </div>
     {% else %}
         <div class="empty-msg">
-            <p>Your vault bag is currently empty.</p>
+            <p>Your bag is empty.</p>
             <a href="{{ url_for('auth.listings') }}" class="back-link">Browse Storefronts</a>
         </div>
     {% endif %}
 </div>
 
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>

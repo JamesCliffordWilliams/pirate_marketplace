@@ -7,6 +7,7 @@
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - added lightbox overlay styles for storefront card image previews
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - restyled enter/page buttons to pill style; increased carousel image height; commented out bag-form styles
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - aligned storefront CTA and pagination buttons with back-button styling; expanded image area on cards
+    Updated by James Williams - 10/26/26 - top bar and side menu rules moved to nav.css
 
 Description: 
 The purpose of this file is to control the style and layout of the storefront homepage.
@@ -58,47 +59,7 @@ body {
 }
 
 
-/* Overlay for dimming the page when nav is open */
-.nav-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    opacity: 0;
-    visibility: hidden;
-    transition: 0.25s ease;
-    z-index: 20;
-}
 
-.nav-overlay.active {
-    opacity: 1;
-    visibility: visible;
-}
-
-
-/* Side navigation pane/menu */
-.nav-pane {
-    position: fixed;
-    top: 0;
-    left: -320px;
-    width: 300px;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.92); /* Updated by Day E 3/22/26 */
-    border-right: 1px solid #B8860B;
-    padding: 30px 22px 24px 22px; /* Updated by Day E 3/22/26 */
-    z-index: 30;
-    transition: left 0.3s ease;
-    overflow-y: auto; /* Updated by Day E 3/22/26 */
-}
-
-.nav-pane.active {
-    left: 0;
-}
-
-
-/* Top half button and actions */
-.nav-top {
-    margin-bottom: 28px;
-}
 
 
 /* Metallic button styling */
@@ -206,141 +167,8 @@ body {
 .page-btn {
     min-width: 112px;
 }
-.create-btn {
-    width: 100%;
-    padding: 14px 16px;
-    margin-bottom: 10px;
-    background: transparent;
-    color: white;
-    border: 1px solid white;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    cursor: pointer;
-    transition: 0.3s;
-    border-radius: 2px;
-}
-
-.create-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: translateY(-2px);
-}
-
-.my-storefront-btn {
-    border-color: #D4AF37;
-    color: #D4AF37;
-}
-
-.my-storefront-btn:hover {
-    background: rgba(212, 175, 55, 0.15);
-}
-
-nav-divider { /* updated by Day E 4/9/2026 */
-    border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.25);
-    margin: 18px 0;
-}
-
-/* Main navigation */
-.nav-section {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    margin-bottom: 28px;
-}
-
-.nav-item {
-    color: white;
-    font-size: 1.05rem;
-    cursor: pointer;
-    display: flex; /* Updated by Day E 3/22/26 */
-    justify-content: space-between; /* Updated by Day E 3/22/26 */
-    align-items: center; /* Updated by Day E 3/22/26 */
-    padding: 4px 0; /* Updated by Day E 3/22/26 */
-}
-
-.nav-item:hover {
-    color: #B8860B;
-}
-
-/* Added by James Williams 10/26/26 - All Categories is a link; make it look like the other menu items */
-a.nav-item {
-    text-decoration: none;
-}
-
-a.nav-item:focus-visible {
-    outline: 2px solid rgba(var(--vault-gold), 0.9);
-    outline-offset: 2px;
-}
-
-.nav-heading {
-    color: rgba(204, 178, 128, 0.75); /* Updated by Day E 3/22/26 */
-    font-size: 0.95rem; /* Updated by Day E 3/22/26 */
-    margin-bottom: 12px; /* Updated by Day E 3/22/26 */
-}
-
-.nav-subitem {
-    color: white; /* Updated by Day E 3/22/26 */
-    margin-bottom: 10px; /* Updated by Day E 3/22/26 */
-    cursor: pointer; /* Updated by Day E 3/22/26 */
-    text-decoration: none;
-    display: block;
-}
-
-.nav-subitem:hover {
-    color: #B8860B; /* Updated by Day E 3/22/26 */
-}
 
 
-/* Updated nav bar */
-.topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 42px;
-    padding: 6px 4px; /* Updated by Day E 3/22/26 */
-}
-
-.topbar-actions {
-    display: flex; /* Updated by Day E 3/22/26 */
-    align-items: center; /* Updated by Day E 3/22/26 */
-    gap: 18px; /* Updated by Day E 3/22/26 */
-}
-
-
-/* Hamburger menu */
-.menu-btn {
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Updated by Day E 3/22/26 */
-    gap: 6px;
-    width: 46px; /* Updated by Day E 3/22/26 */
-    height: 46px; /* Updated by Day E 3/22/26 */
-    background: transparent; /* Updated by Day E 3/22/26 */
-    border: none; /* Updated by Day E 3/22/26 */
-    cursor: pointer; /* Updated by Day E 3/22/26 */
-}
-
-.menu-line {
-    width: 30px; /* Updated by Day E 3/22/26 */
-    height: 3px; /* Updated by Day E 3/22/26 */
-    background: white;
-    border-radius: 2px; /* Updated by Day E 3/22/26 */
-}
-
-
-/* Bag icon */
-.bag-btn {
-    width: 42px; /* Updated by Day E 3/22/26 */
-    height: 42px; /* Updated by Day E 3/22/26 */
-    display: flex; /* Updated by Day E 3/22/26 */
-    color: white;
-    align-items: center; /* Updated by Day E 3/22/26 */
-    justify-content: center; /* Updated by Day E 3/22/26 */
-    background: transparent; /* Updated by Day E 3/22/26 */
-    border: none; /* Updated by Day E 3/22/26 */
-    cursor: pointer; /* Updated by Day E 3/22/26 */
-}
 
 /* Removed by Day Ekoi - Iteration 5 - 4/20/26: bag form removed from storefront cards.
    Originally added by Ryan 3/25/26. Kept as version history.
@@ -386,38 +214,6 @@ a.nav-item:focus-visible {
 }
 */
 
-.topbar-svg {
-    width: 48px; /* Updated by Day E 3/22/26 */
-    height: 48px; /* Updated by Day E 3/22/26 */
-    stroke: white; /* Updated by Day E 3/22/26 */
-    fill: white;
-    color: white;
-}
-
-
-/* Profile button */
-.profile-btn {
-    background: transparent; /* Updated by Day E 3/22/26 */
-    border: none; /* Updated by Day E 3/22/26 */
-    cursor: pointer; /* Updated by Day E 3/22/26 */
-}
-
-.profile-avatar {
-    width: 54px;
-    height: 54px;
-    border-radius: 50%;
-    border: 2px solid #D4AF37;
-    background: white;
-    display: flex; /* Updated by Day E 3/22/26 */
-    align-items: center; /* Updated by Day E 3/22/26 */
-    justify-content: center; /* Updated by Day E 3/22/26 */
-}
-
-.profile-svg {
-    width: 28px; /* Updated by Day E 3/22/26 */
-    height: 28px; /* Updated by Day E 3/22/26 */
-    stroke: #4d4d4d; /* Updated by Day E 3/22/26 */
-}
 
 
 /* Brand/logo/title and search area */

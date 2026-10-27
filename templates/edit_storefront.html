@@ -14,7 +14,7 @@ brand name, contact info, description, logo, and banner.
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Storefront</title>
+    <title>Edit storefront | Pirate Market</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/create_storefront.css') }}">
     <!-- Drag-drop zone styles - Added by Day Ekoi 4/20/26 -->
     <style>
@@ -69,16 +69,13 @@ brand name, contact info, description, logo, and banner.
         .preview-slot { display: flex; flex-direction: column; gap: 6px; }
         .slot-label { font-size: 0.8rem; color: #d4af37; font-weight: 700; margin: 0; }
     </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 
 <body>
+{% include 'partials/site_nav.html' %} {# Added by James Williams 10/26/26 #}
     <header class="create-header">
-        <div class="brand-block">
-            <h1 class="brand-title">
-                <span class="gold">The</span> Vault
-            </h1>
-            <p class="brand-subtitle">Fashion Marketplace</p>
-        </div>
         <h2 class="page-title">Edit Storefront</h2>
     </header>
 
@@ -224,5 +221,7 @@ brand name, contact info, description, logo, and banner.
 
     <script src="{{ url_for('static', filename='js/image_uploader.js') }}"></script> <!-- Added by James Williams 10/26/26 -->
     <script src="{{ url_for('static', filename='js/edit_storefront.js') }}"></script>
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>

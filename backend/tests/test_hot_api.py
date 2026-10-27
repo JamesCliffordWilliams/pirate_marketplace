@@ -211,22 +211,29 @@ class TestHotApiOffline(unittest.TestCase):
         self.assertIn("What shoppers are saving, carting, and buying over the last two weeks.", html)
         self.assertNotIn("this week", html)
         self.assertIn("Picking up momentum, with a boost for smaller storefronts.", html)
-        self.assertIn("The newest products from storefronts across Pirate Marketplace.", html)
+        self.assertIn("The newest products from storefronts across Pirate Market.", html)
         for asset in ("css/storefront.css", "css/listing_card.css", "css/categories.css", "css/hot.css",
                       "js/nav_pane.js", "js/listing_card.js", "js/hot.js"):
             self.assertIn(asset, html)
 
-    def test_nav_hot_link_only_change(self):
-        # Added by James Williams 10/26/26 - stub the category tree so this needs no database
+    def test_every_nav_link_reaches_a_route(self):
+        # Updated by James Williams 10/26/26 - new header, drawer and footer link only to real pages
+        import re
         from controllers import category_controller
         with patch.object(category_controller, "get_category_tree_service", return_value=[]):
             pages = {path: self.client.get(path).get_data(as_text=True)
-                     for path in ("/hot", "/categories", "/storefront")}
+                     for path in ("/hot", "/categories", "/storefronts")}
+        adapter = self.app.url_map.bind("localhost")
         for path, html in pages.items():
-            self.assertIn('<a class="nav-item" href="/hot">Hot! <span>→</span></a>', html, path)
-            self.assertIn('<div class="nav-item">Explore Brands <span>→</span></div>', html, path)
-            self.assertIn('<div class="nav-item">New Drops <span>→</span></div>', html, path)
-            self.assertIn('<a class="nav-item" href="/categories">All Categories <span>→</span></a>', html, path)
+            shell = html[html.index('<header class="pm pm-header">'):html.index('<span id="main"')]
+            shell += html[html.index('<footer class="pm pm-footer">'):]
+            links = set(re.findall(r'href="(/[^"#?]*)"', shell))
+            self.assertGreaterEqual(len(links), 14, path)
+            for link in links:
+                with self.subTest(page=path, link=link):
+                    adapter.match(link, method="GET")  # raises NotFound for a dead link
+            for dead in ("Explore Brands", "New Drops", "Sitemap"):
+                self.assertNotIn(dead, html)
 
 
 @require_local_db

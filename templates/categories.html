@@ -14,10 +14,12 @@ The All Categories page. Shows the 12 main categories; each card opens that cate
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Vault | All Categories</title>
+  <title>All categories | Pirate Market</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/categories.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 
 <body>
@@ -61,5 +63,6 @@ The All Categories page. Shows the 12 main categories; each card opens that cate
   </main>
 
   <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>
