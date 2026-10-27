@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<!-- Created by James Williams - 10/26/26 - component reference for theme.css (dev only) -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Styleguide | Pirate Market</title>
+    <link rel="preload" href="{{ url_for('static', filename='fonts/instrument-sans-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <style>
+        .sg-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .sg-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 32px; }
+        .sg-swatch { display: grid; gap: 4px; width: 132px; font-size: 13px; }
+        .sg-swatch span:first-child { height: 56px; border-radius: 8px; border: 1px solid var(--pm-rigging); }
+        .sg-type > * { margin-bottom: 8px; }
+    </style>
+</head>
+<body class="pm">
+<main class="pm-page">
+    <h1 class="pm-page-title">Styleguide</h1>
+    <p class="pm-muted" style="max-width:62ch">Every component in theme.css with real catalogue images. Pages opt in with <code>class="pm"</code> on the body.</p>
+
+    <section class="pm-section">
+        <div class="pm-section-head"><h2>Color</h2></div>
+        <div class="sg-row">
+            {% for name, hex in [("Harbor","#0B1B36"),("Hull","#10254A"),("Hull raised","#163060"),("Rigging","#26426F"),("Brass","#D4A934"),("Sail","#F4F2EC"),("Fog","#A3B2CB"),("Photo mat","#EEF1F5"),("Signal","#E5484D"),("Kelp","#3DBE8B")] %}
+            <div class="sg-swatch"><span style="background:{{ hex }}"></span><span>{{ name }}</span><span class="pm-muted">{{ hex }}</span></div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="pm-section sg-type">
+        <div class="pm-section-head"><h2>Type</h2></div>
+        <p style="font:400 var(--pm-t39)/1.1 var(--pm-display)">Onyx Threads</p>
+        <h1>New listing</h1>
+        <h2>Hot right now</h2>
+        <h3>Nike Tech Fleece Hoodie</h3>
+        <p style="max-width:66ch">Body text is Instrument Sans at 15px. Lightly worn, size M, pick up across campus or ship. Line length stays under 75 characters so descriptions are easy to read.</p>
+        <p class="pm-muted" style="font-size:var(--pm-t13)">Secondary text, 13px. Prices use tabular figures: <span class="pm-price">$85.00</span> <span class="pm-price">$1,240.50</span></p>
+    </section>
+
+    <section class="pm-section">
+        <div class="pm-section-head"><h2>Buttons</h2></div>
+        <div class="sg-row">
+            <button class="pm-btn pm-btn--primary">Add to bag</button>
+            <button class="pm-btn pm-btn--secondary">Visit store</button>
+            <button class="pm-btn pm-btn--ghost">Cancel</button>
+            <button class="pm-btn pm-btn--danger">Delete listing</button>
+            <button class="pm-btn pm-btn--primary" disabled>Publishing…</button>
+            <button class="pm-icon-btn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        </div>
+    </section>
+
+    <section class="pm-section">
+        <div class="pm-section-head"><h2>Fields</h2></div>
+        <div class="sg-cols">
+            <div>
+                <div class="pm-field">
+                    <label class="pm-label" for="sg-name">Listing name</label>
+                    <input class="pm-input" id="sg-name" placeholder="Vintage Hampton crewneck">
+                </div>
+                <div class="pm-field">
+                    <label class="pm-label" for="sg-price">Price</label>
+                    <div class="pm-prefix"><span>$</span><input class="pm-input" id="sg-price" inputmode="decimal" value="25.00"></div>
+                </div>
+                <div class="pm-field">
+                    <label class="pm-label" for="sg-bad">Price</label>
+                    <input class="pm-input" id="sg-bad" aria-invalid="true" aria-describedby="sg-bad-err" value="-4">
+                    <p class="pm-error" id="sg-bad-err">Price can't be negative. Enter 0 or more.</p>
+                </div>
+            </div>
+            <div>
+                <div class="pm-field">
+                    <label class="pm-label" for="sg-store">Storefront</label>
+                    <select class="pm-select" id="sg-store"><option>Onyx Threads</option><option>Nike Campus</option></select>
+                </div>
+                <div class="pm-field">
+                    <label class="pm-label" for="sg-desc">Description</label>
+                    <textarea class="pm-textarea" id="sg-desc" placeholder="Condition, fit, pickup or shipping"></textarea>
+                    <p class="pm-hint">Optional</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="pm-section">
+        <div class="pm-section-head"><h2>Chips, switch, stepper</h2></div>
+        <div class="sg-row pm-chips" role="radiogroup" aria-label="Size">
+            {% for size in ["XS","S","M","L","XL"] %}
+            <label class="pm-chip"><input type="radio" name="sg-size" value="{{ size }}" {{ "checked" if size == "M" }} {{ "disabled" if size == "XS" }}>{{ size }}</label>
+            {% endfor %}
+        </div>
+        <div class="sg-row">
+            <label class="pm-switch"><input type="checkbox" role="switch">One size</label>
+            <label class="pm-switch"><input type="checkbox" role="switch" checked>Made to order</label>
+            <div class="pm-stepper" data-sg-stepper>
+                <button type="button" aria-label="Decrease quantity" disabled>−</button>
+                <input type="number" value="1" min="1" max="5" aria-label="Quantity">
+                <button type="button" aria-label="Increase quantity">+</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="pm-section">
+        <div class="pm-section-head"><h2>Product tiles</h2><a href="#">See all</a></div>
+        <div class="pm-grid">
+            {% for title, store, price, img, fit, badge in [
+                ("Nike Tech Fleece Hoodie", "Nike Campus", "85.00", "nikehoodie1.png", "cover", ""),
+                ("Onyx Threads heavyweight hoodie, washed black, embroidered crest on back", "Onyx Threads", "60.00", "onyxhoodie.png", "cover", ""),
+                ("Von Dutch camo trucker hat", "Von Dutch", "35.00", "vondutch1.png", "contain", ""),
+                ("Nike Tech Fleece Joggers", "Nike Campus", "70.00", "nikepants1.png", "cover", "Sold out"),
+                ("Listing without a photo", "A store with a very long storefront name that keeps going", "12.00", "", "", "")] %}
+            <article class="pm-tile">
+                <div class="pm-tile__photo">
+                    {% if img %}<img src="{{ url_for('static', filename='images/' + img) }}" alt="" data-fit="{{ fit }}" loading="lazy">
+                    {% else %}<img src="{{ url_for('static', filename='images/listing-placeholder.svg') }}" alt="" class="is-placeholder">{% endif %}
+                    {% if badge %}<span class="pm-tile__badge">{{ badge }}</span>{% endif %}
+                </div>
+                <button class="pm-heart" aria-label="Save {{ title }}" aria-pressed="{{ 'true' if loop.index == 2 else 'false' }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg></button>
+                <a class="pm-tile__link pm-tile__title" href="#">{{ title }}</a>
+                <span class="pm-tile__price pm-price">${{ price }}</span>
+                <span class="pm-tile__store">{{ store }}</span>
+            </article>
+            {% endfor %}
+            <div aria-hidden="true"><div class="pm-skeleton pm-skeleton--photo"></div><div class="pm-skeleton pm-skeleton--line"></div><div class="pm-skeleton pm-skeleton--line pm-skeleton--short"></div></div>
+        </div>
+    </section>
+
+    <section class="pm-section">
+        <div class="pm-section-head"><h2>Storefront facades</h2></div>
+        <div class="pm-facades">
+            {% for name, meta, logo, imgs in [
+                ("Nike Campus", "4 items", "nikelogo.png", ["nikehoodie1.png", "nikejacket.png", "nikepants1.png"]),
+                ("Onyx Threads", "1 item", "onyxlogo.jpeg", ["onyxhoodie.png"]),
+                ("Von Dutch", "3 items", "", ["vondutch1.png", "vondutch2.png"]),
+                ("Hampton Homecoming Collective", "No items yet", "", [])] %}
+            <article class="pm-facade">
+                <div class="pm-facade__cover" data-count="{{ imgs|length }}">
+                    {% for img in imgs %}<img src="{{ url_for('static', filename='images/' + img) }}" alt="" loading="lazy">{% endfor %}
+                </div>
+                <div class="pm-facade__body">
+                    <span class="pm-medallion">{% if logo %}<img src="{{ url_for('static', filename='images/' + logo) }}" alt="">{% else %}{{ name[0] }}{% endif %}</span>
+                    <a class="pm-facade__link pm-facade__name" href="#">{{ name }}</a>
+                    <span class="pm-facade__meta">{{ meta }}</span>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="pm-section">
+        <div class="pm-section-head"><h2>Tabs, empty state, toast, drawer</h2></div>
+        <div class="pm-tabs" role="tablist">
+            <button class="pm-tab" role="tab" aria-selected="true">Listings</button>
+            <button class="pm-tab" role="tab" aria-selected="false">Orders</button>
+            <button class="pm-tab" role="tab" aria-selected="false">Returns</button>
+        </div>
+        <div class="pm-empty">
+            <h2>Your bag is empty</h2>
+            <p>Browse storefronts to find something you like.</p>
+            <a class="pm-btn pm-btn--primary" href="#">Browse storefronts</a>
+        </div>
+        <div class="sg-row">
+            <button class="pm-btn pm-btn--secondary" data-sg-toast>Show toast</button>
+            <button class="pm-btn pm-btn--secondary" data-sg-drawer aria-expanded="false" aria-controls="sg-drawer">Open drawer</button>
+        </div>
+    </section>
+</main>
+
+<div class="pm-toasts" aria-live="polite"></div>
+<div class="pm-overlay" hidden data-sg-close></div>
+<nav class="pm-drawer" id="sg-drawer" hidden aria-label="Example drawer">
+    <button class="pm-icon-btn" data-sg-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    <p style="margin-top:16px">Drawer content</p>
+</nav>
+
+<script>
+    // demo wiring for this page only
+    document.querySelector("[data-sg-toast]").addEventListener("click", () => {
+        const toast = Object.assign(document.createElement("div"), { className: "pm-toast", textContent: "Listing published" });
+        document.querySelector(".pm-toasts").append(toast);
+        setTimeout(() => toast.remove(), 2400);
+    });
+    const drawer = document.getElementById("sg-drawer"), overlay = document.querySelector(".pm-overlay");
+    const opener = document.querySelector("[data-sg-drawer]");
+    const setDrawer = (open) => {
+        drawer.hidden = overlay.hidden = false;
+        requestAnimationFrame(() => { drawer.dataset.open = overlay.dataset.open = open; });
+        opener.setAttribute("aria-expanded", open);
+        if (!open) setTimeout(() => { drawer.hidden = overlay.hidden = true; }, 250);
+    };
+    opener.addEventListener("click", () => setDrawer(true));
+    document.querySelectorAll("[data-sg-close]").forEach((el) => el.addEventListener("click", () => setDrawer(false)));
+    document.querySelectorAll("[data-sg-stepper]").forEach((stepper) => {
+        const [down, input, up] = stepper.children;
+        const set = (n) => { input.value = Math.min(+input.max, Math.max(+input.min, n)); down.disabled = +input.value <= +input.min; up.disabled = +input.value >= +input.max; };
+        down.onclick = () => set(+input.value - 1);
+        up.onclick = () => set(+input.value + 1);
+    });
+</script>
+</body>
+</html>

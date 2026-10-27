@@ -32,6 +32,28 @@ def create_app():
     def upload_too_large(_error):
         return {"error": "That upload is too large. Photos must add up to less than 32 MB."}, 413
 
+    # Added by James Williams 10/26/26 - every url_for('static', ...) gets ?v=<file time>,
+    # so browsers pick up new CSS/JS after a deploy without a hard refresh
+    static_versions = {}
+
+    @app.url_defaults
+    def static_version(endpoint, values):
+        if endpoint != "static" or "filename" not in values or "v" in values:
+            return
+        filename = values["filename"]
+        if filename not in static_versions or app.debug:
+            try:
+                static_versions[filename] = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+            except OSError:
+                return
+        values["v"] = static_versions[filename]
+
+    # Added by James Williams 10/26/26 - component reference, dev only
+    if app.debug or os.getenv("PM_STYLEGUIDE") == "1":
+        @app.get("/dev/styleguide")
+        def styleguide():
+            return render_template("dev/styleguide.html")
+
     # Run DB migrations on every startup so new columns are always present
     # try:
     #     from init_db import create_vault_tables
