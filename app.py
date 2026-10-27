@@ -28,10 +28,6 @@ def create_app():
     app.secret_key = os.getenv('SECRET_KEY')
 
 
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
-    app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
     # Run DB migrations on every startup so new columns are always present
     # try:
     #     from init_db import create_vault_tables
