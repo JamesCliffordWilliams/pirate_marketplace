@@ -6,15 +6,11 @@ from flask import Flask, render_template, redirect, url_for, session
 # Billy: Rewrite
 from controllers.admin_controller import admin_bp
 from controllers.auth_controller import auth_bp
-from controllers.category_controller import category_bp, category_pages_bp # James
 from controllers.checkout_controller import checkout_bp
-<<<<<<< HEAD
 from controllers.category_controller import category_bp, category_pages_bp  # Added by James Williams 10/26/26
 from controllers.hot_controller import hot_bp, hot_pages_bp  # Added by James Williams 10/26/26
 from controllers.order_controllers import orders_bp  # Added by Aniya Hopson 10/27/26
 from init_db import create_vault_tables
-=======
-from controllers.hot_controller import hot_bp, hot_pages_bp # James
 from controllers.listing_controller import listing_bp
 from controllers.message_controller import message_bp
 from controllers.purchase_controller import purchase_bp
@@ -22,7 +18,6 @@ from controllers.return_controller import returns_bp
 from controllers.storefront_controller import storefront_bp, storefront_pages_bp
 from controllers.wallet_controller import wallet_bp # Billy
 from controllers.wishlist_controller import wishlist_bp
->>>>>>> b0edc85bfd655d6e0a306eaa27d3551f56346337
 
 # Billy: Session Timeout
 SESSION_LIFETIME_MINUTES = 15
@@ -92,7 +87,6 @@ def create_app():
     for blueprint, prefix in BLUEPRINTS:
         app.register_blueprint(blueprint, url_prefix=prefix)
 
-<<<<<<< HEAD
     # Route to the "Create Listing" form - Updated 3/24/2026
     # Aniya rerouted the user to login if they are not a user - Updated 9/28/26
     @app.route('/create-listing')
@@ -148,8 +142,6 @@ def create_app():
     app.register_blueprint(hot_pages_bp)        # Added by James Williams 10/26/26
     app.register_blueprint(orders_bp, url_prefix='/api')  # Added by Aniya Hopson 10/27/26
     
-=======
->>>>>>> b0edc85bfd655d6e0a306eaa27d3551f56346337
     @app.get("/health")
     def health():
         return {"status": "ok"}
