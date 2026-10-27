@@ -4,7 +4,7 @@ from utils.auth_utils import hash_password, verify_password
 
 class AuthService:
     def register_user(self, username, password, email, db_conn): #Stores a user's unique ID, username, password, and email into the database
-        if not email.lower().endswith(("@myhamptonu.edu", "@hamptonu.edu")): #Validates Hampton Assocation, added 2/19/2026 by Ryan Grimes
+        if not email.lower().endswith(("@my.hamptonu.edu", "@hamptonu.edu")): #Validates Hampton Assocation, added 2/19/2026 by Ryan Grimes
             print(f"You Must Use a Hampton University Associated Email") 
             return False, "You Must Use a Hampton University Associated Email"
 
