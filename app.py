@@ -16,16 +16,6 @@ from controllers.category_controller import category_bp, category_pages_bp  # Ad
 from controllers.hot_controller import hot_bp, hot_pages_bp  # Added by James Williams 10/26/26
 from init_db import create_vault_tables
 
-# Added by James Williams 10/26/26 - categories in the header bar (parent slug, short label)
-NAV_CATEGORIES = (
-    ("clothing-and-apparel", "Clothing"),
-    ("shoes-and-footwear", "Shoes"),
-    ("electronics-and-technology", "Electronics"),
-    ("home-and-dorm-essentials", "Dorm"),
-    ("books-and-school-supplies", "Books"),
-    ("accessories-and-jewelry", "Accessories"),
-)
-
 
 def create_app():
     app = Flask(__name__,
@@ -67,7 +57,7 @@ def create_app():
                 bag_count += max(int(item.get("quantity", 1)), 0)
             except (TypeError, ValueError, AttributeError):
                 bag_count += 1
-        return {"nav_categories": NAV_CATEGORIES, "bag_count": bag_count}
+        return {"bag_count": bag_count}
 
     # Added by James Williams 10/26/26 - component reference, dev only
     if app.debug or os.getenv("PM_STYLEGUIDE") == "1":

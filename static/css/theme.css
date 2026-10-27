@@ -520,7 +520,7 @@ body.pm {
 .pm .pm-facade__link:focus-visible::after { outline: 2px solid var(--pm-brass); outline-offset: 3px; }
 .pm .pm-facade:hover .pm-facade__name { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 
-/* ---------- page toolbar, sort, pager, one-row rail ---------- */
+/* ---------- page toolbar, sort, pager ---------- */
 
 .pm .pm-toolbar {
     display: flex;
@@ -555,11 +555,6 @@ body.pm {
 
 .pm .pm-pager[hidden] { display: none; }
 
-/* a rail shows one row of the grid */
-.pm .pm-rail > :nth-child(n + 3) { display: none; }
-@media (min-width: 820px) { .pm .pm-rail > :nth-child(3) { display: grid; } }
-@media (min-width: 1100px) { .pm .pm-rail > :nth-child(4) { display: grid; } }
-@media (min-width: 1360px) { .pm .pm-rail > :nth-child(5) { display: grid; } }
 
 /* ---------- section header, empty state ---------- */
 

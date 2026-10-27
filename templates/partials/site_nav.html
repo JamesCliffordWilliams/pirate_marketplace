@@ -3,11 +3,21 @@
 
     Pirate Market
     Created by James Williams - 10/26/26 (moved out of homepage.html)
-    Updated by James Williams - 10/26/26 - new header: crest, storefront search, Sell, Bag, Account,
-    category bar on desktop, drawer menu on narrow screens. Needs css/theme.css, css/nav.css and
-    js/nav_pane.js on the page; nav_categories and bag_count come from app.py.
+    Updated by James Williams - 10/26/26 - new header: crest, storefront search, Bag, Account. The tabs are
+    the items from the old menu with Home first; on narrow screens they move into the drawer.
+    Needs css/theme.css, css/nav.css and js/nav_pane.js on the page; bag_count comes from app.py.
 #}
 {% set signed_in = session.get('user') %}
+{# label, link, pages that count as "here" #}
+{% set menu = [
+    ("Home", url_for('storefront_pages_bp.storefront_home_page'), ['storefront_pages_bp.storefront_home_page', 'storefront']),
+    ("Create storefront", url_for('storefront_pages_bp.create_storefront_page'), ['storefront_pages_bp.create_storefront_page', 'create_storefront']),
+    ("Create listing", url_for('storefront_pages_bp.create_listing_page'), ['storefront_pages_bp.create_listing_page', 'create_listing']),
+    ("My storefront", url_for('my_storefront'), ['my_storefront', 'storefront_pages_bp.my_storefront_dashboard', 'storefront_pages_bp.my_storefront_page']),
+    ("All categories", url_for('category_pages_bp.categories_page'), ['category_pages_bp.categories_page', 'category_pages_bp.category_listings_page']),
+    ("Hot", url_for('hot_pages_bp.hot_page'), ['hot_pages_bp.hot_page']),
+    ("Returns", url_for('returns_bp.returns_page'), ['returns_bp.returns_page']),
+] %}
 <a class="pm-skip" href="#main">Skip to content</a>
 
 <header class="pm pm-header">
@@ -29,7 +39,6 @@
         </form>
 
         <nav class="pm-header__actions" aria-label="Your account">
-            <a class="pm-header__link pm-header__sell" href="{{ url_for('my_storefront') }}">Sell</a>
             <a class="pm-icon-btn pm-header__bag" href="{{ url_for('auth.view_cart') }}"
                aria-label="Bag{% if bag_count %}, {{ bag_count }} item{{ 's' if bag_count != 1 }}{% endif %}">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
@@ -45,14 +54,11 @@
         </nav>
     </div>
 
-    <nav class="pm-catbar" aria-label="Browse">
+    <nav class="pm-catbar" aria-label="Main">
         <div class="pm-catbar__inner">
-            <a href="{{ url_for('hot_pages_bp.hot_page') }}" {% if request.endpoint == 'hot_pages_bp.hot_page' %}aria-current="page"{% endif %}>Hot</a>
-            <a href="{{ url_for('storefront_pages_bp.storefront_home_page') }}" {% if request.endpoint == 'storefront_pages_bp.storefront_home_page' %}aria-current="page"{% endif %}>Storefronts</a>
-            {% for slug, label in nav_categories %}
-            <a href="{{ url_for('category_pages_bp.category_listings_page', parent_slug=slug) }}" {% if request.view_args and request.view_args.get('parent_slug') == slug %}aria-current="page"{% endif %}>{{ label }}</a>
+            {% for label, href, endpoints in menu %}
+            <a href="{{ href }}" {% if request.endpoint in endpoints %}aria-current="page"{% endif %}>{{ label }}</a>
             {% endfor %}
-            <a href="{{ url_for('category_pages_bp.categories_page') }}" {% if request.endpoint == 'category_pages_bp.categories_page' %}aria-current="page"{% endif %}>All categories</a>
         </div>
     </nav>
 </header>
@@ -65,23 +71,12 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
     </div>
-    <nav aria-label="Browse">
-        <a href="{{ url_for('hot_pages_bp.hot_page') }}">Hot</a>
-        <a href="{{ url_for('storefront_pages_bp.storefront_home_page') }}">Storefronts</a>
-        {% for slug, label in nav_categories %}
-        <a href="{{ url_for('category_pages_bp.category_listings_page', parent_slug=slug) }}">{{ label }}</a>
+    <nav aria-label="Main">
+        {% for label, href, endpoints in menu %}
+        <a href="{{ href }}" {% if request.endpoint in endpoints %}aria-current="page"{% endif %}>{{ label }}</a>
         {% endfor %}
-        <a href="{{ url_for('category_pages_bp.categories_page') }}">All categories</a>
     </nav>
-    <nav aria-label="Selling">
-        <p class="pm-drawer__heading">Selling</p>
-        <a href="{{ url_for('my_storefront') }}">My storefront</a>
-        <a href="{{ url_for('storefront_pages_bp.create_listing_page') }}">Create listing</a>
-        <a href="{{ url_for('storefront_pages_bp.create_storefront_page') }}">Create storefront</a>
-    </nav>
-    <nav aria-label="Help and account">
-        <p class="pm-drawer__heading">Help and account</p>
-        <a href="{{ url_for('returns_bp.returns_page') }}">Returns</a>
+    <nav aria-label="Account">
         {% if signed_in %}
         <a href="{{ url_for('auth.account') }}">Account</a>
         <a href="{{ url_for('auth.logout') }}">Log out</a>

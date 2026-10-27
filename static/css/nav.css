@@ -298,7 +298,6 @@ body.pm-scroll-locked { overflow: hidden; }
     .pm-header .pm-header__brand span { font-size: var(--pm-t16); }
     .pm-header .pm-header__brand img { width: 32px; height: 32px; }
     .pm-header .pm-header__search { order: 10; flex-basis: 100%; max-width: none; margin: 0; }
-    .pm-header .pm-header__sell { display: none; }
     .pm-footer .pm-footer__inner { grid-template-columns: 1fr 1fr; }
     .pm-footer .pm-footer__inner > div:first-child { grid-column: 1 / -1; }
 }

@@ -8,16 +8,15 @@ storefront.js
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - fetchStorefronts now maps preview_image_1-4 to card carousel; falls back to banner_url if no previews set
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - removed add-to-cart form from storefront cards (size, qty, add to bag); kept version history via comments
   Updated by James Williams - 10/26/26 - storefront facades (cover: previews, then banner, then the
-  store's product photos, then a monogram), sort, header search, inline pages, Hot rail
+  store's product photos, then a monogram), sort, header search, inline pages
 
 Description: the storefront directory (homepage.html). Store names and other text are set with
 textContent, never as HTML.
 */
 
 (function () {
-  const root = document.getElementById("storefrontDirectory");
   const grid = document.getElementById("storefrontGrid");
-  if (!root || !grid) return;
+  if (!grid) return;
 
   const PER_PAGE = 24;
   const searchInput = document.getElementById("siteSearch");
@@ -149,25 +148,6 @@ textContent, never as HTML.
     }
   }
 
-  async function loadHotRail() {
-    try {
-      const userId = Number(root.dataset.userId) || null;
-      const [response, wishlistIds] = await Promise.all([
-        fetch("/api/hot", { cache: "no-cache" }),
-        VaultListingCard.getWishlistIdSet(userId)
-      ]);
-      if (!response.ok) return;
-      const data = await response.json();
-      const items = (data.hot && data.hot.length ? data.hot : data.just_listed || []).slice(0, 5);
-      if (!items.length) return;
-      const tiles = await Promise.all(items.map((item) => VaultListingCard.create(item, { wishlistIds, currentUserId: userId })));
-      document.getElementById("hotRailGrid").replaceChildren(...tiles);
-      document.getElementById("hotRail").hidden = false;
-    } catch (error) {
-      console.error("Error loading the Hot rail:", error); // the rail just stays hidden
-    }
-  }
-
   if (searchInput) {
     searchInput.addEventListener("input", () => { page = 1; render(); });
     searchInput.form.addEventListener("submit", (event) => { event.preventDefault(); page = 1; render(); });
@@ -177,5 +157,4 @@ textContent, never as HTML.
   document.getElementById("nextPageBtn").addEventListener("click", () => { page += 1; render(); grid.scrollIntoView({ block: "start" }); });
 
   loadStorefronts();
-  loadHotRail();
 })();

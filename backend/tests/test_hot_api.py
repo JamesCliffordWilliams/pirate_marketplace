@@ -228,7 +228,11 @@ class TestHotApiOffline(unittest.TestCase):
             shell = html[html.index('<header class="pm pm-header">'):html.index('<span id="main"')]
             shell += html[html.index('<footer class="pm pm-footer">'):]
             links = set(re.findall(r'href="(/[^"#?]*)"', shell))
-            self.assertGreaterEqual(len(links), 14, path)
+            # the old menu's items, Home first (Updated by James Williams 10/26/26)
+            for href in ("/storefronts", "/storefronts/create", "/listings/create", "/my-storefront",
+                         "/categories", "/hot", "/returns"):
+                self.assertIn(href, links, path)
+            self.assertFalse(any(link.startswith("/categories/") for link in links), path)
             for link in links:
                 with self.subTest(page=path, link=link):
                     adapter.match(link, method="GET")  # raises NotFound for a dead link

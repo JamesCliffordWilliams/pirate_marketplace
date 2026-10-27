@@ -7,8 +7,8 @@
     3/18/2026-3/22/2026
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - removed hardcoded test card, added lightbox overlay element
     Updated by James Williams - Iteration 2 - 10/1/26
-    Updated by James Williams - 10/26/26 - Pirate Market redesign: storefront facades, Hot rail,
-    shop by category, inline pagination. Cards are built by storefront.js.
+    Updated by James Williams - 10/26/26 - Pirate Market redesign: storefront facades, sort, inline
+    pagination. Cards are built by storefront.js.
 --->
 <!DOCTYPE html>
 <html lang="en">
@@ -55,23 +55,6 @@
     <button type="button" class="pm-btn pm-btn--secondary" id="nextPageBtn">Next</button>
   </nav>
 
-  <section class="pm-section" id="hotRail" aria-labelledby="hotRailHeading" hidden>
-    <div class="pm-section-head">
-      <h2 id="hotRailHeading">Hot right now</h2>
-      <a href="{{ url_for('hot_pages_bp.hot_page') }}">See all</a>
-    </div>
-    <div class="pm-grid pm-rail" id="hotRailGrid"></div>
-  </section>
-
-  <section class="pm-section" aria-labelledby="shopByCategory">
-    <div class="pm-section-head"><h2 id="shopByCategory">Shop by category</h2></div>
-    <nav class="pm-chips" aria-labelledby="shopByCategory">
-      {% for slug, label in nav_categories %}
-      <a class="pm-chip" href="{{ url_for('category_pages_bp.category_listings_page', parent_slug=slug) }}">{{ label }}</a>
-      {% endfor %}
-      <a class="pm-chip" href="{{ url_for('category_pages_bp.categories_page') }}">All categories</a>
-    </nav>
-  </section>
 </main>
 
 {% include 'partials/site_footer.html' %}
