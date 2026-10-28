@@ -37,6 +37,7 @@ PRIVATE_PAGES = [
     ("/checkout", "checkout", "checkout.html"),
     ("/order-confirmation", "order_confirmation", "order_confirmation.html"),
     ("/my-storefront", "my_storefront", "my_storefront.html"),
+    ("/wallet", "wallet", "wallet.html"),
 ]
 
 # Billy: Rewrite
