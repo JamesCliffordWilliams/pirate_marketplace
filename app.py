@@ -1,7 +1,11 @@
 import os
+import sys
 from datetime import timedelta
 
 from flask import Flask, render_template, redirect, url_for, session
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend"))    # ← NEW LINE 2
+
 
 # Billy: Rewrite
 from controllers.admin_controller import admin_bp
@@ -37,6 +41,8 @@ PRIVATE_PAGES = [
     ("/checkout", "checkout", "checkout.html"),
     ("/order-confirmation", "order_confirmation", "order_confirmation.html"),
     ("/my-storefront", "my_storefront", "my_storefront.html"),
+    ("/messages", "messages_page", "messages.html"),  # Added by Aniya Hopson 10/27/26  
+
 ]
 
 # Billy: Rewrite

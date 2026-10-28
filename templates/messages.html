@@ -1,0 +1,79 @@
+<!--
+    messages.html
+
+    Pirate Market
+    Created by Aniya Hopson- 10/27/26
+
+Description:
+Messages page, styled like a phone chat app. Shows the user's conversations,
+the selected conversation as chat bubbles, and a box to send a reply.
+Messages older than 60 days are not shown.
+
+How it is used:
+- Opened from "Messages" in the side menu (partials/site_nav.html)
+- Only logged-in users can open it (listed in PRIVATE_PAGES in app.py)
+- Reuses storefront.css for the top bar and side menu, and
+  messages.css for this page's own layout.
+- messages.js loads data from the messaging API in
+  backend/controllers/message_controller.py.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pirate Market | Messages</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/messages.css') }}" />
+</head>
+
+<body class="messages-body">
+
+{% include 'partials/site_nav.html' %}
+
+<main class="msg-page">
+  <div class="msg-app" id="msgApp" data-view="list">
+
+    <!-- Left: conversation list -->
+    <aside class="msg-sidebar" aria-labelledby="inboxHeading">
+      <header class="msg-sidebar-header">
+        <h1 id="inboxHeading" class="msg-title">Messages</h1>
+        <span class="msg-unread" id="unreadBadge"></span>
+    
+    <header class="msg-sidebar-header">
+        <h1 id="inboxHeading" class="msg-title">Messages</h1>
+        <span class="msg-unread" id="unreadBadge" hidden></span>
+        <button type="button" class="msg-compose" id="composeBtn" aria-label="New message">          <!-- NEW -->
+          <svg viewBox="0 0 24 24" aria-hidden="true">                                              <!-- NEW -->
+            <path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor"                    
+                  stroke-width="2" stroke-linejoin="round" />                                        <!-- NEW -->
+            <path d="M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" />            <!-- NEW -->
+          </svg>                                                                                     <!-- NEW -->
+        </button>                                                                                    <!-- NEW -->
+      </header>
+        </section>
+
+  </div>
+
+  <!-- NEW: "New Message" sheet - pick a student brand to message -->
+  <dialog id="newMessageSheet" class="msg-sheet" aria-labelledby="newMessageTitle">
+    <div class="msg-sheet-body">
+      <div class="msg-sheet-header">
+        <button type="button" class="msg-sheet-cancel" id="newMessageCancel">Cancel</button>
+        <h2 id="newMessageTitle" class="msg-sheet-title">New Message</h2>
+        <span aria-hidden="true"></span>
+      </div>
+
+      <div class="msg-sheet-to">
+        <label for="recipientSearch">To:</label>
+        <input id="recipientSearch" class="msg-sheet-search" type="search"
+               placeholder="Search student brands" autocomplete="off" />
+      </div>
+
+      <p class="msg-sheet-hint" id="recipientStatus">Loading brands...</p>
+      <ul class="msg-recipient-list" id="recipientList"></ul>
+    </div>
+  </dialog>
+
+</main>
