@@ -15,7 +15,7 @@ def login():
 
         conn = get_connection()
         if conn is None:
-            return "Database connection failed. <a href='/auth/login'>Try again</a>"
+            return render_template('login.html', error="Pirate Market can't log you in right now. Try again in a minute.", username=user)
 
         success, role = service.validate_login(user, pw, conn)
         # conn.close()
@@ -45,8 +45,9 @@ def login():
             else:
                 return redirect(url_for('auth.listings'))
         
-        return "Invalid Credentials. <a href='/auth/login'>Try again</a>"
-    
+        # Updated by James Williams 10/26/26 - show the form again with a message instead of a bare text page
+        return render_template('login.html', error="That username and password don't match.", username=user)
+
     return render_template('login.html')
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
@@ -58,15 +59,21 @@ def signup():
 
         conn = get_connection()
         if conn is None:
-            return "Database connection failed. <a href='/auth/signup'>Try again</a>"
+            return render_template('signup.html', error="Pirate Market can't create accounts right now. Try again in a minute.",
+                                   username=user, email=email)
 
         success, message = service.register_user(user, pw, email, conn)
         conn.close()
 
         if success:
-            flash("Signup Successful! Please login with your new credentials.", "success")
+            flash("Account created. Log in to start shopping.", "success")
             return redirect(url_for('auth.login'))
-        return f"Signup Failed: {message} <a href='/auth/signup'>Try again</a>"
+        # Updated by James Williams 10/26/26 - show the form again with the reason
+        if message == "You Must Use a Hampton University Associated Email":
+            error = "Use your Hampton University email (@hamptonu.edu or @my.hamptonu.edu)."
+        else:
+            error = "Your account wasn't created. That username or email may already be taken."
+        return render_template('signup.html', error=error, username=user, email=email)
     
     return render_template('signup.html')
 
@@ -91,7 +98,23 @@ def logout():
 def view_cart():
     if 'cart' not in session:
         session['cart'] = []
-    return render_template('cart.html')
+    # Added by James Williams 10/26/26 - gets the main photo for each item in one query
+    photos = {}
+    item_ids = [int(item['id']) for item in session['cart'] if str(item.get('id', '')).isdigit()]
+    if item_ids:
+        try:
+            conn = get_connection()
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT listing_id, image_url FROM listing_images WHERE is_primary = TRUE AND listing_id = ANY(%s);",
+                (item_ids,)
+            )
+            photos = {str(listing_id): url for listing_id, url in cur.fetchall()}
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"DB Error loading bag photos: {e}")
+    return render_template('cart.html', photos=photos)
 
 @auth_bp.route('/add_to_cart', methods=['POST'])
 def add_to_cart():
@@ -142,7 +165,7 @@ def add_to_cart():
     except Exception as e:
         print(f"DB Error adding to cart: {e}")
 
-    # Added by James Williams 10/26/26 - Hot page, only once the cart row is saved
+    # Added by James Williams 10/26/26 - counts this for the Hot page, but only after the cart row is saved
     if cart_saved:
         track_interest(item_id, session['user_id'], "cart")
 
@@ -188,6 +211,49 @@ def remove_from_cart(index):
             session['cart'] = temp_cart
             session.modified = True
             flash(f"Removed {removed_item['name']} from bag.", "info")
+    return redirect(url_for('auth.view_cart'))
+
+# Added by James Williams 10/26/26 - changes an item's quantity in the bag, from 1 up to what's in stock
+@auth_bp.route('/update_cart/<int:index>', methods=['POST'])
+def update_cart(index):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    cart = session.get('cart') or []
+    try:
+        quantity = int(request.form.get('quantity', ''))
+    except ValueError:
+        return redirect(url_for('auth.view_cart'))
+    if not 0 <= index < len(cart) or quantity < 1:
+        return redirect(url_for('auth.view_cart'))
+
+    item = cart[index]
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT quantity_on_hand, is_made_to_order FROM listings WHERE id = %s", (item['id'],))
+        row = cur.fetchone()
+        if row and not row[1] and row[0] is not None:
+            quantity = min(quantity, max(int(row[0]), 1))
+        quantity = min(quantity, 99)
+        # This updates the same row that remove_from_cart would delete
+        cur.execute("""
+            UPDATE cart_items SET quantity = %s
+            WHERE id = (
+                SELECT id FROM cart_items
+                WHERE user_id = %s AND item_name = %s AND size = %s
+                LIMIT 1
+            )
+        """, (quantity, session['user_id'], item['name'], item['size']))
+        conn.commit()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        print(f"DB Error updating bag quantity: {e}")
+        return redirect(url_for('auth.view_cart'))
+
+    item['quantity'] = quantity
+    session['cart'] = cart
+    session.modified = True
     return redirect(url_for('auth.view_cart'))
 
 # Added by Day E 4/9/26 - returns current session user info for frontend auth checks

@@ -3,6 +3,6 @@
 """
 migrations/
 
-One-off, additive database migrations. Each module exposes a
-run_migration(conn, dry_run=False) function and a CLI.
+This folder has one-time database migrations that only add things.
+Each file has a run_migration(conn, dry_run=False) function and can be run from the command line.
 """

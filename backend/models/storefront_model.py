@@ -2,6 +2,7 @@
 # CSC 405 Sp 26'
 # Created by Day Ekoi - Iteration 3
 # Updated by Day Ekoi - Iteration 5 - 4/10/26 -4/20/26 - added preview_image_1-4 to all queries, added item_count via JOIN, fixed contact_info column
+# Updated by James Williams - 10/26/26 - added cover_images for the storefront directory
 
 """
 models/storefront_model.py
@@ -343,6 +344,24 @@ def get_active_storefronts():
     cur.execute(query)
     rows = cur.fetchall()
 
+    # Added by James Williams 10/26/26
+    # Gets up to 3 recent product photos per store for the directory cover in one query
+    covers = {}
+    if rows:
+        cur.execute("""
+            SELECT storefront_id, image_url FROM (
+                SELECT l.storefront_id, li.image_url,
+                       ROW_NUMBER() OVER (PARTITION BY l.storefront_id ORDER BY l.created_at DESC, l.id DESC) AS n
+                FROM listings l
+                JOIN listing_images li ON li.listing_id = l.id AND li.is_primary = TRUE
+                WHERE l.storefront_id = ANY(%s) AND l.status IN ('ACTIVE', 'SOLD_OUT')
+            ) recent
+            WHERE n <= 3
+            ORDER BY storefront_id, n;
+        """, ([row[0] for row in rows],))
+        for storefront_id, image_url in cur.fetchall():
+            covers.setdefault(storefront_id, []).append(image_url)
+
     cur.close()
     conn.close()
 
@@ -365,6 +384,7 @@ def get_active_storefronts():
             "created_at": row[13],
             "updated_at": row[14],
             "item_count": row[15],
+            "cover_images": covers.get(row[0], []),
         })
 
     return storefronts

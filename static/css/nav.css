@@ -1,0 +1,266 @@
+/*
+    nav.css
+
+    Pirate Market
+    Created by James Williams - 10/26/26 (top bar and side menu moved here from storefront.css)
+    This styles the shared header, category bar, side menu and footer.
+    It also works on pages that still use their old styles.
+*/
+
+.pm-header,
+.pm-drawer,
+.pm-overlay,
+.pm-footer,
+.pm-skip {
+    box-sizing: border-box;
+    font-family: var(--pm-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+.pm-skip {
+    position: absolute;
+    z-index: 100;
+    top: 8px;
+    left: 8px;
+    padding: 8px 12px;
+    border-radius: var(--pm-r-control);
+    background: var(--pm-brass);
+    color: var(--pm-harbor);
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-200%);
+}
+
+.pm-skip:focus { transform: none; }
+
+/* ---------- header ---------- */
+
+/* This keeps the header at the very top on pages that still use their old styles */
+body:not(.pm):has(> .pm-header) { padding-top: 0; }
+body:not(.pm) > .pm-header { margin-bottom: 28px; }
+
+.pm-header {
+    position: sticky;
+    z-index: 40;
+    top: 0;
+    background: var(--pm-hull);
+    border-bottom: 1px solid var(--pm-rigging);
+    color: var(--pm-sail);
+}
+
+/* The tabs, Sell, Wallet, Bag and Account all sit in this one row */
+.pm-header__bar {
+    display: flex;
+    align-items: stretch;
+    gap: 16px;
+    max-width: var(--pm-page);
+    min-height: 64px;
+    margin: 0 auto;
+    padding: 0 var(--pm-gutter);
+}
+
+.pm-header .pm-header__menu { display: none; align-self: center; margin-left: -8px; }
+
+.pm-header .pm-header__actions {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    align-self: center;
+}
+
+.pm-header .pm-header__link {
+    padding: 8px 12px;
+    border-radius: var(--pm-r-control);
+    color: var(--pm-sail);
+    font-size: var(--pm-t14);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.pm-header .pm-header__link:hover { background: var(--pm-hull-raised); }
+
+.pm-header .pm-icon-btn svg {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.pm-header .pm-header__bag { position: relative; }
+
+.pm-header .pm-header__count {
+    position: absolute;
+    top: 3px;
+    right: 1px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: var(--pm-brass);
+    color: var(--pm-harbor);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+/* This is the menu button. Its three lines turn into an X while the menu is open */
+.pm-burger { position: relative; display: block; width: 20px; height: 14px; }
+
+.pm-burger span {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    border-radius: 1px;
+    background: currentColor;
+    transition: transform 0.2s var(--pm-ease), opacity 0.15s;
+}
+
+.pm-burger span:nth-child(1) { top: 0; }
+.pm-burger span:nth-child(2) { top: 6px; }
+.pm-burger span:nth-child(3) { top: 12px; }
+[aria-expanded="true"] .pm-burger span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+[aria-expanded="true"] .pm-burger span:nth-child(2) { opacity: 0; }
+[aria-expanded="true"] .pm-burger span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* ---------- tabs (desktop) ---------- */
+
+.pm-catbar { display: flex; min-width: 0; }
+
+.pm-catbar__inner {
+    display: flex;
+    gap: 28px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.pm-catbar a {
+    display: flex;
+    flex: none;
+    align-items: center;
+    border-top: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    color: var(--pm-fog);
+    font-size: var(--pm-t14);
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.pm-catbar a:hover { color: var(--pm-sail); }
+.pm-catbar a[aria-current="page"] { color: var(--pm-sail); border-bottom-color: var(--pm-brass); }
+.pm-catbar a:focus-visible { outline: 2px solid var(--pm-brass); outline-offset: -2px; }
+
+/* ---------- side menu ---------- */
+
+.pm-overlay {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+    background: rgba(5, 12, 26, 0.6);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.pm-drawer {
+    position: fixed;
+    z-index: 51;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(320px, 86vw);
+    overflow-y: auto;
+    padding: 12px 16px 32px;
+    background: var(--pm-hull);
+    color: var(--pm-sail);
+    transform: translateX(-100%);
+    transition: transform 0.25s var(--pm-ease);
+}
+
+.pm-overlay[data-open="true"] { opacity: 1; }
+.pm-drawer[data-open="true"] { transform: none; }
+.pm-overlay[hidden],
+.pm-drawer[hidden] { display: none; }
+
+.pm-drawer .pm-drawer__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.pm-drawer .pm-drawer__title { font: 400 var(--pm-t20)/1 var(--pm-display); }
+.pm-drawer .pm-icon-btn svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.pm-drawer nav { display: grid; padding: 8px 0; border-top: 1px solid var(--pm-rigging); }
+
+.pm-drawer nav a {
+    padding: 10px 8px;
+    border-radius: var(--pm-r-control);
+    color: var(--pm-sail);
+    font-size: var(--pm-t16);
+    text-decoration: none;
+}
+
+.pm-drawer nav a:hover { background: var(--pm-hull-raised); }
+
+.pm-drawer .pm-drawer__heading {
+    margin: 8px 8px 4px;
+    color: var(--pm-fog);
+    font-size: var(--pm-t13);
+    font-weight: 600;
+}
+
+body.pm-scroll-locked { overflow: hidden; }
+
+/* ---------- footer ---------- */
+
+/* This keeps the footer at the bottom of short pages without extra scrolling */
+body.pm:not(.pm-entry) { display: flex; flex-direction: column; }
+body.pm > .pm-footer { margin-top: auto; }
+
+.pm-footer {
+    margin-top: 64px;
+    border-top: 1px solid var(--pm-rigging);
+    background: var(--pm-harbor);
+    color: var(--pm-sail);
+}
+
+.pm-footer .pm-footer__inner {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 32px;
+    max-width: var(--pm-page);
+    margin: 0 auto;
+    padding: 32px var(--pm-gutter) 48px;
+}
+
+.pm-footer .pm-footer__brand { margin: 0 0 4px; font: 400 var(--pm-t20)/1.2 var(--pm-display); }
+.pm-footer .pm-footer__heading { margin: 0 0 8px; font-size: var(--pm-t14); font-weight: 600; }
+.pm-footer p { margin: 0; }
+.pm-footer nav { display: grid; align-content: start; gap: 6px; }
+.pm-footer nav a { color: var(--pm-fog); font-size: var(--pm-t14); text-decoration: none; }
+.pm-footer nav a:hover { color: var(--pm-sail); text-decoration: underline; }
+
+/* ---------- small screens: the side menu replaces the category bar ---------- */
+
+@media (max-width: 899px) {
+    .pm-header .pm-header__menu { display: inline-grid; }
+    .pm-catbar { display: none; }
+    .pm-header__bar { flex-wrap: wrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; }
+    .pm-header .pm-header__sell,
+    .pm-header .pm-header__messages,
+    .pm-header .pm-header__wallet { display: none; }
+    .pm-footer .pm-footer__inner { grid-template-columns: 1fr 1fr; }
+    .pm-footer .pm-footer__inner > div:first-child { grid-column: 1 / -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pm-drawer,
+    .pm-overlay,
+    .pm-burger span { transition: none; }
+}

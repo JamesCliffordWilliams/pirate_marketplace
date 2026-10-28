@@ -5,6 +5,8 @@
     CSC 405 Sp 26'
     Created by Day Ekoi - Iteration 5 4/16/2026
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - drag-drop zones, image preview thumbnails, preview_image_1-4 upload + pre-fill, existing preview image display
+    Updated by James Williams - 10/26/26 - shared photo picker, one request per save
+    Updated by James Williams - 10/26/26 - redesign with saved photos in their tiles, a live store cover preview and errors on the page
 
 Handles the Edit Storefront page:
 - Loads current storefront data and pre-fills the form
@@ -69,8 +71,8 @@ function configureStorefrontStatusButton(storefront, user) {
 
     const isActive = storefront?.is_active !== false;
     deactivateBtn.textContent = isActive ? "Deactivate" : "Reactivate";
-    deactivateBtn.classList.toggle("danger-btn", isActive);
-    deactivateBtn.classList.toggle("reactivate-btn", !isActive);
+    deactivateBtn.classList.toggle("pm-btn--danger", isActive);
+    deactivateBtn.classList.toggle("pm-btn--secondary", !isActive);
 
     deactivateBtn.onclick = async () => {
         const action = isActive ? "deactivate" : "reactivate";
@@ -93,84 +95,42 @@ function configureStorefrontStatusButton(storefront, user) {
 
             window.location.href = "/storefronts/dashboard";
         } catch (error) {
-            alert(error.message || `Could not ${action} storefront.`);
+            VaultListingCard.showToast(error.message || `Couldn't ${action} the storefront.`, "error");
         }
     };
 }
 
 
-// shows thumbnail + filename in a preview container
-function showPreview(containerId, files, max = 1) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = "";
-    Array.from(files).slice(0, max).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-            const wrap = document.createElement("div");
-            wrap.className = "thumb-wrap";
+// Added by James Williams 10/26/26 - the shared photo picker and the live store cover preview.
+// Saved photos stay in their tiles until you pick a new one.
+const { showError, clearErrors, renderFacade } = window.SellerForm;
+const saved = { logo: null, banner: null, previews: [null, null, null, null] };
+let imagePickers = null;
 
-            const img = document.createElement("img");
-            img.src = e.target.result;
-
-            const name = document.createElement("span");
-            name.className = "thumb-name";
-            name.textContent = file.name;
-
-            wrap.appendChild(img);
-            wrap.appendChild(name);
-            container.appendChild(wrap);
-        };
-        reader.readAsDataURL(file);
-    });
+function setupImagePickers() {
+    const attach = (inputId) => window.ImageUploader.attach(document.getElementById(inputId), { onChange: updateFacade });
+    return {
+        logo: attach("logoUpload"),
+        banner: attach("bannerUpload"),
+        previews: [1, 2, 3, 4].map((n) => attach(`previewImage${n}`)),
+    };
 }
 
-
-// shows existing S3 URLs as thumbnails (for pre-filled images)
-function showExistingImages(containerId, urls) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = "";
-    urls.filter(Boolean).forEach((url, i) => {
-        const wrap = document.createElement("div");
-        wrap.className = "thumb-wrap";
-
-        const img = document.createElement("img");
-        img.src = url;
-        img.alt = `Preview ${i + 1}`;
-
-        const label = document.createElement("span");
-        label.className = "thumb-name";
-        label.textContent = `Preview ${i + 1}`;
-
-        wrap.appendChild(img);
-        wrap.appendChild(label);
-        container.appendChild(wrap);
-    });
-}
-
-
-function setupDropZone(zoneId, inputId, previewId, max = 1) {
+function showSavedPhoto(zoneId, url) {
+    if (!url) return;
     const zone = document.getElementById(zoneId);
-    const input = document.getElementById(inputId);
+    zone.classList.add("has-image");
+    zone.style.setProperty("--preview-image", `url("${encodeURI(url)}")`);
+}
 
-    zone.addEventListener("click", () => input.click());
-
-    zone.addEventListener("dragover", e => {
-        e.preventDefault();
-        zone.classList.add("dragover");
+function updateFacade() {
+    const shown = (picker, url) => (picker && picker.previewUrl) || url;
+    renderFacade({
+        name: document.getElementById("brandName").value.trim(),
+        logo: shown(imagePickers && imagePickers.logo, saved.logo),
+        banner: shown(imagePickers && imagePickers.banner, saved.banner),
+        images: saved.previews.map((url, i) => shown(imagePickers && imagePickers.previews[i], url)).filter(Boolean)
     });
-
-    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
-
-    zone.addEventListener("drop", e => {
-        e.preventDefault();
-        zone.classList.remove("dragover");
-        const dt = new DataTransfer();
-        Array.from(e.dataTransfer.files).slice(0, max).forEach(f => dt.items.add(f));
-        input.files = dt.files;
-        showPreview(previewId, dt.files, max);
-    });
-
-    input.addEventListener("change", () => showPreview(previewId, input.files, max));
 }
 
 
@@ -196,8 +156,7 @@ async function loadStorefront(userId, userRole) {
     });
 
     if (!res.ok) {
-        alert("Could not load storefront data.");
-        window.location.href = "/storefronts/dashboard";
+        showError("formError", "This storefront couldn't be loaded. Go back to your dashboard and try again.");
         return null;
     }
 
@@ -207,17 +166,13 @@ async function loadStorefront(userId, userRole) {
     document.getElementById("storeDescription").value = sf.bio || "";
     document.getElementById("contactInfo").value = sf.contact_info || "";
 
-    // show current banner
-    if (sf.banner_url) {
-        document.getElementById("bannerPreviewImg").src = sf.banner_url;
-        document.getElementById("bannerCurrentPreview").style.display = "block";
-    }
-
-    // show current logo
-    if (sf.logo_url) {
-        document.getElementById("logoPreviewImg").src = sf.logo_url;
-        document.getElementById("logoCurrentPreview").style.display = "block";
-    }
+    // shows the saved banner, logo and preview photos in their tiles
+    saved.logo = sf.logo_url || null;
+    saved.banner = sf.banner_url || null;
+    saved.previews = [sf.preview_image_1, sf.preview_image_2, sf.preview_image_3, sf.preview_image_4].map((url) => url || null);
+    showSavedPhoto("logoZone", saved.logo);
+    showSavedPhoto("bannerZone", saved.banner);
+    saved.previews.forEach((url, i) => showSavedPhoto(`previewZone${i + 1}`, url));
 
     // pre-check saved categories - Added by Day Ekoi 4/20/26
     if (sf.categories) {
@@ -228,19 +183,6 @@ async function loadStorefront(userId, userRole) {
         });
         validateCategoryLimit();
     }
-
-    // show existing preview images in individual slots - Updated by Day Ekoi 4/20/26
-    const existingPreviews = [sf.preview_image_1, sf.preview_image_2, sf.preview_image_3, sf.preview_image_4];
-    existingPreviews.forEach((url, i) => {
-        if (url) {
-            const slotDiv = document.getElementById(`existingPreview${i + 1}`);
-            const slotImg = document.getElementById(`existingImg${i + 1}`);
-            if (slotDiv && slotImg) {
-                slotImg.src = url;
-                slotDiv.style.display = "block";
-            }
-        }
-    });
 
     return sf;
 }
@@ -257,33 +199,37 @@ async function init() {
         const currentStorefront = await loadStorefront(user.id, user.role);
         if (!currentStorefront) return;
 
-        // set up drop zones - Updated by Day Ekoi 4/20/26 - 4 individual preview slots
-        setupDropZone("bannerZone", "bannerUpload", "bannerPreview", 1);
-        setupDropZone("logoZone", "logoUpload", "logoPreview", 1);
-        setupDropZone("previewZone1", "previewImage1", "previewPreview1", 1);
-        setupDropZone("previewZone2", "previewImage2", "previewPreview2", 1);
-        setupDropZone("previewZone3", "previewImage3", "previewPreview3", 1);
-        setupDropZone("previewZone4", "previewImage4", "previewPreview4", 1);
+        imagePickers = setupImagePickers();
+        document.getElementById("brandName").addEventListener("input", updateFacade);
+        updateFacade();
         setupCategoryLimitGuard();
         configureStorefrontStatusButton(currentStorefront, user);
 
-        form.addEventListener("submit", async (event) => {
-            event.preventDefault();
+        form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Saving…", async () => {
+            clearErrors(form);
+            if (!document.getElementById("brandName").value.trim()) {
+                showError("brandError", "Enter a storefront name.");
+                document.getElementById("brandName").focus();
+                return;
+            }
+            if (!validateCategoryLimit()) {
+                return;
+            }
 
-            const logoFile = document.getElementById("logoUpload").files[0];
-            const bannerFile = document.getElementById("bannerUpload").files[0];
+            const logoFile = imagePickers.logo.file;
+            const bannerFile = imagePickers.banner.file;
 
             let logoUrl = currentStorefront.logo_url;
             let bannerUrl = currentStorefront.banner_url;
 
             if (logoFile) {
                 try { logoUrl = await uploadImageToS3(logoFile, "storefronts/logos"); }
-                catch (err) { alert("Failed to upload logo. Please try again."); return; }
+                catch (err) { showError("formError", "The logo didn't upload. Try again."); return; }
             }
 
             if (bannerFile) {
                 try { bannerUrl = await uploadImageToS3(bannerFile, "storefronts/banners"); }
-                catch (err) { alert("Failed to upload banner. Please try again."); return; }
+                catch (err) { showError("formError", "The banner didn't upload. Try again."); return; }
             }
 
             // upload each preview slot independently, keep existing if no new file - Updated by Day Ekoi 4/20/26
@@ -295,12 +241,12 @@ async function init() {
             ];
             const previewUrls = [...existingPreviewUrls];
             for (let i = 0; i < 4; i++) {
-                const file = document.getElementById(`previewImage${i + 1}`).files[0];
+                const file = imagePickers.previews[i].file;
                 if (file) {
                     try {
                         previewUrls[i] = await uploadImageToS3(file, "storefronts/previews");
                     } catch (err) {
-                        alert(`Failed to upload preview image ${i + 1}. Please try again.`);
+                        showError("formError", `Preview ${i + 1} didn't upload. Try again.`);
                         return;
                     }
                 }
@@ -308,9 +254,6 @@ async function init() {
 
             const formData = new FormData(form);
             const checkedCategories = Array.from(document.querySelectorAll('input[name="categories"]:checked')).map(cb => cb.value);
-            if (!validateCategoryLimit()) {
-                return;
-            }
 
             const payload = {
                 brand_name: formData.get("brand_name"),
@@ -338,16 +281,18 @@ async function init() {
             const data = await res.json();
 
             if (!res.ok) {
-                alert(data.error || "Failed to update storefront.");
+                showError("formError", data.error || "Your changes weren't saved. Try again.");
                 return;
             }
 
-            window.location.href = "/storefronts/dashboard";
-        });
+            VaultListingCard.showToast("Changes saved");
+            window.setTimeout(() => { window.location.href = "/storefronts/dashboard"; }, 700);
+            return true;
+        }));
 
     } catch (err) {
         console.error("Error initializing edit page:", err);
-        alert("Something went wrong. Please try again.");
+        showError("formError", "Couldn't reach Pirate Market. Check your connection and refresh the page.");
     }
 }
 

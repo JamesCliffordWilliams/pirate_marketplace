@@ -4,11 +4,12 @@
     Pirate Market
     CSC 405 
     Created by Aniya Hopson - 10/26/26
+    Updated by James Williams - 10/27/26 - moved onto theme.css for the redesign. Same layout
+    with the new colors, fonts and buttons.
 
 Description:
-Layout and styling for the public About page. Loaded AFTER storefront.css,
-which already supplies the background image, top bar, side menu, the
-.brand-title heading and the --PM-* color tokens used below.
+Layout and styling for the public About page. Loaded AFTER theme.css and nav.css,
+which supply the page background, header, menu, footer and the --pm-* tokens used below.
 
 Works with:
 - about.html
@@ -17,10 +18,9 @@ Works with:
 
 /* ---------- page frame ---------- */
 
-.about-page {
+.pm .about-page {
     max-width: 1080px;
-    margin: 0 auto;
-    padding: 0 16px 80px;   /* 16px side gutter keeps text off the edge on phones */
+    padding-bottom: 80px;
     line-height: 1.55;
 }
 
@@ -29,23 +29,28 @@ Works with:
 
 .about-hero {
     text-align: center;
-    margin-bottom: 56px;
+    margin: 24px 0 56px;
 }
 
-.about-page .about-eyebrow {   /* .about-page prefix beats the generic ".about-page p" color rule */
-    color: #D4AF37;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 3px;
+.pm .about-eyebrow {
+    color: var(--pm-fog);
+    font-size: var(--pm-t13);
+    font-weight: 600;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
-.about-lede {
+.pm .about-hero h1 {
+    font-size: var(--pm-t39);
+}
+
+.pm .about-lede {
     max-width: 640px;
     margin: 16px auto 0;
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 1.1rem;
+    color: var(--pm-sail);
+    font-size: var(--pm-t20);
+    line-height: 1.5;
 }
 
 
@@ -55,31 +60,29 @@ Works with:
     margin-bottom: 56px;
 }
 
-.about-heading {
-    color: #D4AF37;
-    font-size: 1.6rem;
+.pm .about-heading {
+    font: 400 var(--pm-t25)/1.2 var(--pm-display);
     margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(var(--vault-gold), 0.35);
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--pm-rigging);
 }
 
-/* Shared "glass panel" look for cards, panels and FAQ items */
+/* Shared panel look for cards, panels and FAQ items */
 .about-card,
 .about-panel,
 .about-trust li,
 .about-faq details {
-    background: rgba(var(--vault-navy), 0.78);
-    border: 1px solid rgba(var(--vault-gold), 0.28);
-    border-radius: 14px;
+    background: var(--pm-hull);
+    border: 1px solid var(--pm-rigging);
+    border-radius: var(--pm-r-tile);
 }
 
-.about-page h3 {
-    font-size: 1.1rem;
+.pm .about-page h3 {
     margin-bottom: 8px;
 }
 
-.about-page p {
-    color: rgba(255, 255, 255, 0.82);
+.pm .about-page p {
+    color: var(--pm-fog);
 }
 
 .nowrap {
@@ -92,11 +95,11 @@ Works with:
 .about-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
+    gap: 16px;
 }
 
 .about-card {
-    padding: 22px;
+    padding: 24px;
 }
 
 .about-icon {
@@ -107,8 +110,8 @@ Works with:
     height: 46px;
     margin-bottom: 12px;
     border-radius: 50%;
-    color: #D4AF37;
-    background: rgba(var(--vault-gold), 0.12);
+    color: var(--pm-sail);
+    background: var(--pm-hull-raised);
 }
 
 
@@ -117,21 +120,23 @@ Works with:
 .about-columns {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 18px;
+    gap: 16px;
 }
 
 .about-panel {
     padding: 24px;
 }
 
-.about-panel h3 {
-    color: #D4AF37;
-    margin-bottom: 14px;
+.pm .about-panel h3 {
+    font-size: var(--pm-t20);
+    margin-bottom: 16px;
 }
 
-/* Numbered steps drawn with a CSS counter so the numbers can be styled as gold circles */
+/* Numbered steps drawn with a CSS counter so the numbers can be styled as circles */
 .about-steps {
     list-style: none;
+    margin: 0;
+    padding: 0;
     counter-reset: step;
 }
 
@@ -140,7 +145,7 @@ Works with:
     position: relative;
     padding-left: 40px;
     margin-bottom: 14px;
-    color: rgba(255, 255, 255, 0.85);
+    color: var(--pm-fog);
 }
 
 .about-steps li::before {
@@ -151,16 +156,16 @@ Works with:
     width: 26px;
     height: 26px;
     border-radius: 50%;
-    background: #D4AF37;
-    color: rgb(var(--vault-navy));
-    font-size: 0.85rem;
-    font-weight: 800;
-    line-height: 26px;
+    border: 1px solid var(--pm-control-line);
+    color: var(--pm-sail);
+    font-size: var(--pm-t13);
+    font-weight: 600;
+    line-height: 24px;
     text-align: center;
 }
 
 .about-steps strong {
-    color: white;
+    color: var(--pm-sail);
 }
 
 
@@ -168,14 +173,15 @@ Works with:
 
 .about-trust {
     list-style: none;
+    margin: 0;
+    padding: 0;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 18px;
+    gap: 16px;
 }
 
 .about-trust li {
-    padding: 20px 22px;
-    border-left: 4px solid #D4AF37;
+    padding: 20px 24px;
 }
 
 
@@ -187,12 +193,12 @@ Works with:
 }
 
 .about-faq details {
-    padding: 0 22px;
+    padding: 0 24px;
 }
 
 .about-faq summary {
     padding: 18px 0;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     list-style: none;          /* hides the default triangle (Firefox) */
     display: flex;
@@ -206,7 +212,7 @@ Works with:
 
 .about-faq summary::after {
     content: "+";
-    color: #D4AF37;
+    color: var(--pm-fog);
     font-size: 1.3rem;
     line-height: 1;
 }
@@ -219,25 +225,19 @@ Works with:
     padding-bottom: 18px;
 }
 
-.about-faq summary:focus-visible,
-.about-btn:focus-visible {
-    outline: 2px solid #D4AF37;
-    outline-offset: 3px;
-}
-
 
 /* ---------- Call to action ---------- */
 
 .about-cta {
     text-align: center;
     padding: 40px 24px;
-    border-radius: 18px;
-    background: rgba(var(--vault-navy), 0.9);
-    border: 1px solid rgba(var(--vault-gold), 0.5);
+    border-radius: var(--pm-r-sheet);
+    background: var(--pm-hull);
+    border: 1px solid var(--pm-rigging);
 }
 
-.about-cta h2 {
-    font-size: 1.8rem;
+.pm .about-cta h2 {
+    font: 400 var(--pm-t31)/1.15 var(--pm-display);
     margin-bottom: 8px;
 }
 
@@ -245,32 +245,8 @@ Works with:
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 14px;
-    margin-top: 22px;
-}
-
-.about-btn {
-    display: inline-block;
-    padding: 12px 28px;
-    border-radius: 999px;
-    border: 1px solid #D4AF37;
-    color: #D4AF37;
-    font-weight: 700;
-    text-decoration: none;
-    transition: background 0.2s ease, color 0.2s ease;
-}
-
-.about-btn:hover {
-    background: rgba(var(--vault-gold), 0.15);
-}
-
-.about-btn--primary {
-    background: #D4AF37;
-    color: rgb(var(--vault-navy));
-}
-
-.about-btn--primary:hover {
-    background: #f0cc55;
+    gap: 12px;
+    margin-top: 24px;
 }
 
 
@@ -283,11 +259,11 @@ Works with:
         grid-template-columns: 1fr;
     }
 
-    .about-hero .brand-title {
-        font-size: 2.8rem;
+    .pm .about-hero h1 {
+        font-size: var(--pm-t31);
     }
 
-    .about-lede {
-        font-size: 1rem;
+    .pm .about-lede {
+        font-size: var(--pm-t16);
     }
 }

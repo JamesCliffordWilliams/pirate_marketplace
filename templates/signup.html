@@ -1,119 +1,37 @@
-<!-- Created 3/21/2026 by Ryan Grimes-->  
+<!-- signup.html - Updated by James Williams 10/26/26 - Pirate Market redesign with simpler
+     text, labels and errors shown on the form -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pirate Marketplace | Create Account</title>
-    <style>
-        body, html {
-            margin: 0; padding: 0; height: 100%; width: 100%;
-            background: #000; overflow: hidden;
-            font-family: 'Segoe UI', sans-serif;
-            display: flex; justify-content: center; align-items: center;
-        }
-
-        .vault-wrapper {
-            position: relative;
-            width: 100vw; height: 100vh;
-            background: url('/static/images/background.png') no-repeat center center;
-            background-size: cover;
-            display: flex; justify-content: center; align-items: center;
-        }
-
-        /* Metallic Glass Form Panel */
-        .auth-card {
-            background: rgba(0, 0, 0, 0.85);
-            border: 1px solid #B8860B;
-            padding: 40px;
-            width: 350px;
-            border-radius: 2px;
-            box-shadow: 0 0 25px rgba(184, 134, 11, 0.3);
-            text-align: center;
-            z-index: 10;
-        }
-
-        .auth-card h2 {
-            color: white;
-            letter-spacing: 4px;
-            margin-bottom: 30px;
-            font-size: 2.5vh;
-        }
-
-        .input-group { margin-bottom: 20px; text-align: left; }
-
-        .input-group label {
-            color: #B8860B;
-            font-size: 1.2vh;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .input-group input {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(184, 134, 11, 0.5);
-            padding: 12px;
-            color: white;
-            box-sizing: border-box;
-            outline: none;
-        }
-
-        .input-group input:focus { border-color: #B8860B; background: rgba(255, 255, 255, 0.1); }
-
-        /* Match the metallic button feel */
-        .submit-btn {
-            width: 100%;
-            background: linear-gradient(145deg, #B8860B, #8B6508);
-            border: none;
-            padding: 15px;
-            color: black;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            transition: 0.3s;
-            margin-top: 10px;
-        }
-
-        .submit-btn:hover {
-            filter: brightness(1.2);
-            transform: translateY(-2px);
-        }
-
-        .back-link {
-            display: block;
-            margin-top: 20px;
-            color: rgba(204, 178, 128, 0.6);
-            font-size: 1.3vh;
-            text-decoration: none;
-        }
-
-        .back-link:hover { color: #B8860B; }
-    </style>
+    <title>Create account | Pirate Market</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/entry.css') }}">
 </head>
-<body>
-    <div class="vault-wrapper">
-        <div class="auth-card">
-            <h2>INITIALIZE ACCESS</h2>
-            <form action="{{ url_for('auth.signup') }}" method="POST">
-                <div class="input-group">
-                    <label>Designation (Username)</label>
-                    <input type="text" name="username" required placeholder="User_01">
-                </div>
-                <div class="input-group">
-                    <label>Neural Link (Email)</label>
-                    <input type="email" name="email" required placeholder="email@example.com">
-                </div>
-                <div class="input-group">
-                    <label>Security Cipher (Password)</label>
-                    <input type="password" name="password" required placeholder="••••••••">
-                </div>
-                <button type="submit" class="submit-btn">Create Identity</button>
-            </form>
-            <a href="{{ url_for('index') }}" class="back-link">Return to Portal</a>
+<body class="pm pm-entry">
+<main class="pm-entry__panel">
+    <a href="{{ url_for('index') }}"><img class="pm-entry__crest pm-entry__crest--small" src="{{ url_for('static', filename='images/logo-96.png') }}" alt="Pirate Market home" width="96" height="96"></a>
+    <form class="pm-entry__form" action="{{ url_for('auth.signup') }}" method="POST">
+        <h1>Create account</h1>
+        {% if error %}<p class="pm-notice pm-notice--error pm-entry__message" role="alert">{{ error }}</p>{% endif %}
+        <div class="pm-field">
+            <label class="pm-label" for="username">Username</label>
+            <input class="pm-input" id="username" type="text" name="username" autocomplete="username" required autofocus value="{{ username or '' }}">
         </div>
-    </div>
+        <div class="pm-field">
+            <label class="pm-label" for="email">Hampton University email</label>
+            <input class="pm-input" id="email" type="email" name="email" autocomplete="email" required
+                   placeholder="you@my.hamptonu.edu" value="{{ email or '' }}" aria-describedby="emailHint">
+            <p class="pm-hint" id="emailHint">Pirate Market is for the Hampton community.</p>
+        </div>
+        <div class="pm-field">
+            <label class="pm-label" for="password">Password</label>
+            <input class="pm-input" id="password" type="password" name="password" autocomplete="new-password" required>
+        </div>
+        <button type="submit" class="pm-btn pm-btn--primary">Create account</button>
+    </form>
+    <p class="pm-entry__links">Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+</main>
 </body>
 </html>

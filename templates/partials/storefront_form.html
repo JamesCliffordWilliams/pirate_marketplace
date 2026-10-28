@@ -1,0 +1,86 @@
+{#
+    partials/storefront_form.html
+
+    Pirate Market
+    Created by James Williams - 10/26/26
+    These are the fields shared by Create storefront and Edit storefront.
+    The ids and names are used by create_storefront.js and edit_storefront.js.
+#}
+
+{% macro image_tile(zone_id, input_id, preview_id, label, name=None, shape="") -%}
+<div class="pm-photo pm-photo--{{ shape or 'tile' }}">
+    <label class="drop-zone pm-photo__zone" id="{{ zone_id }}">
+        <span class="drop-text">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            {{ label }}
+        </span>
+        <input type="file" id="{{ input_id }}" {% if name %}name="{{ name }}"{% endif %} accept="image/jpeg,image/png,image/webp,image/gif">
+    </label>
+    <div class="image-preview-row" id="{{ preview_id }}" hidden></div>
+</div>
+{%- endmacro %}
+
+{% macro storefront_fields() -%}
+<section class="pm-form-section" aria-labelledby="brandHeading">
+    <h2 id="brandHeading">Name and logo</h2>
+    <div class="pm-store-brand">
+        {{ image_tile("logoZone", "logoUpload", "logoPreview", "Logo", "logo", "round") }}
+        <div class="pm-field">
+            <label class="pm-label" for="brandName">Storefront name</label>
+            <input type="text" id="brandName" name="brand_name" class="pm-input" maxlength="60" required aria-describedby="brandError">
+            <p class="pm-error" id="brandError" role="alert"></p>
+        </div>
+    </div>
+</section>
+
+<section class="pm-form-section" aria-labelledby="coverHeading">
+    <h2 id="coverHeading">Cover</h2>
+    <p class="pm-hint">Up to 4 preview photos make your cover. A banner, if you add one, is used when there are no previews.
+        With neither, your newest product photos are used.</p>
+    <div class="pm-photos">
+        {% for n in range(1, 5) %}
+        {{ image_tile("previewZone" ~ n, "previewImage" ~ n, "previewPreview" ~ n, "Preview " ~ n) }}
+        {% endfor %}
+    </div>
+    <div class="pm-banner-tile">
+        {{ image_tile("bannerZone", "bannerUpload", "bannerPreview", "Banner (wide photo)", "banner", "wide") }}
+    </div>
+</section>
+
+<section class="pm-form-section" aria-labelledby="aboutHeading">
+    <h2 id="aboutHeading">About</h2>
+    <div class="pm-field">
+        <label class="pm-label" for="storeDescription">Description</label>
+        <textarea id="storeDescription" name="description" class="pm-textarea" maxlength="600" required
+                  placeholder="What you sell, and how pickup or shipping works"></textarea>
+    </div>
+    <div class="pm-field">
+        <label class="pm-label" for="contactInfo">Contact</label>
+        <input type="text" id="contactInfo" name="contact_info" class="pm-input" maxlength="120" placeholder="@yourhandle or email">
+        <p class="pm-hint">Shown on your storefront page.</p>
+    </div>
+    <fieldset class="pm-fieldset">
+        <legend class="pm-label">Style (up to 3)</legend>
+        <div class="pm-chips">
+            {% for style in ["Streetwear", "Casual", "Vintage", "Earthy", "Athleisure", "Retro", "Accessories", "Other"] %}
+            <label class="pm-chip"><input type="checkbox" name="categories" value="{{ style }}">{{ style }}</label>
+            {% endfor %}
+        </div>
+        <p class="pm-error" id="categoryValidationMessage" aria-live="polite"></p>
+    </fieldset>
+</section>
+{%- endmacro %}
+
+{% macro facade_preview() -%}
+<aside class="pm-editor__preview pm-editor__preview--store" aria-label="Preview">
+    <p class="pm-label">Preview</p>
+    <article class="pm-facade pm-preview-tile" aria-hidden="true">
+        <div class="pm-facade__cover" id="facadeCover" data-count="0"></div>
+        <div class="pm-facade__body">
+            <span class="pm-medallion" id="facadeLogo">?</span>
+            <span class="pm-facade__name" id="facadeName">Your storefront</span>
+            <span class="pm-facade__meta">How shoppers see you in Storefronts</span>
+        </div>
+    </article>
+</aside>
+{%- endmacro %}

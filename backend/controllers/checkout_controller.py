@@ -40,7 +40,8 @@ def complete_checkout():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-    # Added by James Williams 10/26/26 - the order is saved; tracking can't change the response
+    # Added by James Williams 10/26/26 - the order is already saved here, so if tracking fails
+    # the shopper still gets the same response
     try:
         track_order(user_id, result["order_items"])
     except Exception as e:

@@ -3,7 +3,8 @@
 # Created by Day Ekoi - Iteration 3
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added primary image JOIN to get_listings_by_storefront_id
 # Updated by James Williams - 10/26/26 - added category_id to listings and browse_public_listings
-# Updated by James Williams - 10/26/26 - Hot page: listing_ids / available_only filters, newest available listings
+# Updated by James Williams - 10/26/26 - listing_ids and available_only filters and newest available listings for the Hot page
+# Updated by James Williams - 10/26/26 - insert functions that take a cursor so create listing can save everything at once
 
 """
 models/listing_model.py
@@ -34,14 +35,14 @@ from db import get_connection
 # Shoppers can see ACTIVE and SOLD_OUT listings from active storefronts
 PUBLIC_LISTING_VISIBILITY_SQL = "l.status IN ('ACTIVE', 'SOLD_OUT') AND s.is_active IS TRUE"
 
-# Sold out listings are shown after available ones (made-to-order is never sold out)
+# Sold out listings show after available ones. Made to order listings are never sold out
 SOLD_OUT_SQL = (
     "(l.status = 'SOLD_OUT' OR (NOT COALESCE(l.is_made_to_order, FALSE)"
     " AND l.fulfillment_type = 'IN_STOCK' AND COALESCE(l.quantity_on_hand, 0) = 0))"
 )
 
 # Added by James Williams 10/26/26
-# Can be added to the cart right now (same rule as add_to_cart and the card)
+# Listings that can go in the cart right now, using the same rule as add_to_cart and the card
 AVAILABLE_SQL = (
     "(l.status <> 'SOLD_OUT' AND (COALESCE(l.is_made_to_order, FALSE)"
     " OR l.quantity_on_hand IS NULL OR l.quantity_on_hand > 0))"
@@ -89,35 +90,31 @@ def create_listing(
     """
     conn = get_connection()
     cur = conn.cursor()
+    listing = insert_listing(cur, storefront_id, title, description, price, fulfillment_type,
+                             quantity_on_hand, sizes_available, status, is_made_to_order, category_id)
+    conn.commit()
 
-    query = """
+    cur.close()
+    conn.close()
+    return listing
+
+
+# Added by James Williams 10/26/26
+# These inserts take a cursor so create listing can save everything together.
+# The caller does the commit.
+def insert_listing(cur, storefront_id, title, description, price, fulfillment_type,
+                   quantity_on_hand=None, sizes_available=None, status="ACTIVE",
+                   is_made_to_order=False, category_id=None):
+    cur.execute("""
         INSERT INTO listings
         (storefront_id, title, description, price, fulfillment_type, quantity_on_hand, sizes_available, status, is_made_to_order, category_id)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         RETURNING id, storefront_id, title, description, price,
                   fulfillment_type, quantity_on_hand, sizes_available,
                   status, created_at, updated_at, is_made_to_order, category_id;
-    """
-
-    cur.execute(query, (
-        storefront_id,
-        title,
-        description,
-        price,
-        fulfillment_type,
-        quantity_on_hand,
-        sizes_available,
-        status,
-        bool(is_made_to_order),
-        category_id
-    ))
-
+    """, (storefront_id, title, description, price, fulfillment_type, quantity_on_hand,
+          sizes_available, status, bool(is_made_to_order), category_id))
     row = cur.fetchone()
-    conn.commit()
-
-    cur.close()
-    conn.close()
-
     return {
         "id": row[0],
         "storefront_id": row[1],
@@ -133,6 +130,30 @@ def create_listing(
         "is_made_to_order": row[11],
         "category_id": row[12],
     }
+
+
+def insert_listing_image(cur, listing_id, image_url, is_primary=False):
+    if is_primary:
+        cur.execute("UPDATE listing_images SET is_primary = FALSE WHERE listing_id = %s;", (listing_id,))
+    cur.execute("""
+        INSERT INTO listing_images (listing_id, image_url, is_primary)
+        VALUES (%s, %s, %s)
+        RETURNING id, listing_id, image_url, is_primary, created_at;
+    """, (listing_id, image_url, is_primary))
+    row = cur.fetchone()
+    return {"id": row[0], "listing_id": row[1], "image_url": row[2], "is_primary": row[3], "created_at": row[4]}
+
+
+def insert_listing_size(cur, listing_id, size, quantity):
+    cur.execute("""
+        INSERT INTO listing_sizes (listing_id, size, quantity)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (listing_id, size)
+        DO UPDATE SET quantity = EXCLUDED.quantity
+        RETURNING id, listing_id, size, quantity, created_at;
+    """, (listing_id, size, quantity))
+    row = cur.fetchone()
+    return {"id": row[0], "listing_id": row[1], "size": row[2], "quantity": row[3], "created_at": row[4]}
 
 
 def get_listing_by_id(listing_id):
@@ -472,10 +493,9 @@ def restore_listings_after_storefront_reactivation(storefront_id):
 def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0,
                            listing_ids=None, available_only=False):  # Added by James Williams 10/26/26
     """
-    Returns (listings, total) for listings shoppers can see, from every storefront.
-    Each listing includes its images, sizes, storefront and category,
-    so the page doesn't need extra requests per card.
-    listing_ids: only these listings. available_only: skip sold out / out of stock.
+    Returns (listings, total) for the listings shoppers can see from every storefront.
+    Each listing comes with its images, sizes, storefront and category so the page doesn't need extra requests.
+    listing_ids limits it to those listings, and available_only skips anything sold out.
     """
     # Added by James Williams 10/26/26
     if listing_ids is not None and len(listing_ids) == 0:
@@ -514,16 +534,11 @@ def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0,
         LEFT JOIN product_categories c ON c.id = l.category_id
         LEFT JOIN product_categories p ON p.id = c.parent_id
         LEFT JOIN LATERAL (
-            SELECT array_agg(top_images.image_url ORDER BY top_images.rank) AS urls
-            FROM (
-                SELECT li.image_url,
-                       ROW_NUMBER() OVER (
-                           ORDER BY COALESCE(li.is_primary, FALSE) DESC, li.created_at ASC, li.id ASC
-                       ) AS rank
-                FROM listing_images li
-                WHERE li.listing_id = l.id
-            ) top_images
-            WHERE top_images.rank <= 4
+            -- The main photo first, then the oldest, at most 4
+            SELECT (array_agg(li.image_url
+                              ORDER BY COALESCE(li.is_primary, FALSE) DESC, li.created_at ASC, li.id ASC))[1:4] AS urls
+            FROM listing_images li
+            WHERE li.listing_id = l.id
         ) imgs ON TRUE
         LEFT JOIN LATERAL (
             SELECT json_agg(json_build_object('size', ls.size, 'quantity', ls.quantity) ORDER BY ls.id) AS sizes
@@ -541,7 +556,7 @@ def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0,
     if rows:
         total = rows[0][22]
     elif offset > 0:
-        # Past the last page: still return the real total
+        # If the page is past the end, this still gets the real total
         cur.execute(f"""
             SELECT COUNT(*)
             FROM listings l
@@ -589,7 +604,7 @@ def browse_public_listings(category_ids=None, sort="newest", limit=24, offset=0,
 
 # Added by James Williams 10/26/26
 def get_newest_available_listings(exclude_ids=(), per_storefront=2, limit=8):
-    """Newest visible, in-stock listings as [{id, storefront_id}], at most per_storefront from each store."""
+    """Gets the newest visible, in stock listings, with at most per_storefront from each store."""
     conn = get_connection()
     cur = conn.cursor()
     cur.execute(f"""
@@ -626,32 +641,12 @@ def add_listing_image(listing_id, image_url, is_primary=False):
     """
     conn = get_connection()
     cur = conn.cursor()
-
-    if is_primary:
-        cur.execute(
-            "UPDATE listing_images SET is_primary = FALSE WHERE listing_id = %s;",
-            (listing_id,)
-        )
-
-    query = """
-        INSERT INTO listing_images (listing_id, image_url, is_primary)
-        VALUES (%s, %s, %s)
-        RETURNING id, listing_id, image_url, is_primary, created_at;
-    """
-    cur.execute(query, (listing_id, image_url, is_primary))
-    row = cur.fetchone()
+    image = insert_listing_image(cur, listing_id, image_url, is_primary)
     conn.commit()
 
     cur.close()
     conn.close()
-
-    return {
-        "id": row[0],
-        "listing_id": row[1],
-        "image_url": row[2],
-        "is_primary": row[3],
-        "created_at": row[4],
-    }
+    return image
 
 
 def get_images_for_listing(listing_id):
@@ -754,28 +749,12 @@ def upsert_listing_size(listing_id, size, quantity):
     """
     conn = get_connection()
     cur = conn.cursor()
-
-    query = """
-        INSERT INTO listing_sizes (listing_id, size, quantity)
-        VALUES (%s, %s, %s)
-        ON CONFLICT (listing_id, size)
-        DO UPDATE SET quantity = EXCLUDED.quantity
-        RETURNING id, listing_id, size, quantity, created_at;
-    """
-    cur.execute(query, (listing_id, size, quantity))
-    row = cur.fetchone()
+    row = insert_listing_size(cur, listing_id, size, quantity)
     conn.commit()
 
     cur.close()
     conn.close()
-
-    return {
-        "id": row[0],
-        "listing_id": row[1],
-        "size": row[2],
-        "quantity": row[3],
-        "created_at": row[4],
-    }
+    return row
 
 
 def get_sizes_for_listing(listing_id):

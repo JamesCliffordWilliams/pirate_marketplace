@@ -4,147 +4,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Vault | My Wallet</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='css/storefront.css') }}">
+    <title>My Wallet | Pirate Market</title>
+    <!-- Wallet page by Elisa Earls. Updated by James Williams 10/27/26 - uses the redesign's
+         theme, header and footer. Same layout and wallet code, the styles below only apply inside the wallet -->
+    <link rel="preload" href="{{ url_for('static', filename='fonts/instrument-sans-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 
     <style>
-        :root {
-            --gold: #B8860B;
-            --dark-bg: #121212;
-        }
-
-        body {
-            margin: 0;
-            background: #000;
-            color: #fff;
-            font-family: 'Segoe UI', sans-serif;
-        }
-
-        .wallet-container {
+        .pm .wallet-container {
             max-width: 900px;
-            margin: 50px auto;
+            margin: 32px auto 64px;
             padding: 24px;
-            background: #121212;
-            border: 1px solid var(--gold);
+            background: var(--pm-hull);
+            border: 1px solid var(--pm-rigging);
+            border-radius: var(--pm-r-sheet);
         }
 
-        .wallet-header {
+        .pm .wallet-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 16px;
             flex-wrap: wrap;
-            border-bottom: 2px solid var(--gold);
+            border-bottom: 1px solid var(--pm-rigging);
             padding-bottom: 18px;
         }
 
-        h1, h2 {
-            color: var(--gold);
-        }
+        .pm .wallet-container h1 { font: 400 var(--pm-t31)/1.15 var(--pm-display); }
+        .pm .wallet-container h2 { font-size: var(--pm-t20); margin-bottom: 8px; }
+        .pm .wallet-container p { color: var(--pm-fog); }
 
-        .balance-card {
+        .pm .balance-card {
             margin: 28px 0;
             padding: 28px;
-            background: #1a1a1a;
-            border: 1px solid #444;
+            background: var(--pm-harbor);
+            border: 1px solid var(--pm-rigging);
+            border-radius: var(--pm-r-tile);
         }
 
-        .balance-label {
-            color: #bbb;
+        .pm .balance-label {
+            color: var(--pm-fog);
             text-transform: uppercase;
             letter-spacing: 2px;
+            font-size: var(--pm-t13);
         }
 
-        .balance-amount {
+        .pm .balance-amount {
             margin-top: 10px;
             font-size: 2.5rem;
-            font-weight: bold;
-            color: var(--gold);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
         }
 
-        .wallet-actions {
+        .pm .wallet-actions {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 20px;
         }
 
-        .action-card {
+        .pm .action-card {
             padding: 20px;
-            background: #1a1a1a;
-            border: 1px solid #333;
+            background: var(--pm-harbor);
+            border: 1px solid var(--pm-rigging);
+            border-radius: var(--pm-r-tile);
         }
 
-        label {
+        .pm .wallet-container label {
             display: block;
             margin: 12px 0 6px;
+            font-size: var(--pm-t14);
+            font-weight: 600;
         }
 
-        input {
-            box-sizing: border-box;
+        .pm .wallet-container input {
             width: 100%;
-            padding: 12px;
-            background: #080808;
-            color: white;
-            border: 1px solid #555;
+            min-height: 40px;
+            padding: 8px 12px;
+            background: var(--pm-hull);
+            color: var(--pm-sail);
+            border: 1px solid var(--pm-control-line);
+            border-radius: var(--pm-r-control);
         }
 
-        button {
+        .pm .wallet-container input:focus { outline: none; border-color: var(--pm-brass); }
+
+        .pm .wallet-container button {
             margin-top: 14px;
-            padding: 12px 18px;
-            background: var(--gold);
-            color: #000;
+            min-height: 40px;
+            padding: 0 16px;
+            background: var(--pm-brass);
+            color: var(--pm-harbor);
             border: none;
-            font-weight: bold;
+            border-radius: var(--pm-r-control);
+            font-weight: 600;
             cursor: pointer;
         }
 
-        button:disabled {
-            opacity: 0.5;
+        .pm .wallet-container button:hover:not(:disabled) { background: var(--pm-brass-hover); }
+
+        .pm .wallet-container button:disabled {
+            opacity: 0.55;
             cursor: not-allowed;
         }
 
-        .status-message {
+        .pm .status-message {
             min-height: 24px;
             margin: 16px 0;
-            color: #ddd;
         }
 
-        .back-link {
-            color: var(--gold);
+        .pm .back-link {
+            color: var(--pm-fog);
+            font-size: var(--pm-t14);
+            font-weight: 600;
             text-decoration: none;
         }
 
-        .transaction-list {
+        .pm .back-link:hover { color: var(--pm-sail); }
+
+        .pm .transaction-list {
             margin-top: 20px;
         }
 
-        .transaction-row {
+        .pm .transaction-row {
             display: flex;
             justify-content: space-between;
             gap: 16px;
             padding: 14px 0;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--pm-rigging);
         }
 
-        .transaction-details {
-            color: #aaa;
-            font-size: 0.9rem;
+        .pm .transaction-details {
+            color: var(--pm-fog);
+            font-size: var(--pm-t14);
             margin-top: 4px;
         }
 
-        .positive {
-            color: #75d69c;
+        .pm .positive {
+            color: var(--pm-kelp);
         }
 
-        .negative {
-            color: #ff8585;
+        .pm .negative {
+            color: var(--pm-signal-text);
         }
     </style>
 </head>
 
-<body>
+<body class="pm">
+{% include 'partials/site_nav.html' %}
 <main class="wallet-container">
 
     <div class="wallet-header">
@@ -209,7 +216,8 @@
 
 </main>
 
-
+{% include 'partials/site_footer.html' %}
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
 <script>
 const API = "/api/wallet";
 

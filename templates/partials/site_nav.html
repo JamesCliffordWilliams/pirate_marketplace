@@ -1,171 +1,86 @@
 {#
     partials/site_nav.html
 
-    Pirate Marketplace
+    Pirate Market
     Created by James Williams - 10/26/26 (moved out of homepage.html)
-    The top bar and side menu, shared by the homepage and the category pages.
+    Updated by James Williams - 10/26/26 - This is the shared header with Sell, Bag and Account.
+    The tabs are the old menu links with Home first. On small screens everything moves into the side menu.
+    Updated by James Williams - 10/27/26 - the tabs and Sell, Wallet, Bag and Account share one row
+    Pages need css/theme.css, css/nav.css and js/nav_pane.js. bag_count comes from app.py.
 #}
-<!-- Side navigation pane/menu (the 3 lines)
- -allows users to press create storefront button that now allows them to be a seller by creating a storefront and then creating listings
- -explore brands, all categories, new drops, and hot! sections included
- - About, FAQs, and sitemap sections (probably wont be functional for the full scale of the product but included for design purposes)
--->
-<div id="navOverlay" class="nav-overlay"></div>
+{% set signed_in = session.get('user') %}
+{# Each tab has a label, a link and the pages that highlight it #}
+{% set menu = [
+    ("Home", url_for('storefront_pages_bp.storefront_home_page'), ['storefront_pages_bp.storefront_home_page', 'storefront']),
+    ("All categories", url_for('category_pages_bp.categories_page'), ['category_pages_bp.categories_page', 'category_pages_bp.category_listings_page']),
+    ("Hot", url_for('hot_pages_bp.hot_page'), ['hot_pages_bp.hot_page']),
+    ("Returns", url_for('returns_bp.returns_page'), ['returns_bp.returns_page']),
+] %}
+<a class="pm-skip" href="#main">Skip to content</a>
 
-<aside id="navPane" class="nav-pane">
+<header class="pm pm-header">
+    <div class="pm-header__bar">
+        <button class="pm-icon-btn pm-header__menu menu-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navPane">
+            <span class="pm-burger" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
 
-<div class="nav-top">
-    <a href="{{ url_for('storefront_pages_bp.create_storefront_page') }}">
-        <button class="create-btn">Create Storefront</button>
-    </a>
-    <a href="{{ url_for('create_listing') }}">
-        <button class="create-btn">Create Listing</button>
-    </a>
-    <a href="/my-storefront">
-        <button class="create-btn my-storefront-btn">My Storefront</button>
-</a>
-    <hr class="nav-divider">
-</div>
+        <nav class="pm-catbar" aria-label="Main">
+            <div class="pm-catbar__inner">
+                {% for label, href, endpoints in menu %}
+                <a href="{{ href }}" {% if request.endpoint in endpoints %}aria-current="page"{% endif %}>{{ label }}</a>
+                {% endfor %}
+            </div>
+        </nav>
 
-  <!-- Main navigation -->
-  <div class="nav-section">
-    <div class="nav-item">Explore Brands <span>→</span></div>
-    <a class="nav-item" href="{{ url_for('category_pages_bp.categories_page') }}">All Categories <span>→</span></a>
-    <div class="nav-item">New Drops <span>→</span></div>
-    <a class="nav-item" href="{{ url_for('hot_pages_bp.hot_page') }}">Hot! <span>→</span></a> <!-- Updated by James Williams 10/26/26 -->
-  </div>
+        <nav class="pm-header__actions" aria-label="Your account">
+            <a class="pm-header__link pm-header__sell" href="{{ url_for('my_storefront') }}">Sell</a>
+            {% if signed_in %}<a class="pm-header__link pm-header__messages" href="{{ url_for('messages_page') }}">Messages</a>{% endif %}
+            {% if signed_in %}<a class="pm-header__link pm-header__wallet" href="{{ url_for('wallet') }}">Wallet</a>{% endif %}
+            <a class="pm-icon-btn pm-header__bag" href="{{ url_for('auth.view_cart') }}"
+               aria-label="Bag{% if bag_count %}, {{ bag_count }} item{{ 's' if bag_count != 1 }}{% endif %}">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
+                {% if bag_count %}<span class="pm-header__count" aria-hidden="true">{{ bag_count }}</span>{% endif %}
+            </a>
+            {% if signed_in %}
+            <a class="pm-icon-btn" href="{{ url_for('auth.account') }}" aria-label="Account">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+            </a>
+            {% else %}
+            <a class="pm-header__link" href="{{ url_for('auth.login') }}">Log in</a>
+            {% endif %}
+        </nav>
+    </div>
+</header>
 
-  <!-- extras -->
-  <div class="nav-section more">
-    <p class="nav-heading">More from the Market</p>
-    <a href="/about" class="nav-subitem">About</a> <!-- Updated by Aniya Hopson 10/20/26 -->
-    <a href="/returns" class="nav-subitem">Returns</a>
-    <a href="/messages" class="nav-subitem">Messages</a> <!-- Added by Aniya Hopson 10/27/26 -->    
-    <div class="nav-subitem">Sitemap</div>
-  </div>
-
+<div id="navOverlay" class="pm pm-overlay" hidden></div>
+<aside id="navPane" class="pm pm-drawer" hidden aria-label="Menu">
+    <div class="pm-drawer__top">
+        <span class="pm-drawer__title">Menu</span>
+        <button class="pm-icon-btn" type="button" data-nav-close aria-label="Close menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+    </div>
+    <nav aria-label="Main">
+        {% for label, href, endpoints in menu %}
+        <a href="{{ href }}" {% if request.endpoint in endpoints %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+    </nav>
+    <nav aria-label="Selling">
+        <p class="pm-drawer__heading">Selling</p>
+        <a href="{{ url_for('my_storefront') }}">My storefront</a>
+        <a href="{{ url_for('storefront_pages_bp.create_listing_page') }}">Create listing</a>
+        <a href="{{ url_for('storefront_pages_bp.create_storefront_page') }}">Create storefront</a>
+    </nav>
+    <nav aria-label="Account">
+        <p class="pm-drawer__heading">Account</p>
+        {% if signed_in %}
+        <a href="{{ url_for('auth.account') }}">Account</a>
+        <a href="{{ url_for('messages_page') }}">Messages</a> <!-- Added by Aniya Hopson 10/27/26 -->
+        <a href="{{ url_for('wallet') }}">Wallet</a>
+        <a href="{{ url_for('auth.logout') }}">Log out</a>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}">Log in</a>
+        {% endif %}
+    </nav>
 </aside>
-
-  <!-- 
-    Original top nav bar
-    This version used emoji placeholders for:
-    - menu
-    - cart
-    - profile
-
-    It has been replaced below with a version using SVG icons.
--->
-
-
-<!---
-  <header class="topbar">
-    <button class="icon-btn">☰</button>
-
-    <div class="topbar-actions">
-      <button class="icon-btn">🛒</button>
-      <button class="icon-btn">👤</button>
-    </div>
-  </header>
--->
-
-<!----
-Updated nav bar
-
-
-    Improvements:
-    - Replaced emojis with SVG icons 
-    - Added custom menu button (3-line hamburger)
-    - Styled profile button to match storefront logo design
-    - Added better spacing 
-
-    Future functionality:
-    - Menu button → opens navigation pane
-    - Bag icon → routes to cart
-    - Profile icon → routes to user account page
-  -->
-
-  <header class="topbar">
-
-    <!-- Menu button (custom hamburger icon) -->
-    <button class="icon-btn menu-btn" aria-label="Open navigation menu">
-      <span class="menu-line"></span>
-      <span class="menu-line"></span>
-      <span class="menu-line"></span>
-    </button>
-
-    <!-- Right-side actions -->
-    <div class="topbar-actions">
-    
-    <!--Shopping bag button -->
-      <a href="{{ url_for('auth.view_cart') }}" class="icon-btn bag-btn" aria-label="View shopping bag" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
-        <svg viewBox="0 0 24 24" class="topbar-svg" aria-hidden="true">
-          <path
-            d="M6 8h12l-1 11H7L6 8Z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M9 8V6a3 3 0 0 1 6 0v2"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </svg>
-      </a>
-
-      <!-- Shopping bag button 
-      <button class="icon-btn bag-btn" aria-label="View shopping bag">
-        <svg viewBox="0 0 24 24" class="topbar-svg" aria-hidden="true">
-          <path
-            d="M6 8h12l-1 11H7L6 8Z"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M9 8V6a3 3 0 0 1 6 0v2"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-          />
-        </svg>
-      </button> -->
-
-      <!-- Profile button 
-      <button class="profile-btn" aria-label="View account">
-        <div class="profile-avatar">
-          <svg viewBox="0 0 24 24" class="profile-svg" aria-hidden="true">
-            <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
-            <path
-              d="M5 19a7 7 0 0 1 14 0"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-          </svg>
-        </div>
-      </button> -->
-
-      <a href="{{ url_for('auth.account') }}" class="profile-btn" aria-label="View account" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">
-        <div class="profile-avatar">
-          <svg viewBox="0 0 24 24" class="profile-svg" aria-hidden="true">
-            <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/>
-            <path
-              d="M5 19a7 7 0 0 1 14 0"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-            />
-          </svg>
-        </div>
-      </a>
-
-    </div>
-  </header>
+<span id="main" tabindex="-1"></span>

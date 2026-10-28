@@ -1,136 +1,140 @@
 /* checkout.css
     The Vault Campus Marketplace
     Created by Kaila Roberts - Iteration 4
-    
-    This file pulls the theme from storefront.css to ensure 
-    consistent branding across the purchase flow.
+    Updated by James Williams - 10/26/26 - rewritten for the redesign. This styles the bag,
+    checkout and order confirmation pages.
 */
 
-
-/* Base Page Styles */
-body {
-    /* Uses the specific background gradient and image path from the project */
-    background: linear-gradient(rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.58)),
-                url("/static/images/background.png") no-repeat center center fixed;
-    background-size: cover;
-    color: white;
-    font-family: Arial, Helvetica, sans-serif;
-    margin: 0;
+.pm .pm-checkout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 48px;
+    align-items: start;
 }
 
-/* Header & Navigation Styles */
-.storefront-banner {
-    width: min(1200px, 92%);
-    margin: 1.5rem auto;
+.pm .pm-back { display: inline-block; margin-bottom: 12px; color: var(--pm-fog); font-size: var(--pm-t14); }
+.pm .pm-back::before { content: "‹ "; }
+.pm .pm-back:hover { color: var(--pm-sail); }
+.pm .pm-checkout__intro { margin: 4px 0 20px; }
+.pm .pm-checkout__form { max-width: 560px; }
+.pm .pm-checkout__pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.pm .pm-notice--error { border-left-color: var(--pm-signal); margin-bottom: 16px; }
+.pm .pm-bag__flash { margin-bottom: 20px; }
+
+/* ---------- bag items ---------- */
+
+.pm .pm-bag { display: grid; border-top: 1px solid var(--pm-rigging); }
+
+.pm .pm-bag__item {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr) auto 96px auto;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--pm-rigging);
+}
+
+.pm .pm-bag__photo {
+    display: block;
+    width: 88px;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: var(--pm-r-tile);
+    background: var(--pm-mat);
+}
+
+.pm .pm-bag__photo img { width: 100%; height: 100%; object-fit: cover; }
+.pm .pm-bag__photo img.is-placeholder { object-fit: contain; padding: 25%; opacity: 0.5; }
+.pm .pm-bag__info { display: grid; gap: 2px; min-width: 0; }
+.pm .pm-bag__info .pm-muted { font-size: var(--pm-t14); }
+.pm .pm-bag__name { color: var(--pm-sail); font-weight: 600; text-decoration: none; }
+.pm .pm-bag__name:hover { text-decoration: underline; }
+.pm .pm-bag__qty output { min-width: 36px; text-align: center; font-variant-numeric: tabular-nums; }
+.pm .pm-bag__line { text-align: right; }
+.pm .pm-bag__remove { color: var(--pm-fog); }
+.pm .pm-bag__remove:hover { color: var(--pm-signal-text); }
+
+/* ---------- summary panel ---------- */
+
+.pm .pm-summary {
+    position: sticky;
+    top: 136px;
+    display: grid;
+    gap: 16px;
+    padding: 24px;
+    border-radius: var(--pm-r-sheet);
+    background: var(--pm-hull);
+}
+
+.pm .pm-summary dl { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; margin: 0; font-size: var(--pm-t14); }
+.pm .pm-summary dd { margin: 0; text-align: right; }
+
+.pm .pm-summary__total {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-}
-
-.nav-link { text-decoration: none; } /* Removes default blue underline from links */
-
-/* THE BACK BUTTON: Secondary style (Gold outline, transparent center) */
-.secondary-btn {
-    background: transparent;
-    color: #d4af37;
-    border: 1px solid #d4af37;
-    padding: 0.8rem 1.5rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.3s ease; /* Smooth transition for the hover effect */
-    border-radius: 2px;
-}
-
-.secondary-btn:hover {
-    background: rgba(212, 175, 55, 0.1); /* Subtle gold glow on hover */
-    transform: translateY(-2px); /* Matches movement of storefront cards */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-}
-
-/* Form & Input Styles */
-.checkout-layout-wrapper {
-    width: min(1200px, 92%);
-    margin: 0 auto;
-    display: flex;
-    gap: 2rem;
-}
-
-.form-card {
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(184, 134, 11, 0.65);
-    padding: 2rem;
-    box-shadow: 0 0 25px rgba(184, 134, 11, 0.18);
-}
-
-.checkout-form-container { flex: 2; }
-.order-summary-container { flex: 1; }
-
-.section-label {
-    color: #d4af37;
-    text-transform: uppercase;
-    font-weight: 800;
-    margin-bottom: 20px;
-}
-
-/* Input boxes match the 'create_storefront' form style */
-input, textarea {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(184, 134, 11, 0.5);
-    padding: 1rem;
-    color: white;
-    margin-top: 5px;
-    margin-bottom: 20px;
-    outline: none;
-}
-
-/* COMPLETE TRANSACTION BUTTON: Primary style (Solid Gold Gradient) */
-.primary-btn {
-    width: 100%;
-    padding: 1rem;
-    background: linear-gradient(145deg, #B8860B, #8B6508);
-    color: black;
-    border: none;
-    font-weight: 800;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.primary-btn:hover {
-    filter: brightness(1.2);
-    transform: translateY(-2px);
-}
-
-.primary-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-}
-
-.gold { color: #d4af37; }
-
-.helper-text { color: #888; font-size: 0.9rem; }
-
-.error-msg {
-    background: rgba(180, 40, 40, 0.2);
-    border: 1px solid rgba(200, 60, 60, 0.5);
-    color: #ff8a8a;
-    padding: 10px 14px;
-    margin-bottom: 16px;
-    font-size: 0.9rem;
-}
-
-.price-display {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin: 20px 0 16px;
-    border-top: 1px solid rgba(184, 134, 11, 0.4);
     padding-top: 16px;
+    border-top: 1px solid var(--pm-rigging);
+    font-size: var(--pm-t20);
+    font-weight: 600;
 }
 
-.brand-title { font-size: 1.8rem; margin: 0; letter-spacing: 2px; }
-.brand-subtitle { color: #888; margin: 4px 0 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
-.brand-block { text-align: right; }
+.pm .pm-summary .pm-btn--primary { min-height: 48px; font-size: var(--pm-t16); }
+.pm .pm-summary__more { justify-self: center; color: var(--pm-fog); font-size: var(--pm-t14); }
+.pm .pm-summary__items { display: grid; gap: 12px; }
+.pm .pm-summary__item { display: flex; justify-content: space-between; gap: 12px; font-size: var(--pm-t14); }
+.pm .pm-summary__item > div { display: grid; gap: 2px; }
+.pm .pm-summary__name { font-weight: 600; }
+
+/* ---------- order confirmation ---------- */
+
+.pm .pm-confirm { max-width: 640px; }
+.pm .pm-confirm__number { margin: 8px 0 24px; color: var(--pm-fog); }
+.pm .pm-confirm__number strong { color: var(--pm-sail); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.pm .pm-confirm .pm-summary { position: static; margin-bottom: 16px; }
+.pm .pm-confirm > .pm-muted { margin-bottom: 24px; }
+.pm .pm-confirm__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+@media (max-width: 899px) {
+    .pm .pm-checkout { grid-template-columns: 1fr; gap: 32px; }
+    .pm .pm-summary { position: static; }
+}
+
+@media (max-width: 600px) {
+    .pm .pm-bag__item { grid-template-columns: 72px minmax(0, 1fr) auto; row-gap: 8px; align-items: start; }
+    .pm .pm-bag__photo { width: 72px; grid-row: span 2; }
+    .pm .pm-bag__qty { grid-column: 2; }
+    .pm .pm-bag__line { grid-column: 3; grid-row: 1; }
+    .pm .pm-bag__item > form:last-child { grid-column: 3; grid-row: 2; }
+    .pm .pm-checkout__pair { grid-template-columns: 1fr; gap: 0; }
+}
+
+/* ---------- account ---------- */
+
+.pm .pm-orders { display: grid; border-top: 1px solid var(--pm-rigging); }
+
+.pm .pm-order {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--pm-rigging);
+    color: inherit;
+    text-decoration: none;
+}
+
+.pm .pm-order:hover .pm-order__number { text-decoration: underline; }
+.pm .pm-order__info { display: grid; gap: 2px; }
+.pm .pm-order__number { font-weight: 600; font-variant-numeric: tabular-nums; }
+.pm .pm-order__info .pm-muted { font-size: var(--pm-t14); }
+.pm .pm-account__seller { margin-top: 48px; }
+
+/* This styles the rows on the Sales tab like the order rows above */
+.pm .purchase-items { display: grid; border-top: 1px solid var(--pm-rigging); }
+.pm .purchase-row {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--pm-rigging);
+    font-size: var(--pm-t14);
+    font-variant-numeric: tabular-nums;
+}
+.pm .purchase-items:empty { border-top: 0; }

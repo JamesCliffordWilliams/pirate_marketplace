@@ -5,6 +5,7 @@
     CSC 405 Sp 26'
     Created by Day Ekoi - Iteration 5
     3/22/2026
+    Updated by James Williams - 10/26/26 - shared photo picker styles
 
 
 Description:
@@ -33,7 +34,7 @@ html, body {
 body {
     background:
         linear-gradient(rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.58)),
-        url("/static/images/background.png") no-repeat center center fixed;
+        url("/static/images/background.jpg") no-repeat center center fixed;
     background-size: cover;
     color: white;
     font-family: Arial, Helvetica, sans-serif;
@@ -311,12 +312,36 @@ textarea:focus {
 }
 
 
-/* file inputs: centered */
-input[type="file"] {
+/* photo pickers (js/image_uploader.js) - Added by James Williams 10/26/26
+   This hides the file input but keeps it focusable. Clicking the drop zone opens it. */
+.drop-zone {
     display: block;
-    margin: 0 auto;
-    color: white;
-    font-size: 0.95rem;
+    position: relative;
+}
+
+.drop-zone input[type="file"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.drop-zone:focus-within {
+    outline: 2px solid #f0cc55;
+    outline-offset: 2px;
+}
+
+.drop-zone.is-processing {
+    opacity: 0.6;
+    cursor: progress;
+}
+
+.upload-error {
+    margin: 0.5rem auto 0;
+    color: #ff8a8a;
+    font-size: 0.9rem;
+    text-align: center;
 }
 
 

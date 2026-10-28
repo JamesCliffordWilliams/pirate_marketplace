@@ -7,6 +7,9 @@ Created by Elali McNair - Iteration 4
 Updated by Day Ekoi - Iteration 5 4/9/26
 Updated by Day Ekoi - Iteration 5 4/22/26 - One Size mode, per-size quantities, Made-to-Order
 Updated by James Williams - 10/26/26 - added the required category picker
+Updated by James Williams - 10/26/26 - shared photo picker, one request per submit
+Updated by James Williams - 10/26/26 - request key so a retried create can't make a duplicate
+Updated by James Williams - 10/26/26 - redesign with photo tiles, a live preview, and errors on the page instead of pop-ups
 
 Purpose:
 Handles form submission for Create Listing page. Supports:
@@ -14,39 +17,20 @@ Handles form submission for Create Listing page. Supports:
 - Multi-size mode (per-size quantity inputs)
 - Made-to-Order flag (bypasses inventory limits)
 - Required product category
+The request it sends to /api/listings/create is the same as before.
 */
 
-document.addEventListener('DOMContentLoaded', function() {
-
-  function ensureToastRoot() {
-    let root = document.getElementById("toastRoot");
-    if (!root) {
-      root = document.createElement("div");
-      root.id = "toastRoot";
-      root.className = "toast-root";
-      document.body.appendChild(root);
-    }
-    return root;
-  }
-
-  function showListingToast(message, tone = "success") {
-    const root = ensureToastRoot();
-    const toast = document.createElement("div");
-    toast.className = `toast ${tone === "success" ? "success" : "error"}`;
-    toast.textContent = message;
-    root.appendChild(toast);
-
-    window.setTimeout(() => {
-      toast.classList.add("fade-out");
-      window.setTimeout(() => toast.remove(), 220);
-    }, 2200);
-  }
+document.addEventListener("DOMContentLoaded", function () {
+  const { photoTiles, watchSizeBoxes, readSizes, showError, clearErrors, renderPreview } = window.SellerForm;
 
   const listingForm = document.getElementById("listingForm");
   const cancelBtn = document.getElementById("cancelBtn");
   const storefrontSelect = document.getElementById("storefrontSelect");
+  const listingName = document.getElementById("listingName");
+  const priceInput = document.getElementById("price");
   const previewInputs = [1, 2, 3, 4].map((index) => document.getElementById(`previewImage${index}`));
-  const selectedListingImages = [null, null, null, null];
+  const livePreview = document.getElementById("livePreview");
+  let currentUser = null; // loaded once with the storefronts
 
   // ── Size mode elements ──────────────────────────────────────
   const oneSizeToggle = document.getElementById("oneSizeToggle");
@@ -56,19 +40,18 @@ document.addEventListener('DOMContentLoaded', function() {
   const madeToOrderToggle = document.getElementById("madeToOrderToggle");
 
   // ── Category picker ─────────────────────────────────────────
-  // Added by James Williams 10/26/26
-  // Category errors from the server show under the picker instead of in an alert
+  // If the server rejects the category, the error shows under the picker instead of in a pop-up
   const CATEGORY_ERROR_MESSAGES = [
     "Please choose a category.",
     "Choose a specific subcategory, not a main category.",
     "That category doesn't exist."
   ];
-  const submitBtn = listingForm ? listingForm.querySelector("button[type='submit']") : null;
+  const submitBtn = listingForm.querySelector("button[type='submit']");
   let categoriesReady = false;
   let formLocked = false; // true when the user has no storefront
 
   function updateSubmitState() {
-    if (submitBtn) submitBtn.disabled = formLocked || !categoriesReady;
+    submitBtn.disabled = formLocked || !categoriesReady;
   }
 
   const categoryPicker = window.CategoryPicker.mount(document.getElementById("categoryPicker"), {
@@ -80,339 +63,223 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   function applyOneSizeMode(enabled) {
-    if (!multiSizeGrid || !oneSizeQtyRow) return;
     if (enabled) {
-      // Hide multi-size grid, clear all checkboxes and qty inputs
       multiSizeGrid.style.display = "none";
-      multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach(cb => {
-        cb.checked = false;
-      });
+      multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach(cb => { cb.checked = false; });
       multiSizeGrid.querySelectorAll(".size-qty-input").forEach(inp => {
         inp.value = "";
         inp.style.display = "none";
       });
-      oneSizeQtyRow.style.display = "block";
+      oneSizeQtyRow.style.display = "";
     } else {
       multiSizeGrid.style.display = "";
       oneSizeQtyRow.style.display = "none";
-      if (oneSizeQty) oneSizeQty.value = "";
+      oneSizeQty.value = "";
     }
   }
 
-  if (oneSizeToggle) {
-    oneSizeToggle.addEventListener("change", () => {
-      applyOneSizeMode(oneSizeToggle.checked);
+  oneSizeToggle.addEventListener("change", () => applyOneSizeMode(oneSizeToggle.checked));
+  watchSizeBoxes(multiSizeGrid);
+
+  // ── Photos and live preview ──────────────────────────────────
+  const imagePickers = photoTiles(previewInputs, updatePreview);
+
+  function updatePreview() {
+    const cover = imagePickers.find((picker) => picker.file);
+    const store = storefrontSelect.selectedOptions[0];
+    renderPreview(livePreview, {
+      title: listingName.value.trim(),
+      price: priceInput.value,
+      image: cover ? cover.previewUrl : null,
+      store: store && store.value ? store.textContent : ""
     });
   }
 
-  // Show/hide per-size quantity input when a size checkbox is toggled
-  if (multiSizeGrid) {
-    multiSizeGrid.querySelectorAll('input[name="sizes"]').forEach(cb => {
-      cb.addEventListener("change", () => {
-        const row = cb.closest(".size-qty-row");
-        if (!row) return;
-        const qtyInput = row.querySelector(".size-qty-input");
-        if (qtyInput) {
-          qtyInput.style.display = cb.checked ? "inline-block" : "none";
-          if (!cb.checked) qtyInput.value = "";
-        }
-      });
-    });
-  }
+  [listingName, priceInput].forEach((input) => input.addEventListener("input", updatePreview));
+  storefrontSelect.addEventListener("change", updatePreview);
+  updatePreview();
 
-  // ── Image preview / drop zone ────────────────────────────────
+  loadUserStorefronts();
 
-  function renderSinglePreview(previewContainer, file, zone, slotIndex) {
-    if (!previewContainer) return;
+  // ── Checking the form before anything gets sent ──
+  function collectListing() {
+    clearErrors(listingForm);
+    let firstInvalid = null;
+    const fail = (errorId, message, field) => {
+      showError(errorId, message);
+      firstInvalid = firstInvalid || field;
+    };
 
-    previewContainer.innerHTML = "";
-    if (!file) {
-      if (zone) {
-        zone.classList.remove("has-image");
-        zone.style.backgroundImage = "";
-        const existingBadge = zone.querySelector(".image-selected-badge");
-        if (existingBadge) existingBadge.remove();
-      }
-      return;
+    const storefrontId = storefrontSelect.value;
+    const title = listingName.value.trim();
+    const price = parseFloat(priceInput.value);
+    const isMadeToOrder = madeToOrderToggle.checked;
+    const categoryId = document.getElementById("categoryId").value.trim();
+    const listingImages = imagePickers.map((picker) => picker.file).filter(Boolean);
+
+    if (!listingImages.length) fail("photosError", "Add at least one photo.", previewInputs[0]);
+    if (!title) fail("nameError", "Enter a listing name.", listingName);
+    if (!storefrontId) fail("storefrontError", "Choose the storefront to list this in.", storefrontSelect);
+    if (!categoryId || !categoryPicker.hasValue()) {
+      categoryPicker.setError("Please choose a category.");
+      firstInvalid = firstInvalid || { focus: () => categoryPicker.focus() };
     }
+    if (priceInput.value === "" || isNaN(price) || price < 0) fail("priceError", "Enter a price of 0 or more.", priceInput);
 
-    const thumbWrap = document.createElement("div");
-    thumbWrap.className = "thumb-wrap";
+    // sizes and how many of each
+    const { sizes, sizeQuantities, totalQty } = readSizes({ oneSizeToggle, oneSizeQty, multiSizeGrid, isMadeToOrder }, fail);
 
-    const image = document.createElement("img");
-    image.src = URL.createObjectURL(file);
-    image.alt = file.name;
-    image.onload = () => URL.revokeObjectURL(image.src);
-
-    const fileName = document.createElement("p");
-    fileName.className = "thumb-name";
-    fileName.textContent = file.name;
-
-    thumbWrap.appendChild(image);
-    thumbWrap.appendChild(fileName);
-    previewContainer.appendChild(thumbWrap);
-
-    if (zone) {
-      const zoneImageUrl = URL.createObjectURL(file);
-      zone.style.backgroundImage = `url('${zoneImageUrl}')`;
-      zone.classList.add("has-image");
-
-      const existingBadge = zone.querySelector(".image-selected-badge");
-      if (existingBadge) existingBadge.remove();
-
-      const badge = document.createElement("span");
-      badge.className = "image-selected-badge";
-      badge.textContent = `Image ${slotIndex + 1} selected`;
-      zone.appendChild(badge);
+    if (firstInvalid) {
+      firstInvalid.focus();
+      return null;
     }
-  }
-
-  function wireDropZone(zone, input, previewContainer, slotIndex) {
-    if (!zone || !input) return;
-
-    zone.addEventListener("click", () => input.click());
-
-    zone.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      zone.classList.add("dragover");
-    });
-
-    zone.addEventListener("dragleave", () => {
-      zone.classList.remove("dragover");
-    });
-
-    zone.addEventListener("drop", (event) => {
-      event.preventDefault();
-      zone.classList.remove("dragover");
-
-      const droppedFile = event.dataTransfer?.files?.[0];
-      if (droppedFile && droppedFile.type.startsWith("image/")) {
-        selectedListingImages[slotIndex] = droppedFile;
-        renderSinglePreview(previewContainer, droppedFile, zone, slotIndex);
-      }
-    });
-
-    input.addEventListener("change", () => {
-      const chosenFile = input.files?.[0];
-      selectedListingImages[slotIndex] = chosenFile && chosenFile.type.startsWith("image/")
-        ? chosenFile
-        : null;
-      renderSinglePreview(previewContainer, selectedListingImages[slotIndex], zone, slotIndex);
-    });
-  }
-
-  [1, 2, 3, 4].forEach((index, arrayIndex) => {
-    const zone = document.getElementById(`previewZone${index}`);
-    const input = previewInputs[arrayIndex];
-    const preview = document.getElementById(`previewPreview${index}`);
-    wireDropZone(zone, input, preview, arrayIndex);
-  });
-
-  if (storefrontSelect) {
-    loadUserStorefronts();
+    return { storefrontId, title, price, isMadeToOrder, categoryId, listingImages, sizes, sizeQuantities, totalQty };
   }
 
   // ── Form submission ──────────────────────────────────────────
+  // This sends one request per submit, and the user was already loaded when the page opened
+  listingForm.addEventListener("submit", window.ImageUploader.guardSubmit(listingForm, "Publishing…", async () => {
+    const user = currentUser || await fetchCurrentUser();
+    if (!user) {
+      window.location.href = "/auth/login";
+      return true;
+    }
 
-  if (listingForm) {
-    listingForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    const listing = collectListing();
+    if (!listing) return;
 
-      const userRes = await fetch("/auth/api/auth/me");
-      if (!userRes.ok) {
-        alert("You must be logged in to create a listing.");
+    try {
+      const formData = new FormData();
+      formData.append("storefront_id", listing.storefrontId);
+      formData.append("title", listing.title);
+      formData.append("quantity_on_hand", listing.totalQty);
+      formData.append("price", listing.price);
+      formData.append("fulfillment_type", "IN_STOCK");
+      formData.append("status", "ACTIVE");
+      formData.append("is_made_to_order", listing.isMadeToOrder ? "true" : "false");
+      formData.append("sizes_available", JSON.stringify(listing.sizes));
+      formData.append("size_quantities", JSON.stringify(listing.sizeQuantities));
+      formData.append("category_id", String(listing.categoryId));
+      listing.listingImages.forEach(file => formData.append("listing_images", file));
+
+      const response = await sendCreateRequest(formData, user);
+      if (response.status === 401) {
         window.location.href = "/auth/login";
-        return;
+        return true;
       }
-      const user = await userRes.json();
+      const result = await response.json().catch(() => ({}));
 
-      const storefrontId = document.getElementById("storefrontSelect").value;
-      const listingName = document.getElementById("listingName").value.trim();
-      const price = parseFloat(document.getElementById("price").value);
-      const isOneSizeMode = oneSizeToggle && oneSizeToggle.checked;
-      const isMadeToOrder = madeToOrderToggle && madeToOrderToggle.checked;
-
-      if (!storefrontId) {
-        alert("Please select a storefront for this listing.");
-        return;
+      if (response.ok) {
+        VaultListingCard.showToast("Listing published");
+        window.setTimeout(() => {
+          window.location.href = result.id ? `/listings/${result.id}` : "/my-storefront";
+        }, 900);
+        return true;
       }
-
-      if (!listingName || price < 0 || isNaN(price)) {
-        alert("Please fill in all required fields with valid values.");
-        return;
-      }
-
-      // Added by James Williams 10/26/26
-      const categoryId = document.getElementById("categoryId").value.trim();
-      if (!categoryId || !categoryPicker.hasValue()) {
-        categoryPicker.setError("Please choose a category.");
+      if (CATEGORY_ERROR_MESSAGES.includes(result.error)) {
+        categoryPicker.setError(result.error);
         categoryPicker.focus();
-        return;
-      }
-
-      // Collect sizes and per-size quantities
-      let sizes = [];
-      const sizeQuantities = {};
-
-      if (isOneSizeMode) {
-        const qty = parseInt(oneSizeQty ? oneSizeQty.value : "0", 10);
-        if (!isMadeToOrder && (isNaN(qty) || qty < 0)) {
-          alert("Please enter a valid quantity for One Size.");
-          return;
-        }
-        sizes = ["One Size"];
-        sizeQuantities["One Size"] = isMadeToOrder ? 0 : (qty || 0);
       } else {
-        const sizeCheckboxes = document.querySelectorAll("input[name='sizes']:checked");
-        sizes = Array.from(sizeCheckboxes).map(cb => cb.value);
-        if (sizes.length === 0) {
-          alert("Please select at least one size.");
-          return;
-        }
-        for (const size of sizes) {
-          const qtyInput = multiSizeGrid
-            ? multiSizeGrid.querySelector(`.size-qty-input[data-size="${size}"]`)
-            : null;
-          const qty = qtyInput ? parseInt(qtyInput.value, 10) : NaN;
-          if (!isMadeToOrder && (isNaN(qty) || qty < 0)) {
-            alert(`Please enter a valid quantity for size ${size}.`);
-            return;
-          }
-          sizeQuantities[size] = isMadeToOrder ? 0 : (isNaN(qty) ? 0 : qty);
-        }
+        showError("formError", result.error || "The listing wasn't published. Try again.");
       }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      showError("formError", "Couldn't reach Pirate Market. Check your connection and try again.");
+    }
+  }));
 
-      const totalQty = isMadeToOrder ? 0 : Object.values(sizeQuantities).reduce((a, b) => a + b, 0);
+  cancelBtn.addEventListener("click", () => {
+    window.location.href = "/my-storefront";
+  });
 
-      const listingImages = selectedListingImages.filter(Boolean);
-      if (listingImages.length === 0) {
-        alert("Please upload at least one listing image.");
-        return;
-      }
-
-      try {
-        const formData = new FormData();
-        formData.append("storefront_id", storefrontId);
-        formData.append("title", listingName);
-        formData.append("quantity_on_hand", totalQty);
-        formData.append("price", price);
-        formData.append("fulfillment_type", "IN_STOCK");
-        formData.append("status", "ACTIVE");
-        formData.append("is_made_to_order", isMadeToOrder ? "true" : "false");
-        formData.append("sizes_available", JSON.stringify(sizes));
-        formData.append("size_quantities", JSON.stringify(sizeQuantities));
-        formData.append("category_id", String(categoryId)); // Added by James Williams 10/26/26
-        listingImages.forEach(file => formData.append("listing_images", file));
-        formData.append("listing_image", listingImages[0]);
-
-        const response = await fetch("/api/listings/create", {
-          method: "POST",
-          headers: {
-            "X-User-Id": user.id,
-            "X-User-Role": user.role
-          },
-          body: formData,
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-          showListingToast(`Listing "${listingName}" created successfully!`);
-          window.setTimeout(() => {
-            window.location.href = "/my-storefront";
-          }, 2500);
-        } else if (CATEGORY_ERROR_MESSAGES.includes(result.error)) { // Added by James Williams 10/26/26
-          categoryPicker.setError(result.error);
-          categoryPicker.focus();
-        } else {
-          alert("Error creating listing: " + (result.error || "Unknown error"));
-        }
-      } catch (error) {
-        console.error("Error submitting form:", error);
-        alert("Error creating listing: " + error.message);
-      }
-    });
+  // Each submit gets its own key. We only reuse it to retry if nothing came back or the server
+  // says the listing is still being made (409), so the same listing can't get created twice
+  function newRequestKey() {
+    if (window.crypto.randomUUID) return window.crypto.randomUUID();
+    const bytes = window.crypto.getRandomValues(new Uint8Array(16)); // randomUUID only works on https
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
   }
 
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", () => {
-      window.location.href = "/storefronts";
-    });
+  async function sendCreateRequest(formData, user) {
+    const key = newRequestKey();
+    for (let attempt = 1; ; attempt++) {
+      try {
+        const response = await fetch("/api/listings/create", {
+          method: "POST",
+          headers: { "X-User-Id": user.id, "X-User-Role": user.role, "Idempotency-Key": key },
+          body: formData,
+        });
+        if (response.status !== 409 || attempt >= 5) return response;
+      } catch (error) {
+        if (attempt >= 3) throw error; // still offline
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    }
+  }
+
+  async function fetchCurrentUser() {
+    const userRes = await fetch("/auth/api/auth/me");
+    currentUser = userRes.ok ? await userRes.json() : null;
+    return currentUser;
+  }
+
+  function lockForNoStorefront() {
+    storefrontSelect.innerHTML = '<option value="" disabled selected>No storefront yet</option>';
+    formLocked = true;
+    listingForm.querySelectorAll("input, select, button[type='submit'], .cp-trigger").forEach(el => { el.disabled = true; });
+    updateSubmitState();
+    const notice = document.createElement("div");
+    notice.className = "pm-notice";
+    notice.append("You need a storefront before you can list products. ");
+    const link = document.createElement("a");
+    link.href = "/storefronts/create";
+    link.textContent = "Create your storefront";
+    notice.appendChild(link);
+    listingForm.prepend(notice);
   }
 
   async function loadUserStorefronts() {
     try {
-      const userRes = await fetch("/auth/api/auth/me");
-      if (!userRes.ok) {
+      const user = await fetchCurrentUser();
+      if (!user) {
         window.location.href = "/auth/login";
         return;
       }
-      const user = await userRes.json();
 
       const response = await fetch("/api/storefronts/me", {
-        method: "GET",
-        headers: {
-          "X-User-Id": user.id,
-          "X-User-Role": user.role
-        },
+        headers: { "X-User-Id": user.id, "X-User-Role": user.role },
       });
 
-      if (response.ok) {
-        const storefrontData = await response.json();
-        const storefronts = Array.isArray(storefrontData)
-          ? storefrontData
-          : storefrontData && storefrontData.id
-            ? [storefrontData]
-            : [];
-
-        storefrontSelect.innerHTML = "";
-
-        if (storefronts.length > 0) {
-          const defaultOption = document.createElement("option");
-          defaultOption.value = "";
-          defaultOption.textContent = "Select a storefront";
-          defaultOption.disabled = true;
-          defaultOption.selected = true;
-          storefrontSelect.appendChild(defaultOption);
-
-          storefronts.forEach(storefront => {
-            const option = document.createElement("option");
-            option.value = storefront.id;
-            option.textContent = storefront.brand_name || storefront.name || `Storefront #${storefront.id}`;
-            storefrontSelect.appendChild(option);
-          });
-        } else {
-          storefrontSelect.innerHTML = '<option value="" disabled>No storefronts found - create one first</option>';
-          formLocked = true;
-          if (listingForm) {
-            listingForm.querySelectorAll("input, select, button[type='submit'], .cp-trigger").forEach(el => {
-              el.disabled = true;
-            });
-          }
-          const messageDiv = document.createElement("div");
-          messageDiv.style.cssText = "color: #d4af37; margin-top: 10px; font-weight: bold; text-align:center;";
-          messageDiv.innerHTML = `You must create a storefront before creating listings. <a href="/storefronts/create" style="color:#fff; text-decoration:underline;">Create one here</a>`;
-          storefrontSelect.parentNode.appendChild(messageDiv);
-        }
-      } else if (response.status === 404) {
-        storefrontSelect.innerHTML = '<option value="" disabled>No storefronts found - create one first</option>';
-        formLocked = true;
-        if (listingForm) {
-          listingForm.querySelectorAll("input, select, button[type='submit'], .cp-trigger").forEach(el => {
-            el.disabled = true;
-          });
-        }
-        const messageDiv = document.createElement("div");
-        messageDiv.style.cssText = "color: #d4af37; margin-top: 10px; font-weight: bold; text-align:center;";
-        messageDiv.innerHTML = `You must create a storefront before creating listings. <a href="/storefronts/create" style="color:#fff; text-decoration:underline;">Create one here</a>`;
-        storefrontSelect.parentNode.appendChild(messageDiv);
-      } else {
-        console.error("Failed to load storefronts");
-        storefrontSelect.innerHTML = '<option value="">Error loading storefronts</option>';
+      if (response.status === 404) {
+        lockForNoStorefront();
+        return;
       }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const storefrontData = await response.json();
+      const storefronts = Array.isArray(storefrontData)
+        ? storefrontData
+        : storefrontData && storefrontData.id ? [storefrontData] : [];
+      if (!storefronts.length) {
+        lockForNoStorefront();
+        return;
+      }
+
+      storefrontSelect.replaceChildren();
+      storefronts.forEach(storefront => {
+        const option = document.createElement("option");
+        option.value = storefront.id;
+        option.textContent = storefront.brand_name || storefront.name || `Storefront #${storefront.id}`;
+        storefrontSelect.appendChild(option);
+      });
+      updatePreview();
     } catch (error) {
       console.error("Error loading storefronts:", error);
-      storefrontSelect.innerHTML = '<option value="">Error loading storefronts</option>';
+      storefrontSelect.innerHTML = '<option value="">Couldn\'t load your storefronts</option>';
+      showError("storefrontError", "Refresh the page to try again.");
     }
   }
 });

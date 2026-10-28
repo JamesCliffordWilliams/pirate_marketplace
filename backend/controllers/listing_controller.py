@@ -3,6 +3,8 @@
 # Created by Day Ekoi - Iteration 3 
 # Dates: 2/25-2/26
 # Updated by Day Ekoi - Iteration 5 4/10/26 - S3 image upload integration
+# Updated by James Williams - 10/26/26 - listings need a category now. The form create checks everything
+#   before uploading and saves the listing, photos and sizes all at once
 
 """
 controllers/listing_controller.py
@@ -20,9 +22,11 @@ All system rules + permission checks happen in services/listing_service.py.
 """
 
 from flask import Blueprint, request, jsonify
+from werkzeug.exceptions import RequestEntityTooLarge  # Added by James Williams 10/26/26
 
 from services.listing_service import (
     create_listing_service,
+    build_listing_fields,  # Added by James Williams 10/26/26
     get_listing_by_id_service,
     get_listings_for_storefront_service,
     get_listings_for_storefront_with_options_service,
@@ -42,7 +46,7 @@ from services.listing_service import (
     delete_listing_size_service
 )
 from services.storefront_service import get_my_storefront_service
-from services.category_service import resolve_assignable_category  # Added by James Williams 10/26/26
+from services.listing_create_service import CreateError, create_listing_once, parse_idempotency_key  # Added by James Williams 10/26/26
 
 listing_bp = Blueprint("listing_bp", __name__, url_prefix="/api")
 
@@ -115,13 +119,6 @@ def create_listing_from_form():
         if not title:
             return jsonify({"error": "title is required."}), 400
 
-        # Added by James Williams 10/26/26
-        # Check the category before uploading images, so a bad category doesn't leave images in S3
-        try:
-            category = resolve_assignable_category(request.form.get("category_id"))
-        except Exception as e:
-            return jsonify({"error": str(e)}), 400
-
         # Parse sizes
         try:
             sizes_available = json.loads(sizes_json)
@@ -146,36 +143,22 @@ def create_listing_from_form():
         elif quantity_on_hand is None:
             quantity_on_hand = 0
 
-        # Handle file upload(s) - supports multiple images, first one is primary.
-        upload_files = request.files.getlist("listing_images")
-        upload_files = [f for f in upload_files if f and f.filename]
+        # Updated by James Williams 10/26/26 - checks everything before uploading, then saves the listing,
+        # photos and sizes all at once. The Idempotency-Key stops the same request from making two listings
+        key = parse_idempotency_key(request.headers.get("Idempotency-Key"))
 
+        upload_files = [f for f in request.files.getlist("listing_images") if f and f.filename]
         # Backward compatibility for existing clients sending one file as listing_image.
         if not upload_files and "listing_image" in request.files and request.files["listing_image"].filename:
             upload_files = [request.files["listing_image"]]
-
         if not upload_files:
             return jsonify({"error": "At least one listing image is required."}), 400
         if len(upload_files) > 4:
             return jsonify({"error": "You can upload up to 4 listing images."}), 400
+        if any(not f.filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp")) for f in upload_files):
+            return jsonify({"error": "Image must be PNG, JPG, JPEG, GIF, or WebP."}), 400
 
-        image_urls = []
-        try:
-            from utils.s3 import upload_image_to_s3
-
-            for file in upload_files:
-                if not file.filename.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp")):
-                    return jsonify({"error": "Image must be PNG, JPG, JPEG, GIF, or WebP."}), 400
-
-                image_url = upload_image_to_s3(file, folder="listings")
-                if not image_url:
-                    return jsonify({"error": "Failed to upload image to S3."}), 500
-                image_urls.append(image_url)
-        except Exception as e:
-            return jsonify({"error": f"Error uploading image(s) to S3: {str(e)}"}), 500
-
-        # Prepare data for service
-        data = {
+        fields = build_listing_fields(current_user, storefront_id, {
             "title": title,
             "quantity_on_hand": quantity_on_hand,
             "price": price,
@@ -184,39 +167,41 @@ def create_listing_from_form():
             "description": "",
             "sizes_available": sizes_available,
             "is_made_to_order": is_made_to_order,
-            "category_id": category["id"],
-        }
+            "category_id": request.form.get("category_id"),
+        })
 
-        # Create listing
-        listing = create_listing_service(current_user, storefront_id, data)
-
-        # Add uploaded images to listing
-        for index, image_url in enumerate(image_urls):
-            try:
-                add_listing_image_service(current_user, listing["id"], image_url, is_primary=(index == 0))
-            except Exception as e:
-                print(f"Warning: Failed to add image to listing: {str(e)}")
-
-        # Add sizes with individual quantities
+        # Uses each size's own quantity if there is one, otherwise the total
+        size_rows = []
         for size in sizes_available:
+            if size is None or str(size).strip() == "":
+                return jsonify({"error": "size is required."}), 400
+            size_qty = size_quantities.get(size, quantity_on_hand) if size_quantities else quantity_on_hand
             try:
-                # Use per-size quantity if provided, else fall back to total
-                size_qty = size_quantities.get(size, quantity_on_hand) if size_quantities else quantity_on_hand
-                try:
-                    size_qty = int(size_qty)
-                except (TypeError, ValueError):
-                    size_qty = quantity_on_hand or 0
-                upsert_listing_size_service(current_user, listing["id"], size, size_qty)
-            except Exception as e:
-                print(f"Warning: Failed to add size {size} to listing: {str(e)}")
+                size_qty = int(size_qty)
+            except (TypeError, ValueError):
+                size_qty = quantity_on_hand or 0
+            if size_qty < 0:
+                return jsonify({"error": "quantity cannot be negative."}), 400
+            size_rows.append((str(size).strip(), size_qty))
 
-        return jsonify(listing), 201
-
+    except CreateError as e:
+        return jsonify({"error": str(e)}), e.status
+    except RequestEntityTooLarge:
+        raise  # the 413 handler in app.py shows the size limit message
     except Exception as e:
         msg = str(e).lower()
         if "unauthorized" in msg:
             return jsonify({"error": str(e)}), 403
         return jsonify({"error": str(e)}), 400
+
+    try:
+        listing, status_code = create_listing_once(current_user["id"], key, fields, size_rows, upload_files)
+    except CreateError as e:
+        return jsonify({"error": str(e)}), e.status
+    except Exception as e:
+        print(f"Create listing failed: {e}")
+        return jsonify({"error": "The listing couldn't be saved. Nothing was created; please try again."}), 500
+    return jsonify(listing), status_code
 
 
 #_________________

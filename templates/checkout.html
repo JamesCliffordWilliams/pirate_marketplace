@@ -1,71 +1,70 @@
 <!--
 Created by Kaila Roberts 3/23/26
 Updated by Day Ekoi 4/22/26 - wired to checkout.js, added field IDs, error display
+Updated by James Williams 10/26/26 - Pirate Market redesign with the form next to the order summary
 -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout | The Vault</title>
+    <title>Checkout | Pirate Market</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/checkout.css') }}">
 </head>
-<body>
-    <header class="storefront-top">
-        <div class="storefront-banner">
-           <a href="{{ url_for('auth.view_cart') }}" style="text-decoration: none;">
-                <button class="secondary-btn">&larr; BACK TO CART</button>
-            </a>
+<body class="pm">
+{% include 'partials/site_nav.html' %}
 
-            <div class="brand-block">
-                <h1 class="brand-title"><span class="gold">The</span> Vault</h1>
-                <p class="brand-subtitle">Finalize Purchase</p>
-            </div>
-        </div>
-    </header>
+<main class="pm-page">
+    <a class="pm-back" href="{{ url_for('auth.view_cart') }}">Back to bag</a>
+    <h1 class="pm-page-title">Checkout</h1>
 
-    <main class="checkout-layout-wrapper">
-        <section class="checkout-form-container form-card">
-            <h3 class="section-label">Buyer Details</h3>
-            <div id="checkoutError" class="error-msg" style="display:none;"></div>
-            <form id="checkoutForm">
-                <div class="input-group">
-                    <label>First Name</label>
-                    <input type="text" id="firstName" placeholder="Enter First Name" required>
+    <div class="pm-checkout">
+        <section aria-labelledby="buyerHeading">
+            <h2 id="buyerHeading">Your details</h2>
+            <p class="pm-muted pm-checkout__intro">The seller uses these to arrange the handoff with you.</p>
+            <p id="checkoutError" class="pm-notice pm-notice--error" role="alert" style="display:none;"></p>
+            <form id="checkoutForm" class="pm-checkout__form" novalidate>
+                <div class="pm-checkout__pair">
+                    <div class="pm-field">
+                        <label class="pm-label" for="firstName">First name</label>
+                        <input class="pm-input" type="text" id="firstName" autocomplete="given-name" required>
+                    </div>
+                    <div class="pm-field">
+                        <label class="pm-label" for="lastName">Last name</label>
+                        <input class="pm-input" type="text" id="lastName" autocomplete="family-name" required>
+                    </div>
                 </div>
-                <div class="input-group">
-                    <label>Last Name</label>
-                    <input type="text" id="lastName" placeholder="Enter Last Name" required>
+                <div class="pm-field">
+                    <label class="pm-label" for="buyerEmail">Campus email</label>
+                    <input class="pm-input" type="email" id="buyerEmail" autocomplete="email" placeholder="you@my.hamptonu.edu" required>
                 </div>
-                <div class="input-group">
-                    <label>Campus Email</label>
-                    <input type="email" id="buyerEmail" placeholder="student@campus.edu" required>
+                <div class="pm-field">
+                    <label class="pm-label" for="contactNumber">Phone</label>
+                    <input class="pm-input" type="tel" id="contactNumber" autocomplete="tel" placeholder="(757) 555-0123" required>
                 </div>
-                <div class="input-group">
-                    <label>Contact Number</label>
-                    <input type="text" id="contactNumber" placeholder="e.g. (123) 456-7890" required>
-                </div>
-                <div class="input-group">
-                    <label>Meeting Location</label>
-                    <textarea id="meetingLocation" placeholder="e.g. Student Center, 1st Floor" required></textarea>
+                <div class="pm-field">
+                    <label class="pm-label" for="meetingLocation">Where to meet</label>
+                    <textarea class="pm-textarea" id="meetingLocation" required placeholder="Student Center, 1st floor"></textarea>
                 </div>
             </form>
         </section>
 
-        <aside class="order-summary-container form-card">
-            <h3 class="section-label">Review Order</h3>
-            <div id="checkoutItemsList">
-                <p class="helper-text">Loading your bag...</p>
+        <aside class="pm-summary" aria-label="Order summary">
+            <h2>Your order</h2>
+            <div id="checkoutItemsList" class="pm-summary__items">
+                <p class="pm-muted">Loading your bag…</p>
             </div>
-            <div class="price-display">
-                <span class="gold">Total: </span>
-                <span class="total-amount">$0.00</span>
-            </div>
-            <button type="submit" id="submitCheckoutBtn" form="checkoutForm" class="primary-btn">Complete Transaction</button>
+            <p class="pm-summary__total"><span>Total</span><span class="total-amount pm-price">$0.00</span></p>
+            <button type="submit" id="submitCheckoutBtn" form="checkoutForm" class="pm-btn pm-btn--primary pm-btn--block">Place order</button>
+            <p class="pm-hint">You pay the seller when you meet.</p>
         </aside>
-    </main>
+    </div>
+</main>
 
-    <script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
+{% include 'partials/site_footer.html' %}
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
 </body>
 </html>

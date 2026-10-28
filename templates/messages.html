@@ -9,6 +9,7 @@ Messages page, styled like a phone chat app. Shows the user's conversations,
 the selected conversation as chat bubbles, a box to send a reply, and a
 "New Message" sheet for starting a conversation with a student brand.
 Messages older than 60 days are not shown.
+Updated by James Williams - 10/27/26 - uses the redesign's theme, header and footer (messages_theme.css)
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -17,11 +18,14 @@ Messages older than 60 days are not shown.
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pirate Market | Messages</title>
 
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
+  <link rel="preload" href="{{ url_for('static', filename='fonts/instrument-sans-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/messages.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/messages_theme.css') }}">
 </head>
 
-<body class="messages-body">
+<body class="pm messages-body">
 
 {% include 'partials/site_nav.html' %}
 
@@ -95,6 +99,7 @@ Messages older than 60 days are not shown.
 
 </main>
 
+{% include 'partials/site_footer.html' %}
 <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
 <script src="{{ url_for('static', filename='js/messages.js') }}"></script>
 <script src="{{ url_for('static', filename='js/new_message.js') }}"></script>

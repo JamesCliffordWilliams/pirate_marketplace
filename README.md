@@ -44,8 +44,8 @@ The Vault is a web-based campus marketplace exclusively for Hampton University s
 ### Installation
 
 ```bash
-git clone https://github.com/DavidJ46/TheVaultProject.git
-cd TheVaultProject
+git clone https://github.com/JamesCliffordWilliams/pirate_marketplace.git
+cd pirate_marketplace
 
 python3 -m venv venv
 source venv/bin/activate        # macOS/Linux
@@ -98,12 +98,13 @@ python3 backend/tests/test_file_name
 
 | Name | Role |
 |---|---|
-| David Jackson | Project Manager, Admin backend & frontend |
-| Elali McNair | Co-PM, Wishlist & Purchase backend, Create Listing frontend |
-| Ryan Grimes | Systems & Security Lead, Auth backend, Login/Signup/Cart frontend |
-| Day Ekoi | Cloud Deployment Lead, Storefront & Listings backend & frontend, Returns system, AWS deployment |
-| Madison Boyd | Documentation Lead, User & Account Settings backend & frontend |
-| Kaila Roberts | Database & App Support, Checkout backend and frontend |
+| Billy Anders | Project Manager (PM) |
+| Elisa Earls | Co-Project Manager / Backend Support |
+| Miles Walker | Document Lead |
+| Aniya Hopson | Systems & Security Planning Lead |
+| Cletus Hyacinth | Cloud Deployment Lead |
+| James Williams | Cloud Deployment Lead |
+| Madison Rickman | Database & Application Support Lead |
 
 ---
 

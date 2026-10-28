@@ -6,9 +6,9 @@
     Created by James Williams - 10/26/26
 
 Description:
-Loads the products for a category page and shows them as cards.
-Sort and page are saved in the URL, so Back/Forward and shared links work.
-Shows loading, empty, and error states.
+This loads the products for a category page and shows them as cards.
+The sort and page number are saved in the URL, so the Back button and shared links still work.
+It also shows the loading, empty and error screens.
 
 Works with:
 - category_listings.html
@@ -20,7 +20,6 @@ Works with:
     if (!root) return;
 
     const PER_PAGE = 24;
-    const SKELETON_COUNT = 8;
     const SORTS = ["newest", "price_asc", "price_desc"];
 
     const slug = root.dataset.slug;
@@ -28,8 +27,6 @@ Works with:
     const parentName = root.dataset.parentName || "";
     const parentUrl = root.dataset.parentUrl || "/categories";
     const isSub = root.dataset.isSub === "true";
-    const showCategory = root.dataset.showCategory === "true";
-    const isLoggedIn = root.dataset.loggedIn === "true";
 
     const grid = document.getElementById("categoryGrid");
     const toolbar = root.querySelector(".cat-toolbar");
@@ -43,7 +40,6 @@ Works with:
     let currentState = readState();
     let lastPagination = null;
     let requestToken = 0;
-    let viewerPromise = null;
 
     // ________________________________________________________
     // URL STATE
@@ -71,7 +67,7 @@ Works with:
         window.history.pushState(state, "", urlFor(state));
     }
 
-    // Keep the current sort when clicking a subcategory or the breadcrumb
+    // This keeps the same sort when you click a subcategory or the breadcrumb
     function syncSortLinks(sort) {
         root.querySelectorAll(".cat-chip, .cat-breadcrumb a").forEach((link) => {
             const url = new URL(link.getAttribute("href"), window.location.origin);
@@ -87,43 +83,8 @@ Works with:
     }
 
     // ________________________________________________________
-    // CURRENT USER (for wishlist and cart)
-    // ________________________________________________________
-
-    function getViewer() {
-        if (!viewerPromise) {
-            viewerPromise = (async () => {
-                let userId = Number(root.dataset.userId) || null;
-                if (!userId && isLoggedIn) {
-                    const user = await VaultListingCard.getCurrentSessionUser();
-                    userId = user?.id || null;
-                }
-                const wishlistIds = await VaultListingCard.getWishlistIdSet(userId);
-                return { userId, wishlistIds };
-            })();
-        }
-        return viewerPromise;
-    }
-
-    // ________________________________________________________
     // RENDERING
     // ________________________________________________________
-
-    function renderSkeletons() {
-        const nodes = [];
-        for (let i = 0; i < SKELETON_COUNT; i += 1) {
-            const card = document.createElement("div");
-            card.className = "cat-skeleton-card";
-            card.setAttribute("aria-hidden", "true");
-            ["image", "line", "short", "button"].forEach((part) => {
-                const block = document.createElement("div");
-                block.className = `cat-skeleton-block cat-skeleton-block--${part}`;
-                card.appendChild(block);
-            });
-            nodes.push(card);
-        }
-        grid.replaceChildren(...nodes);
-    }
 
     function renderMessage(title, actions) {
         const box = document.createElement("div");
@@ -134,12 +95,10 @@ Works with:
         heading.textContent = title;
         box.appendChild(heading);
 
-        if (actions.length) {
-            const row = document.createElement("div");
-            row.className = "cat-state-actions";
-            actions.forEach((action) => row.appendChild(action));
-            box.appendChild(row);
-        }
+        const row = document.createElement("div");
+        row.className = "cat-state-actions";
+        row.append(...actions);
+        box.appendChild(row);
 
         grid.replaceChildren(box);
     }
@@ -187,10 +146,10 @@ Works with:
         target.scrollIntoView({ block: "start", behavior: reduceMotion ? "auto" : "smooth" });
     }
 
-    function goToPage(page, options = {}) {
+    function goToPage(page) {
         const state = { sort: currentState.sort, page };
         pushState(state);
-        load(state, { scroll: options.scroll !== false });
+        load(state, { scroll: true });
     }
 
     function renderEmpty() {
@@ -221,7 +180,7 @@ Works with:
     async function load(state, options = {}) {
         const token = ++requestToken;
         grid.setAttribute("aria-busy", "true");
-        renderSkeletons();
+        grid.replaceChildren(...VaultListingCard.skeletonCards(8));
         if (options.scroll) scrollToGridTop();
 
         try {
@@ -232,7 +191,7 @@ Works with:
             });
             const [response, viewer] = await Promise.all([
                 fetch(`/api/categories/${encodeURIComponent(slug)}/listings?${params.toString()}`),
-                getViewer()
+                VaultListingCard.getViewer(root)
             ]);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
@@ -256,9 +215,7 @@ Works with:
 
             const cards = await Promise.all(listings.map((item) => VaultListingCard.create(item, {
                 wishlistIds: viewer.wishlistIds,
-                currentUserId: viewer.userId,
-                showStorefront: true,
-                showCategory
+                currentUserId: viewer.userId
             })));
             if (token !== requestToken) return;
 
@@ -303,7 +260,7 @@ Works with:
         load(currentState, { scroll: false });
     });
 
-    // initial render
+    // first load when the page opens
     sortSelect.value = currentState.sort;
     syncSortLinks(currentState.sort);
     window.history.replaceState(currentState, "", window.location.href);

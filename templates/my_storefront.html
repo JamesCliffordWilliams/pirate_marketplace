@@ -1,109 +1,84 @@
 <!--
  my_storefront.html
 
-    The Vault Campus Marketplace 
+    The Vault Campus Marketplace
     CSC 405 Sp 26'
     Created by Day Ekoi - Iteration 4 3/22/2026
     Implemented & Updated by Day Ekoi - Iteration 5 4/9/26
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - added deactivate storefront button
+    Updated by James Williams - 10/26/26 - Pirate Market redesign with the store header
+    and a listings table with status and quick buttons
 
-Description of file (What it does, how it is used, etc):
-This file is the seller storefront dashboard page for users who already have a storefront.
-It allows the seller to view their storefront banner, logo, brand name, and their current listings.
-
-This page also includes action buttons that let the seller:
-- Edit their storefront
-- Create a new listing
-- View their public storefront
-
-This file acts as the UI structure for the seller's personal storefront management page.
-It is different from the public storefront page because this version is meant for the storefront owner.
+This is the seller's dashboard. my_storefront.js fills it in from the API.
 Updated by Aniya Hopson-  added in incoming orders section
 -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Storefront Dashboard</title>
+    <title>My storefront | Pirate Market</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/my_storefront.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront_view.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/seller.css') }}">
 </head>
+<body class="pm">
+{% include 'partials/site_nav.html' %}
 
-<body>
-    <main class="storefront-dashboard">
+<main class="pm-page pm-store pm-dashboard" id="dashboard">
+    <div class="pm-facade__cover pm-store__cover" id="bannerBox" data-count="0"></div>
 
-        <!-- back button - Added by Day Ekoi 4/20/26 -->
-        <div class="back-row">
-            <button class="back-btn" onclick="window.location.href='/storefronts'">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-                Back
-            </button>
+    <header class="pm-store__head">
+        <span class="pm-medallion pm-medallion--lg" id="logoCircle" aria-hidden="true"></span>
+        <div class="pm-store__title">
+            <h1 id="pageTitle"><span class="pm-skeleton pm-skeleton--line" style="display:block;width:240px;height:32px"></span></h1>
+            <p class="pm-muted" id="storeMeta"></p>
         </div>
+        <div class="pm-dashboard__actions" id="storeActions" hidden>
+            <a class="pm-btn pm-btn--secondary" id="viewStorefrontBtn" href="#">View storefront</a>
+            <a class="pm-btn pm-btn--secondary" id="editStorefrontBtn" href="#">Edit storefront</a>
+            <a class="pm-btn pm-btn--primary" id="createListingBtn" href="/listings/create">Add listing</a>
+        </div>
+    </header>
 
-        <!-- Banner section -->
-        <section class="banner-section">
-            <h1 class="dashboard-title" id="pageTitle">Loading...</h1>
+    <div class="pm-notice pm-dashboard__notice" id="storefrontStatusBanner" hidden>
+        This storefront is deactivated, so shoppers can't see it or its listings.
+    </div>
 
-            <!-- banner — background image set by JS if available -->
-            <div class="banner-box" id="bannerBox">
-                <p id="bannerFallback">Storefront Banner</p>
-            </div>
+    <!-- Incoming orders - Added by Aniya Hopson 10/27/26 -->
+    <section class="orders-section">
+        <h2 class="orders-title">Incoming Orders</h2>
+        <p class="orders-note">Hand the items to the buyer, then click "Mark as Picked Up". Orders not picked up by their date expire and the items go back into your stock.</p>
+        <p class="orders-message" id="ordersMessage">Loading orders...</p>
+        <div id="ordersList"></div>
+    </section>
 
-            <!-- overlapping logo -->
-            <div class="logo-circle" id="logoCircle">
-                <img id="logoImg" alt="Store Logo" style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;">
-                <p id="logoFallback">Logo</p>
-            </div>
-        </section>
+    <section class="pm-section" aria-labelledby="listingsHeading">
+        <div class="pm-section-head">
+            <h2 id="listingsHeading">Listings</h2>
+            <p class="pm-muted" id="listingCount" aria-live="polite"></p>
+        </div>
+        <div id="listingGrid" class="pm-listing-table" aria-busy="true">
+            <div class="pm-skeleton pm-skeleton--line"></div>
+            <div class="pm-skeleton pm-skeleton--line"></div>
+            <div class="pm-skeleton pm-skeleton--line pm-skeleton--short"></div>
+        </div>
+    </section>
 
-        <!-- Profile info row - Updated by Day Ekoi 4/20/26 -->
-        <section class="store-info-row">
-            <div class="storefront-status-banner" id="storefrontStatusBanner" style="display:none;">
-                Your storefront is currently deactivated and is not visible to the public. Reactivate it in Edit Storefront to make it live again.
-            </div>
+    <section class="pm-section pm-dashboard__danger" id="storeSettings" hidden aria-labelledby="settingsHeading">
+        <h2 id="settingsHeading">Close the storefront</h2>
+        <p class="pm-muted">Hides the storefront and all its listings from shoppers. Contact support to reopen it.</p>
+        <button type="button" class="pm-btn pm-btn--danger" id="deactivateStorefrontBtn">Deactivate storefront</button>
+    </section>
+</main>
 
-            <div class="store-info-layout">
-                <div class="store-info-primary">
-                    <!-- Removed by Day Ekoi - Iteration 5 - 4/20/26: inline brand-name heading replaced by page title above banner.
-                    <h2 class="brand-name" id="brandName">Loading...</h2>
-                    -->
-                    <p id="storeDescription" class="store-bio"></p>
-                    <p id="contactInfo" class="store-contact"></p>
-                </div>
-
-                <div class="store-info-secondary">
-                    <div class="dashboard-actions">
-                        <button class="action-btn" id="editStorefrontBtn">Edit Storefront</button>
-                        <button class="action-btn" id="createListingBtn">+ Create New Listing</button>
-                        <button class="action-btn" id="viewStorefrontBtn">View Public Storefront</button>
-                        <!-- Removed by Day Ekoi - Iteration 5 - 4/20/26: deactivate action hidden from primary dashboard controls to match simplified owner layout.
-                        <button class="action-btn action-btn--danger" id="deactivateStorefrontBtn">Deactivate Storefront</button>
-                        -->
-                    </div>
-                </div>
-            </div>
-
-        </section>
-       
-        <!-- Incoming orders - Added by Aniya Hopson 10/27/26 -->
-        <section class="orders-section">
-            <h2 class="orders-title">Incoming Orders</h2>
-            <p class="orders-note">Hand the items to the buyer, then click "Mark as Picked Up". Orders not picked up by their date expire and the items go back into your stock.</p>
-            <p class="orders-message" id="ordersMessage">Loading orders...</p>
-            <div id="ordersList"></div>
-        </section>
-
-        <!-- Listings section -->
-        <section class="listings-section">
-            <div class="listing-grid" id="listingGrid"></div>
-        </section>
-
-    </main>
-
-    <script src="{{ url_for('static', filename='js/my_storefront.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/seller_orders.js') }}"></script>  <!-- Added by Aniya Hopson 10/27/26 -->
+{% include 'partials/site_footer.html' %}
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/listing_card.js') }}"></script>
+<script src="{{ url_for('static', filename='js/my_storefront.js') }}"></script>
+<script src="{{ url_for('static', filename='js/seller_orders.js') }}"></script>  <!-- Added by Aniya Hopson 10/27/26 -->
 </body>
 </html>

@@ -4,24 +4,23 @@
 """
 models/interest_model.py
 
-Purpose:
-Database work for listing_interest (shopper engagement used by the Hot page).
-
-Notes:
-- At most one row per listing, shopper, kind and day.
-- Owners' own actions and hidden listings are never recorded.
-- If the table doesn't exist yet (code deployed before the migration),
-  the Hot queries return no engagement instead of erroring.
+This file has the database code for listing_interest, which tracks what shoppers do for the Hot page.
+There's at most one row per listing, shopper, kind and day.
+Owners clicking their own listings and hidden listings are never saved.
+If the table doesn't exist yet, the Hot queries just return nothing instead of crashing.
 """
 
 from psycopg2 import errors
 
 from db import get_connection
-from config.hot_ranking import INTEREST_KINDS, MIN_ACCOUNT_AGE_HOURS, TRACKING_TIMEOUT_SECONDS
+from config.hot_ranking import WEIGHTS, MIN_ACCOUNT_AGE_HOURS
 from models.listing_model import PUBLIC_LISTING_VISIBILITY_SQL, AVAILABLE_SQL
 
+# Tracking gives up after this long so it never slows down wishlist, cart or checkout
+TRACKING_TIMEOUT_SECONDS = 2
 
-# Shoppers who count: not the storefront owner, and the account was old enough at the time
+
+# A shopper only counts if they aren't the storefront owner and their account was old enough at the time
 COUNTED_ENGAGER_SQL = """
     li.user_id <> s.owner_id
     AND (%(min_age)s = 0 OR u.created_at IS NULL
@@ -30,16 +29,16 @@ COUNTED_ENGAGER_SQL = """
 
 
 def record_interest(listing_id, user_id, kind):
-    """Saves one engagement. Returns True if a new row was added."""
+    """Saves one shopper action. Returns True if a new row was added."""
     return record_interests([listing_id], user_id, kind) > 0
 
 
 def record_interests(listing_ids, user_id, kind):
     """
-    Saves the same engagement for several listings with one connection.
-    Gives up after TRACKING_TIMEOUT_SECONDS. Returns how many rows were added.
+    Saves the same action for several listings using one connection.
+    Gives up after TRACKING_TIMEOUT_SECONDS and returns how many rows were added.
     """
-    if kind not in INTEREST_KINDS:
+    if kind not in WEIGHTS:
         raise ValueError(f"Unknown interest kind: {kind!r}")
     if not listing_ids:
         return 0
@@ -87,9 +86,8 @@ def is_listing_public(listing_id):
 
 def get_engagement_events(window_hours, min_account_age_hours=MIN_ACCOUNT_AGE_HOURS):
     """
-    Latest event of each kind per (listing, shopper) in the window, for listings
-    that are visible and in stock. Returns dicts with listing_id, storefront_id,
-    user_id, kind and age_hours (worked out by the database clock).
+    Gets each shopper's latest action of each kind on listings that are visible and in stock.
+    age_hours is how long ago it happened, using the database clock.
     """
     conn = get_connection()
     try:
@@ -127,7 +125,7 @@ def get_engagement_events(window_hours, min_account_age_hours=MIN_ACCOUNT_AGE_HO
 
 
 def get_storefront_reach(storefront_ids, days, min_account_age_hours=MIN_ACCOUNT_AGE_HOURS):
-    """{storefront_id: number of different shoppers} across all of the store's listings."""
+    """Counts how many different shoppers interacted with each storefront's listings."""
     if not storefront_ids:
         return {}
 
