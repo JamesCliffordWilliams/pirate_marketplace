@@ -415,7 +415,6 @@ def create_vault_tables():
                 id SERIAL PRIMARY KEY,
                 sender_id INTEGER NOT NULL, -- There is only one user and one reciever per conversation
                 receiver_id INTEGER NOT NULL,
-                content TEXT NOT NULL,
                 listing_id INTEGER, -- Can be NULL so that messages don't need to be tied to a listing
                 body TEXT NOT NULL CHECK (char_length(body) >= 1 AND char_length(body) <= 2000), -- Character limit
                 is_read BOOLEAN NOT NULL DEFAULT FALSE, -- Every message starts as unread
@@ -431,9 +430,11 @@ def create_vault_tables():
             );"""
 
         cur.execute(create_messages_table)
+        # Remove the unused "content" column from databases created before this fix - Aniya Hopson 10/27/26
+        cur.execute("ALTER TABLE messages DROP COLUMN IF EXISTS content;")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
-        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);") #Helps with loading a conversatio
-
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);")
+        
         print(f"DATABASE INITIALIZED: {', '.join(tables)} tables are ready.")
         # ________________________________________________________
         # LISTING INTEREST (Hot page engagement)
