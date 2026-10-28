@@ -1,0 +1,48 @@
+/*
+    messages_theme.css
+
+    Pirate Market
+    Created by James Williams - 10/27/26
+    This fits Aniya's Messages page into the redesign. Her messages.css stays the same.
+    This file loads after it and points her colors at the theme.
+*/
+
+.pm.messages-body { background: var(--pm-harbor); }
+.pm.messages-body::before { display: none; }
+
+/* Her color names, now using the theme's colors */
+.pm .msg-page {
+  --gold: var(--pm-brass);
+  --gold-dark: var(--pm-brass);
+  --panel: var(--pm-hull);
+  --field: var(--pm-harbor);
+  --field-hover: var(--pm-hull-raised);
+  --line: var(--pm-control-line);
+  --divider: var(--pm-rigging);
+  --glow: none;
+  --muted: var(--pm-fog);
+  --error: var(--pm-signal-text);
+  --radius: var(--pm-r-sheet);
+  width: 100%;
+  color: var(--pm-sail);
+  font-family: var(--pm-sans);
+}
+
+.pm .msg-app,
+.pm .msg-sheet { border-color: var(--pm-rigging); }
+
+.pm .msg-title { font: 400 var(--pm-t31)/1.15 var(--pm-display); }
+
+.pm .msg-unread,
+.pm .is-mine .msg-bubble,
+.pm .msg-send { color: var(--pm-harbor); }
+
+.pm .msg-send:hover:not(:disabled) {
+  filter: none;
+  box-shadow: none;
+  background: var(--pm-brass-hover);
+}
+
+.pm .msg-convo.is-unread .msg-convo-preview,
+.pm .msg-composer textarea,
+.pm .msg-sheet { color: var(--pm-sail); }

@@ -153,7 +153,7 @@ class TestCategoryPagesOffline(unittest.TestCase):
         # Updated by James Williams 10/26/26 - the new header only links to pages that exist
         self.assertIn('href="/categories">All categories</a>', html)
         self.assertIn('href="/hot"', html)
-        for dead in ("Explore Brands", "New Drops", "Sitemap"):
+        for dead in ("New Drops", "Sitemap"):  # Explore Brands is now CJ's real heading
             self.assertNotIn(dead, html)
         self.assertIn("js/nav_pane.js", html)
         self.assertIn("js/storefront.js", html)

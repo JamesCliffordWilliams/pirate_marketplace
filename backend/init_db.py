@@ -2,7 +2,7 @@
 init_db.py
 
 Purpose:
-This file initializes the PostgreSQL database schema for The Vault.
+This file initializes the PostgreSQL database schema for Pirate Market.
 It creates all required database tables if they do not already exist.
 
 Run this file manually when:
@@ -11,10 +11,11 @@ Run this file manually when:
 - Ensuring the database schema is properly initialized
 """
 
-# The Vault Campus Marketplace
+# Pirate Market Campus Marketplace
 # CSC 405 Sp 26'
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added contact_info, preview_image_1-4, categories columns to storefronts; added ALTER TABLE migrations
 # Updated by James Williams - 10/26/26 - added the product categories, listing_interest (Hot page) and listing_create_requests tables
+
 
 import psycopg2
 import os
@@ -324,7 +325,10 @@ def create_vault_tables():
                     ON DELETE CASCADE
             );
         """
+        #Added by Aniya Hopson 10/26/26
         cur.execute(create_orders_table)
+        cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days');")
+        cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;")
 
         # ________________________________________________________
         # ORDER ITEMS TABLE (Items per order)
@@ -348,6 +352,8 @@ def create_vault_tables():
         """
 
         cur.execute(create_order_items_table)
+        #Added by Aniya Hopson 10/26/26
+        cur.execute("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;")
 
         create_wallets_table = """
             CREATE TABLE IF NOT EXISTS wallets  (
@@ -404,6 +410,35 @@ def create_vault_tables():
                     """)
         tables = [row[0] for row in cur.fetchall()]
 
+        #_________________________________________________________
+        # MESSAGES TABLE (buyer <-> seller messages)
+        # Added by Miles Walker 10/25/26
+        #___________________________________________________________
+        create_messages_table = """
+            CREATE TABLE IF NOT EXISTS messages (
+                id SERIAL PRIMARY KEY,
+                sender_id INTEGER NOT NULL, -- There is only one user and one reciever per conversation
+                receiver_id INTEGER NOT NULL,
+                listing_id INTEGER, -- Can be NULL so that messages don't need to be tied to a listing
+                body TEXT NOT NULL CHECK (char_length(body) >= 1 AND char_length(body) <= 2000), -- Character limit
+                is_read BOOLEAN NOT NULL DEFAULT FALSE, -- Every message starts as unread
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+                CONSTRAINT fk_message_sender
+                    FOREIGN KEY(sender_id) REFERENCES users(id) ON DELETE CASCADE,
+                CONSTRAINT fk_message_receiver
+                    FOREIGN KEY(receiver_id) REFERENCES users(id) ON DELETE CASCADE,
+                CONSTRAINT fk_msg_listing
+                    FOREIGN KEY(listing_id) REFERENCES listings(id) ON DELETE SET NULL, -- Prevents messages from being deleted if the associated listing is deleted 
+                CONSTRAINT chk_not_self CHECK (sender_id <> receiver_id) -- Prevents users from messaging themselves 
+            );"""
+
+        cur.execute(create_messages_table)
+        # Remove the unused "content" column from databases created before this fix - Aniya Hopson 10/27/26
+        cur.execute("ALTER TABLE messages DROP COLUMN IF EXISTS content;")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);")
+        
         print(f"DATABASE INITIALIZED: {', '.join(tables)} tables are ready.")
         # ________________________________________________________
         # LISTING INTEREST (shopper activity for the Hot page)

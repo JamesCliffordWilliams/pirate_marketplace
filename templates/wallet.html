@@ -1,0 +1,360 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wallet | Pirate Market</title>
+    <!-- Wallet page by Elisa Earls. Updated by James Williams 10/27/26 - uses the redesign's
+         theme, header and footer. Same layout and wallet code, the styles below only apply inside the wallet -->
+    <link rel="preload" href="{{ url_for('static', filename='fonts/instrument-sans-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
+
+    <style>
+        .pm .wallet-container {
+            max-width: 900px;
+            margin: 32px auto 64px;
+            padding: 24px;
+            background: var(--pm-hull);
+            border: 1px solid var(--pm-rigging);
+            border-radius: var(--pm-r-sheet);
+        }
+
+        .pm .wallet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid var(--pm-rigging);
+            padding-bottom: 18px;
+        }
+
+        .pm .wallet-container h1 { font: 400 var(--pm-t31)/1.15 var(--pm-display); }
+        .pm .wallet-container h2 { font-size: var(--pm-t20); margin-bottom: 8px; }
+        .pm .wallet-container p { color: var(--pm-fog); }
+
+        .pm .balance-card {
+            margin: 28px 0;
+            padding: 28px;
+            background: var(--pm-harbor);
+            border: 1px solid var(--pm-rigging);
+            border-radius: var(--pm-r-tile);
+        }
+
+        .pm .balance-label {
+            color: var(--pm-fog);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: var(--pm-t13);
+        }
+
+        .pm .balance-amount {
+            margin-top: 10px;
+            font-size: 2.5rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .pm .wallet-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
+        .pm .action-card {
+            padding: 20px;
+            background: var(--pm-harbor);
+            border: 1px solid var(--pm-rigging);
+            border-radius: var(--pm-r-tile);
+        }
+
+        .pm .wallet-container label {
+            display: block;
+            margin: 12px 0 6px;
+            font-size: var(--pm-t14);
+            font-weight: 600;
+        }
+
+        .pm .wallet-container input {
+            width: 100%;
+            min-height: 40px;
+            padding: 8px 12px;
+            background: var(--pm-hull);
+            color: var(--pm-sail);
+            border: 1px solid var(--pm-control-line);
+            border-radius: var(--pm-r-control);
+        }
+
+        .pm .wallet-container input:focus { outline: none; border-color: var(--pm-brass); }
+
+        .pm .wallet-container button {
+            margin-top: 14px;
+            min-height: 40px;
+            padding: 0 16px;
+            background: var(--pm-brass);
+            color: var(--pm-harbor);
+            border: none;
+            border-radius: var(--pm-r-control);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .pm .wallet-container button:hover:not(:disabled) { background: var(--pm-brass-hover); }
+
+        .pm .wallet-container button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .pm .status-message {
+            min-height: 24px;
+            margin: 16px 0;
+        }
+
+        .pm .back-link {
+            color: var(--pm-fog);
+            font-size: var(--pm-t14);
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .pm .back-link:hover { color: var(--pm-sail); }
+
+        .pm .transaction-list {
+            margin-top: 20px;
+        }
+
+        .pm .transaction-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--pm-rigging);
+        }
+
+        .pm .transaction-details {
+            color: var(--pm-fog);
+            font-size: var(--pm-t14);
+            margin-top: 4px;
+        }
+
+        .pm .positive {
+            color: var(--pm-kelp);
+        }
+
+        .pm .negative {
+            color: var(--pm-signal-text);
+        }
+    </style>
+</head>
+
+<body class="pm">
+{% include 'partials/site_nav.html' %}
+<main class="wallet-container">
+
+    <div class="wallet-header">
+        <div>
+            <h1>MY WALLET</h1>
+            <p>Manage your Vault funds and transaction history.</p>
+        </div>
+
+        <a class="back-link"
+           href="{{ url_for('storefront_pages_bp.my_storefront_page') }}">
+            ← BACK TO STOREFRONT
+        </a>
+    </div>
+
+    <section class="balance-card">
+        <div class="balance-label">Available Balance</div>
+        <div id="walletBalance" class="balance-amount">Loading...</div>
+        <p id="walletStatus" class="status-message"
+           role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="wallet-actions">
+        <div class="action-card">
+            <h2>Add Funds</h2>
+            <p>Add demo funds to your wallet.</p>
+
+            <form id="depositForm">
+                <label for="depositAmount">Amount ($)</label>
+                <input id="depositAmount" type="number"
+                       min="0.01" max="10000" step="0.01"
+                       placeholder="25.00" required>
+
+                <button id="depositButton" type="submit">
+                    Add Funds
+                </button>
+            </form>
+        </div>
+
+        <div class="action-card">
+            <h2>Withdraw Funds</h2>
+            <p>Remove funds from your wallet.</p>
+
+            <form id="withdrawForm">
+                <label for="withdrawAmount">Amount ($)</label>
+                <input id="withdrawAmount" type="number"
+                       min="0.01" max="10000" step="0.01"
+                       placeholder="10.00" required>
+
+                <button id="withdrawButton" type="submit">
+                    Withdraw
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <section class="transaction-list">
+        <h2>Transaction History</h2>
+        <div id="transactions">
+            Loading transactions...
+        </div>
+    </section>
+
+</main>
+
+{% include 'partials/site_footer.html' %}
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+<script>
+const API = "/api/wallet";
+
+async function walletRequest(path, options = {}) {
+    const userId =
+        localStorage.getItem("vaultUserId") ||
+        sessionStorage.getItem("vaultUserId");
+
+    if (!userId) {
+        throw new Error("Please log in before using your wallet.");
+    }
+
+    const response = await fetch(`${API}${path}`, {
+        ...options,
+        headers: {
+            "Content-Type": "application/json",
+            "X-User-Id": userId,
+            ...(options.headers || {})
+        }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.error || "Wallet request failed.");
+    }
+
+    return data;
+}
+
+function formatMoney(amount) {
+    return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD"
+    }).format(Number(amount) || 0);
+}
+
+function showStatus(message) {
+    document.getElementById("walletStatus").textContent = message;
+}
+
+async function loadWallet() {
+    try {
+        const data = await walletRequest("");
+        const balance = data.balance ?? data.wallet?.balance ?? 0;
+
+        document.getElementById("walletBalance").textContent =
+            formatMoney(balance);
+
+        await loadTransactions();
+    } catch (error) {
+        document.getElementById("walletBalance").textContent = "--";
+        showStatus(error.message);
+    }
+}
+
+async function loadTransactions() {
+    const container = document.getElementById("transactions");
+
+    try {
+        const data = await walletRequest("/transactions");
+        const transactions = data.transactions || [];
+
+        container.replaceChildren();
+
+        if (transactions.length === 0) {
+            container.textContent = "No transactions yet.";
+            return;
+        }
+
+        transactions.forEach(transaction => {
+            const row = document.createElement("div");
+            row.className = "transaction-row";
+
+            const details = document.createElement("div");
+            const type = document.createElement("strong");
+            type.textContent = transaction.type || "Transaction";
+
+            const date = document.createElement("div");
+            date.className = "transaction-details";
+            date.textContent = transaction.created_at || "";
+
+            details.append(type, date);
+
+            const amount = document.createElement("strong");
+            const value = Number(transaction.amount) || 0;
+            amount.textContent = formatMoney(value);
+            amount.className = value >= 0 ? "positive" : "negative";
+
+            row.append(details, amount);
+            container.appendChild(row);
+        });
+    } catch (error) {
+        container.textContent = error.message;
+    }
+}
+
+async function submitWalletAction(event, action) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const input = form.querySelector('input[type="number"]');
+    const button = form.querySelector("button");
+    const amount = Number(input.value);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        showStatus("Enter an amount greater than zero.");
+        return;
+    }
+
+    button.disabled = true;
+
+    try {
+        const result = await walletRequest("/" + action, {
+            method: "POST",
+            body: JSON.stringify({ amount })
+        });
+
+        showStatus(result.message || "Wallet updated successfully.");
+        input.value = "";
+        await loadWallet();
+    } catch (error) {
+        showStatus(error.message);
+    } finally {
+        button.disabled = false;
+    }
+}
+
+document.getElementById("depositForm").addEventListener("submit", event => {
+    submitWalletAction(event, "deposit");
+});
+
+document.getElementById("withdrawForm").addEventListener("submit", event => {
+    submitWalletAction(event, "withdraw");
+});
+
+loadWallet();
+</script>
+</body>
+</html>

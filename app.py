@@ -4,15 +4,17 @@ from datetime import timedelta
 
 from flask import Flask, render_template, redirect, request, url_for, session
 
-# Added back by James Williams 10/27/26 - lets python3 app.py find the backend folder outside PyCharm
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'backend')))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend"))    # ← NEW LINE 2
+
 
 # Billy: Rewrite
 from controllers.admin_controller import admin_bp
 from controllers.auth_controller import auth_bp
-from controllers.category_controller import category_bp, category_pages_bp # James
 from controllers.checkout_controller import checkout_bp
-from controllers.hot_controller import hot_bp, hot_pages_bp # James
+from controllers.category_controller import category_bp, category_pages_bp  # Added by James Williams 10/26/26
+from controllers.hot_controller import hot_bp, hot_pages_bp  # Added by James Williams 10/26/26
+from controllers.order_controllers import orders_bp  # Added by Aniya Hopson 10/27/26
+from init_db import create_vault_tables
 from controllers.listing_controller import listing_bp
 from controllers.message_controller import message_bp
 from controllers.purchase_controller import purchase_bp
@@ -39,6 +41,8 @@ PRIVATE_PAGES = [
     ("/checkout", "checkout", "checkout.html"),
     ("/order-confirmation", "order_confirmation", "order_confirmation.html"),
     ("/my-storefront", "my_storefront", "my_storefront.html"),
+    ("/messages", "messages_page", "messages.html"),  # Added by Aniya Hopson 10/27/26  
+    ("/wallet", "wallet", "wallet.html"),
 ]
 
 # Added by James Williams 10/27/26 - storefront, product, category and Hot pages need a login too
@@ -50,6 +54,7 @@ BLUEPRINTS = [
     (checkout_bp, "/api"),
     (listing_bp, None),
     (message_bp, None), # Billy
+    (orders_bp, "/api"),  # Aniya
     (storefront_bp, None),
     (storefront_pages_bp, None),
     (purchase_bp, None),
@@ -68,7 +73,7 @@ def register_pages(app):
     for url, endpoint, template in PUBLIC_PAGES:
         app.add_url_rule(url, endpoint, lambda t=template: render_template(t))
     for url, endpoint, template in PRIVATE_PAGES: # Aniya: reroute the user login if they are not a user
-        app.add_url_rule(url, endpoint, lambda t=template: render_template(t) if session.get('user') else redirect(url_for("auth.login")))
+        app.add_url_rule(url,   endpoint, lambda t=template: render_template(t) if session.get('user') else redirect(url_for("auth.login")))
 
 # Billy: Rewrite
 def create_app():

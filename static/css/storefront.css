@@ -261,3 +261,37 @@ body {
 
 /* Lightbox overlay - Added by Day Ekoi 4/20/26 */
 
+
+/* Added by James Williams 10/27/26 - styles CJ's Explore Brands heading and brand search to match the redesign */
+.pm .explore-section {
+  margin-bottom: 24px;
+}
+
+.pm .explore-section h1 {
+  font: 400 var(--pm-t31)/1.15 var(--pm-display);
+}
+
+.pm .explore-section p {
+  margin: 8px 0 16px;
+  max-width: 60ch;
+  color: var(--pm-fog);
+}
+
+.pm .explore-section input {
+  width: 100%;
+  max-width: 420px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--pm-control-line);
+  border-radius: var(--pm-r-control);
+  background: var(--pm-hull);
+  color: var(--pm-sail);
+  font: inherit;
+}
+
+.pm .explore-section input::placeholder { color: #7D8DA8; }
+
+.pm .explore-section input:focus {
+  outline: none;
+  border-color: var(--pm-brass);
+}

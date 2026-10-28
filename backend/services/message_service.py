@@ -32,7 +32,8 @@ class MessageService:
             return False, "Receiver not found", None
         try: 
             return True, "Sent", insert_message(sender_id, receiver_id, body, listing_id)
-        except Exception:
+        except Exception as e:
+            print(f"MESSAGE SEND ERROR: {e}")  # real database error, shown in the server terminal only - [Your Name] 10/27/26
             return False, "Failed to send message", None
 
     def conversation(self, user_id, other_id):

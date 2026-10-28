@@ -94,3 +94,66 @@
     .pm .pm-listing-row__actions { grid-column: 2 / -1; justify-content: flex-start; margin-left: -10px; }
 }
 .pm .pm-listing-table:has(> .pm-empty) { border-top: 0; }
+
+/* Incoming orders - Added by Aniya Hopson 10/27/26 */
+/* Updated by James Williams 10/27/26 - same layout with the redesign's colors */
+.pm .orders-section {
+    margin-top: 48px;
+    padding: 24px;
+    background: var(--pm-hull);
+    border: 1px solid var(--pm-rigging);
+    border-radius: var(--pm-r-tile);
+}
+
+.pm .orders-title {
+    color: var(--pm-sail);
+}
+
+.pm .orders-note,
+.pm .orders-message {
+    color: var(--pm-fog);
+    font-size: var(--pm-t14);
+    margin: 6px 0 16px;
+}
+
+.pm .order-card {
+    padding: 16px;
+    margin-bottom: 12px;
+    background: var(--pm-harbor);
+    border: 1px solid var(--pm-rigging);
+    border-radius: var(--pm-r-tile);
+}
+
+.pm .order-number {
+    color: var(--pm-sail);
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.pm .order-line,
+.pm .order-item {
+    font-size: var(--pm-t14);
+    margin: 3px 0;
+}
+
+.pm .order-deadline {
+    color: var(--pm-fog);
+    font-size: var(--pm-t14);
+    margin: 10px 0;
+}
+
+/* This makes the "Mark as Picked Up" button look like the other buttons */
+.pm .order-card .action-btn {
+    min-height: 40px;
+    padding: 0 16px;
+    border: 1px solid var(--pm-control-line);
+    border-radius: var(--pm-r-control);
+    background: none;
+    color: var(--pm-sail);
+    font-size: var(--pm-t14);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.pm .order-card .action-btn:hover:not(:disabled) { border-color: var(--pm-fog); }
+.pm .order-card .action-btn:disabled { opacity: 0.55; cursor: not-allowed; }

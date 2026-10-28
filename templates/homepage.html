@@ -9,6 +9,7 @@
     Updated by James Williams - Iteration 2 - 10/1/26
     Updated by James Williams - 10/26/26 - Pirate Market redesign with store covers, sorting
     and page buttons. storefront.js builds the cards.
+    Updated by James Williams - 10/27/26 - CJ's Explore Brands heading and brand search sit at the top
 --->
 <!DOCTYPE html>
 <html lang="en">
@@ -25,9 +26,22 @@
 {% include 'partials/site_nav.html' %}
 
 <main class="pm-page pm-directory" id="storefrontDirectory" data-user-id="{{ session.get('user_id') or '' }}">
+    <!-- The heading for explore brands and search function-->
+     <section class="explore-section">
+      <h1> Explore Brands </h1>
+      <p>
+          Discover clothing brands and their unique storefronts made by the Hampton University comunity.
+      </p>
+      <input 
+      type="search"
+      id = "brandSearch"
+      placeholder="Search Clothing Brands...."
+      aria-label="Search Clothing Brands"
+      >
+    </section>
+
   <div class="pm-toolbar">
     <div>
-      <h1>Storefronts</h1>
       <p class="pm-muted" id="storefrontCount" aria-live="polite"></p>
     </div>
     <label class="pm-sort">

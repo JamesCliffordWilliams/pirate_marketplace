@@ -3,8 +3,9 @@
 
     Pirate Market
     Created by James Williams - 10/26/26 (moved out of homepage.html)
-    Updated by James Williams - 10/26/26 - This is the shared header with search, Sell, Bag and Account.
+    Updated by James Williams - 10/26/26 - This is the shared header with Sell, Bag and Account.
     The tabs are the old menu links with Home first. On small screens everything moves into the side menu.
+    Updated by James Williams - 10/27/26 - the tabs and Sell, Wallet, Bag and Account share one row
     Pages need css/theme.css, css/nav.css and js/nav_pane.js. bag_count comes from app.py.
 #}
 {% set signed_in = session.get('user') %}
@@ -23,15 +24,18 @@
             <span class="pm-burger" aria-hidden="true"><span></span><span></span><span></span></span>
         </button>
 
-        <form class="pm-header__search" role="search" action="{{ url_for('storefront_pages_bp.storefront_home_page') }}">
-            <label class="pm-visually-hidden" for="siteSearch">Search storefronts</label>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
-            <input id="siteSearch" name="q" type="search" placeholder="Search storefronts" autocomplete="off"
-                   value="{{ request.args.get('q', '') if request.endpoint == 'storefront_pages_bp.storefront_home_page' else '' }}">
-        </form>
+        <nav class="pm-catbar" aria-label="Main">
+            <div class="pm-catbar__inner">
+                {% for label, href, endpoints in menu %}
+                <a href="{{ href }}" {% if request.endpoint in endpoints %}aria-current="page"{% endif %}>{{ label }}</a>
+                {% endfor %}
+            </div>
+        </nav>
 
         <nav class="pm-header__actions" aria-label="Your account">
             <a class="pm-header__link pm-header__sell" href="{{ url_for('my_storefront') }}">Sell</a>
+            {% if signed_in %}<a class="pm-header__link pm-header__messages" href="{{ url_for('messages_page') }}">Messages</a>{% endif %}
+            {% if signed_in %}<a class="pm-header__link pm-header__wallet" href="{{ url_for('wallet') }}">Wallet</a>{% endif %}
             <a class="pm-icon-btn pm-header__bag" href="{{ url_for('auth.view_cart') }}"
                aria-label="Bag{% if bag_count %}, {{ bag_count }} item{{ 's' if bag_count != 1 }}{% endif %}">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 12H7L6 8Z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg>
@@ -46,14 +50,6 @@
             {% endif %}
         </nav>
     </div>
-
-    <nav class="pm-catbar" aria-label="Main">
-        <div class="pm-catbar__inner">
-            {% for label, href, endpoints in menu %}
-            <a href="{{ href }}" {% if request.endpoint in endpoints %}aria-current="page"{% endif %}>{{ label }}</a>
-            {% endfor %}
-        </div>
-    </nav>
 </header>
 
 <div id="navOverlay" class="pm pm-overlay" hidden></div>
@@ -79,6 +75,8 @@
         <p class="pm-drawer__heading">Account</p>
         {% if signed_in %}
         <a href="{{ url_for('auth.account') }}">Account</a>
+        <a href="{{ url_for('messages_page') }}">Messages</a> <!-- Added by Aniya Hopson 10/27/26 -->
+        <a href="{{ url_for('wallet') }}">Wallet</a>
         <a href="{{ url_for('auth.logout') }}">Log out</a>
         {% else %}
         <a href="{{ url_for('auth.login') }}">Log in</a>

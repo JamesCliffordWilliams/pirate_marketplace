@@ -128,3 +128,13 @@
 .pm .pm-order__number { font-weight: 600; font-variant-numeric: tabular-nums; }
 .pm .pm-order__info .pm-muted { font-size: var(--pm-t14); }
 .pm .pm-account__seller { margin-top: 48px; }
+
+/* This styles the rows on the Sales tab like the order rows above */
+.pm .purchase-items { display: grid; border-top: 1px solid var(--pm-rigging); }
+.pm .purchase-row {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--pm-rigging);
+    font-size: var(--pm-t14);
+    font-variant-numeric: tabular-nums;
+}
+.pm .purchase-items:empty { border-top: 0; }

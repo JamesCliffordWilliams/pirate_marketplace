@@ -10,6 +10,7 @@
     and a listings table with status and quick buttons
 
 This is the seller's dashboard. my_storefront.js fills it in from the API.
+Updated by Aniya Hopson-  added in incoming orders section
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -47,6 +48,14 @@ This is the seller's dashboard. my_storefront.js fills it in from the API.
         This storefront is deactivated, so shoppers can't see it or its listings.
     </div>
 
+    <!-- Incoming orders - Added by Aniya Hopson 10/27/26 -->
+    <section class="orders-section">
+        <h2 class="orders-title">Incoming Orders</h2>
+        <p class="orders-note">Hand the items to the buyer, then click "Mark as Picked Up". Orders not picked up by their date expire and the items go back into your stock.</p>
+        <p class="orders-message" id="ordersMessage">Loading orders...</p>
+        <div id="ordersList"></div>
+    </section>
+
     <section class="pm-section" aria-labelledby="listingsHeading">
         <div class="pm-section-head">
             <h2 id="listingsHeading">Listings</h2>
@@ -70,5 +79,6 @@ This is the seller's dashboard. my_storefront.js fills it in from the API.
 <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
 <script src="{{ url_for('static', filename='js/listing_card.js') }}"></script>
 <script src="{{ url_for('static', filename='js/my_storefront.js') }}"></script>
+<script src="{{ url_for('static', filename='js/seller_orders.js') }}"></script>  <!-- Added by Aniya Hopson 10/27/26 -->
 </body>
 </html>

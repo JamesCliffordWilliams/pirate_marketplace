@@ -63,12 +63,12 @@ def get_inbox(user_id):
     cur.execute("""
         SELECT * FROM (
             SELECT DISTINCT ON (other_id)
-                CASE WHEN m.sender_id = %s THEN m.receiver_id ELSE m.sender_id END AS other.id,
+                CASE WHEN m.sender_id = %s THEN m.receiver_id ELSE m.sender_id END AS other_id,
                 u.username, m.body, m.created_at, m.is_read, m.sender_id
             FROM messages m 
             JOIN users u 
                 ON u.id = CASE WHEN m.sender_id = %s THEN m.receiver_id ELSE m.sender_id END
-            WHERE m.sender id =  %s OR m.receiver_id = %s
+            WHERE m.sender_id =  %s OR m.receiver_id = %s
             ORDER BY other_id, m.created_at DESC
         ) latest
         ORDER BY created_at DESC;""",

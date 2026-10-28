@@ -1,4 +1,4 @@
-# The Vault Campus Marketplace
+# Pirate Marketplace Campus Marketplace
 # CSC 405 Sp 26'
 # Updated by Day Ekoi - 4/22/26 - API-only blueprint
 # Updated by James Williams - 10/26/26 - records orders for the Hot page

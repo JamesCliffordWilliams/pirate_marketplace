@@ -2,6 +2,7 @@
 Created by Kaila Roberts 4/18/26
 Updated by Day Ekoi 4/22/26 - JS-driven, loads order data from API
 Updated by James Williams 10/26/26 - Pirate Market redesign. Order details are added as plain text, not HTML.
+Updated by ANiya Hopson 10/27/26 - Pirate Market name, pickup date
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -91,7 +92,8 @@ Updated by James Williams 10/26/26 - Pirate Market redesign. Order details are a
     const details = el("dl");
     [["Name", `${order.buyer_first_name} ${order.buyer_last_name}`], ["Email", order.buyer_email],
      ["Phone", order.buyer_contact], ["Meet at", order.buyer_meeting_location], ["Placed", placed],
-     ["Status", sentenceCase(order.order_status)]].forEach(([label, value]) => {
+     ["Status", sentenceCase(order.order_status)],
+     ["Pick up by", order.order_status === "SUBMITTED" ? order.pickup_by : "—"]].forEach(([label, value]) => {
         if (value) details.append(el("dt", "pm-muted", label), el("dd", null, value));
     });
     handoff.append(el("h2", null, "Handoff"), details);

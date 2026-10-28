@@ -3,7 +3,8 @@
 
     Pirate Market
     Created by James Williams - 10/26/26 (moved out of account.html, original by Madison Boyd 3/23/2026)
-    This is the account page. It shows your past orders and the items you saved.
+    This is the account page. It shows your past orders, the items you saved and your sales.
+    Updated by James Williams - 10/27/26 - Sales tab (Aniya's loadSales) and pick up dates
     Everything is added as plain text, never as HTML.
 */
 
@@ -31,7 +32,9 @@
         const panel = tab.getAttribute("aria-controls");
         if (!loaded.has(panel)) {
             loaded.add(panel);
-            (panel === "wishlist" ? loadSaved : loadPurchases)();
+            if (panel === "wishlist") loadSaved();
+            else if (panel === "sales") loadSales();
+            else loadPurchases();
         }
     }
 
@@ -70,7 +73,8 @@
                     : "";
                 const info = el("span", "pm-order__info");
                 info.append(el("span", "pm-order__number", order.confirmation_number),
-                    el("span", "pm-muted", [date, sentenceCase(order.order_status)].filter(Boolean).join(", ")));
+                    el("span", "pm-muted", [date, sentenceCase(order.order_status),
+                        order.order_status === "SUBMITTED" ? `Pick up by ${order.pickup_by}` : ""].filter(Boolean).join(", ")));
                 link.append(info, el("span", "pm-price", `$${parseFloat(order.total_amount || 0).toFixed(2)}`));
                 return link;
             }));
@@ -107,6 +111,28 @@
             console.error("Error loading saved items:", error);
             status.textContent = "Your saved items didn't load. Refresh the page to try again.";
         }
+    }
+
+    // Sales History - Added by Aniya Hopson 10/27/26
+    // Shows finished (completed or expired) orders. Open orders stay in Incoming Orders.
+    async function loadSales() {
+        const emptyState = document.getElementById("salesEmptyState");
+        const container = document.getElementById("salesContainer");
+
+        const res = await fetch("/api/seller/orders");
+        const data = await res.json();
+        const sales = (data.orders || []).filter((order) => order.order_status !== "SUBMITTED");
+
+        container.innerHTML = "";
+        emptyState.textContent = sales.length ? "" : "No items sold yet.";
+
+        sales.forEach((order) => {
+            const row = document.createElement("div");
+            row.className = "purchase-row";
+            // textContent so buyer-typed text can't run as code
+            row.textContent = `Date: ${order.completed_at} | ${order.order_status}  |  ${order.confirmation_number}  |  Buyer: ${order.buyer_name}`;
+            container.appendChild(row);
+        });
     }
 
     selectTab(tabs[0]);

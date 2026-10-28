@@ -48,9 +48,10 @@ body:not(.pm) > .pm-header { margin-bottom: 28px; }
     color: var(--pm-sail);
 }
 
+/* The tabs, Sell, Wallet, Bag and Account all sit in this one row */
 .pm-header__bar {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 16px;
     max-width: var(--pm-page);
     min-height: 64px;
@@ -58,44 +59,7 @@ body:not(.pm) > .pm-header { margin-bottom: 28px; }
     padding: 0 var(--pm-gutter);
 }
 
-.pm-header .pm-header__menu { display: none; margin-left: -8px; }
-
-.pm-header .pm-header__search {
-    position: relative;
-    flex: 1;
-    max-width: 480px;
-    margin: 0; /* This lines up with the Home tab */
-}
-
-.pm-header .pm-header__search svg {
-    position: absolute;
-    top: 50%;
-    left: 12px;
-    width: 18px;
-    height: 18px;
-    transform: translateY(-50%);
-    fill: none;
-    stroke: var(--pm-fog);
-    stroke-width: 2;
-    stroke-linecap: round;
-    pointer-events: none;
-}
-
-.pm-header .pm-header__search input {
-    width: 100%;
-    height: 40px;
-    margin: 0;
-    padding: 0 12px 0 38px;
-    border: 1px solid var(--pm-control-line);
-    border-radius: var(--pm-r-control);
-    background: var(--pm-harbor);
-    color: var(--pm-sail);
-    font: 400 var(--pm-t14) var(--pm-sans);
-    box-shadow: none;
-}
-
-.pm-header .pm-header__search input::placeholder { color: var(--pm-fog); opacity: 1; }
-.pm-header .pm-header__search input:focus { outline: none; border-color: var(--pm-brass); }
+.pm-header .pm-header__menu { display: none; align-self: center; margin-left: -8px; }
 
 .pm-header .pm-header__actions {
     display: flex;
@@ -103,6 +67,7 @@ body:not(.pm) > .pm-header { margin-bottom: 28px; }
     align-items: center;
     gap: 4px;
     margin-left: auto;
+    align-self: center;
 }
 
 .pm-header .pm-header__link {
@@ -163,21 +128,22 @@ body:not(.pm) > .pm-header { margin-bottom: 28px; }
 [aria-expanded="true"] .pm-burger span:nth-child(2) { opacity: 0; }
 [aria-expanded="true"] .pm-burger span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
-/* ---------- category bar (desktop) ---------- */
+/* ---------- tabs (desktop) ---------- */
+
+.pm-catbar { display: flex; min-width: 0; }
 
 .pm-catbar__inner {
     display: flex;
     gap: 28px;
-    max-width: var(--pm-page);
-    margin: 0 auto;
-    padding: 0 var(--pm-gutter);
     overflow-x: auto;
     scrollbar-width: none;
 }
 
 .pm-catbar a {
+    display: flex;
     flex: none;
-    padding: 10px 0 11px;
+    align-items: center;
+    border-top: 2px solid transparent;
     border-bottom: 2px solid transparent;
     color: var(--pm-fog);
     font-size: var(--pm-t14);
@@ -286,8 +252,9 @@ body.pm > .pm-footer { margin-top: auto; }
     .pm-header .pm-header__menu { display: inline-grid; }
     .pm-catbar { display: none; }
     .pm-header__bar { flex-wrap: wrap; gap: 8px; padding-top: 8px; padding-bottom: 8px; }
-    .pm-header .pm-header__search { order: 10; flex-basis: 100%; max-width: none; margin: 0; }
-    .pm-header .pm-header__sell { display: none; }
+    .pm-header .pm-header__sell,
+    .pm-header .pm-header__messages,
+    .pm-header .pm-header__wallet { display: none; }
     .pm-footer .pm-footer__inner { grid-template-columns: 1fr 1fr; }
     .pm-footer .pm-footer__inner > div:first-child { grid-column: 1 / -1; }
 }

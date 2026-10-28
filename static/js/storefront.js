@@ -8,6 +8,8 @@ storefront.js
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - fetchStorefronts now maps preview_image_1-4 to card carousel; falls back to banner_url if no previews set
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - removed add-to-cart form from storefront cards (size, qty, add to bag); kept version history via comments
   Updated by James Williams - 10/26/26 - store covers, sorting, header search and page numbers
+  Updated by Cletus Hyacinth - Iteration 3 10/26/26 - added brandSearch input to filter storefronts by brand name in addition to searchInput
+  Updated by James Williams - 10/27/26 - renderStorefronts() and filterStorefronts() for CJ's brand search (his code is at the bottom)
 
 Description: This is the storefront directory on homepage.html. Store names and other text
 are added as plain text, never as HTML.
@@ -18,12 +20,12 @@ are added as plain text, never as HTML.
   if (!grid) return;
 
   const PER_PAGE = 24;
-  const searchInput = document.getElementById("siteSearch");
   const sortSelect = document.getElementById("storefrontSort");
   const countLabel = document.getElementById("storefrontCount");
   const pager = document.getElementById("storefrontPager");
   let storefronts = [];
   let page = 1;
+  let brandQuery = "";
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -82,7 +84,7 @@ are added as plain text, never as HTML.
   }
 
   function visibleStorefronts() {
-    const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+    const query = currentQuery().toLowerCase();
     const list = storefronts.filter((store) => !query || String(store.brand_name || "").toLowerCase().includes(query));
     const sort = sortSelect.value;
     return list.sort((a, b) => {
@@ -92,11 +94,16 @@ are added as plain text, never as HTML.
     });
   }
 
+  // This is the text from CJ's Explore Brands search
+  function currentQuery() {
+    return brandQuery;
+  }
+
   function render() {
     const list = visibleStorefronts();
     const pages = Math.max(1, Math.ceil(list.length / PER_PAGE));
     page = Math.min(page, pages);
-    const query = searchInput ? searchInput.value.trim() : "";
+    const query = currentQuery();
 
     grid.replaceChildren();
     grid.setAttribute("aria-busy", "false");
@@ -148,13 +155,43 @@ are added as plain text, never as HTML.
     }
   }
 
-  if (searchInput) {
-    searchInput.addEventListener("input", () => { page = 1; render(); });
-    searchInput.form.addEventListener("submit", (event) => { event.preventDefault(); page = 1; render(); });
-  }
   sortSelect.addEventListener("change", () => { page = 1; render(); });
   document.getElementById("prevPageBtn").addEventListener("click", () => { page -= 1; render(); grid.scrollIntoView({ block: "start" }); });
   document.getElementById("nextPageBtn").addEventListener("click", () => { page += 1; render(); grid.scrollIntoView({ block: "start" }); });
 
+  // These are the two functions CJ's brand search below calls
+  window.renderStorefronts = () => { brandQuery = ""; page = 1; render(); };
+  window.filterStorefronts = (query) => { brandQuery = query; page = 1; render(); };
+
   loadStorefronts();
 })();
+
+// SEARCH BAR FUNCTIONALITY
+// Added by Day E 4/9/26
+// filters storefront cards in real time as the user types in the search bar
+
+const searchInput = document.getElementById("searchInput");
+const brandSearch = document.getElementById("brandSearch");
+
+//  input changes
+if(searchInput){
+    searchInput.addEventListener("input", () => {
+        const query = searchInput.value.trim();
+        if (!query) {
+            renderStorefronts(); // show all if search is cleared
+        } else {
+            filterStorefronts(query);
+        }
+    });
+
+  }
+  if(brandSearch) 
+  { brandSearch.addEventListener("input", () => {
+        const query = brandSearch.value.trim();
+        if (!query) {
+            renderStorefronts(); // show all if search is cleared
+        } else {
+            filterStorefronts(query);
+        }
+    });
+  }

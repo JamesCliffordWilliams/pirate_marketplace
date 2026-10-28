@@ -1,5 +1,6 @@
 <!--Made by Madison Boyd on  3/23/2026-->
 <!-- Updated by James Williams 10/26/26 - Pirate Market redesign with Purchases and Saved tabs (account.js) -->
+<!-- Updated by James Williams 10/27/26 - Sales tab for Aniya's sales history -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,6 +26,7 @@
     <div class="pm-tabs" role="tablist" aria-label="Account">
         <button class="pm-tab" role="tab" id="tab-purchases" aria-controls="purchases" aria-selected="true">Purchases</button>
         <button class="pm-tab" role="tab" id="tab-wishlist" aria-controls="wishlist" aria-selected="false" tabindex="-1">Saved</button>
+        <button class="pm-tab" role="tab" id="tab-sales" aria-controls="sales" aria-selected="false" tabindex="-1">Sales</button>
     </div>
 
     <section id="purchases" role="tabpanel" aria-labelledby="tab-purchases">
@@ -37,8 +39,14 @@
         <div id="wishlistItemsContainer" class="pm-grid"></div>
     </section>
 
+    <section id="sales" role="tabpanel" aria-labelledby="tab-sales" hidden>
+        <p id="salesEmptyState" class="pm-muted">Loading your sales...</p>
+        <div id="salesContainer" class="purchase-items"></div>
+    </section>
+
     <p class="pm-account__seller pm-muted">Selling something? Manage your listings in
-        <a href="{{ url_for('my_storefront') }}">My storefront</a>.</p>
+        <a href="{{ url_for('my_storefront') }}">My storefront</a>. Your balance is in your
+        <a href="{{ url_for('wallet') }}">Wallet</a>.</p>
 </main>
 
 {% include 'partials/site_footer.html' %}

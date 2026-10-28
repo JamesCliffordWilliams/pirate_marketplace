@@ -203,7 +203,7 @@ class TestHotApiOffline(unittest.TestCase):
             for link in links:
                 with self.subTest(page=path, link=link):
                     adapter.match(link, method="GET")  # this fails on a dead link
-            for dead in ("Explore Brands", "New Drops", "Sitemap"):
+            for dead in ("New Drops", "Sitemap"):  # Explore Brands is now CJ's real heading
                 self.assertNotIn(dead, html)
 
 
