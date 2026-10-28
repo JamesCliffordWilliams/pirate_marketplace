@@ -2,20 +2,13 @@
     messages.html
 
     Pirate Market
-    Created by Aniya Hopson- 10/27/26
+    Created by Aniya Hopson - 10/27/26
 
 Description:
 Messages page, styled like a phone chat app. Shows the user's conversations,
-the selected conversation as chat bubbles, and a box to send a reply.
+the selected conversation as chat bubbles, a box to send a reply, and a
+"New Message" sheet for starting a conversation with a student brand.
 Messages older than 60 days are not shown.
-
-How it is used:
-- Opened from "Messages" in the side menu (partials/site_nav.html)
-- Only logged-in users can open it (listed in PRIVATE_PAGES in app.py)
-- Reuses storefront.css for the top bar and side menu, and
-  messages.css for this page's own layout.
-- messages.js loads data from the messaging API in
-  backend/controllers/message_controller.py.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -39,24 +32,48 @@ How it is used:
     <aside class="msg-sidebar" aria-labelledby="inboxHeading">
       <header class="msg-sidebar-header">
         <h1 id="inboxHeading" class="msg-title">Messages</h1>
-        <span class="msg-unread" id="unreadBadge"></span>
-    
-    <header class="msg-sidebar-header">
-        <h1 id="inboxHeading" class="msg-title">Messages</h1>
         <span class="msg-unread" id="unreadBadge" hidden></span>
-        <button type="button" class="msg-compose" id="composeBtn" aria-label="New message">          <!-- NEW -->
-          <svg viewBox="0 0 24 24" aria-hidden="true">                                              <!-- NEW -->
-            <path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor"                    
-                  stroke-width="2" stroke-linejoin="round" />                                        <!-- NEW -->
-            <path d="M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" />            <!-- NEW -->
-          </svg>                                                                                     <!-- NEW -->
-        </button>                                                                                    <!-- NEW -->
+        <button type="button" class="msg-compose" id="composeBtn" aria-label="New message">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 20h4L19 9l-4-4L4 16v4Z" fill="none" stroke="currentColor"
+                  stroke-width="2" stroke-linejoin="round" />
+            <path d="M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2" />
+          </svg>
+        </button>
       </header>
-        </section>
+      <p class="msg-retention">Messages are automatically deleted 60 days after they're sent.</p>
+
+      <p class="msg-empty" id="inboxEmpty">Loading conversations...</p>
+      <ul class="msg-convo-list" id="convoList"></ul>
+    </aside>
+
+    <!-- Right: the open conversation -->
+    <section class="msg-thread" aria-labelledby="threadName">
+      <header class="msg-thread-header">
+        <button type="button" class="msg-back" id="backBtn" aria-label="Back to conversations">‹</button>
+        <span class="msg-avatar" id="threadAvatar" aria-hidden="true" hidden></span>
+        <h2 class="msg-thread-name" id="threadName">Select a conversation</h2>
+      </header>
+
+      <div class="msg-scroll" id="threadScroll" role="log" aria-live="polite">
+        <p class="msg-placeholder" id="threadPlaceholder">Choose a conversation or tap the pencil to start one.</p>
+        <div id="messageList"></div>
+      </div>
+
+      <form class="msg-composer" id="composer" hidden>
+        <label for="messageInput" class="visually-hidden">Message</label>
+        <textarea id="messageInput" rows="1" maxlength="2000" placeholder="Message"></textarea>
+        <button type="submit" class="msg-send" id="sendBtn" aria-label="Send message" disabled>↑</button>
+        <p class="msg-composer-meta">
+          <span id="composerError" class="msg-error" role="alert"></span>
+          <span id="charCount" class="msg-count"></span>
+        </p>
+      </form>
+    </section>
 
   </div>
 
-  <!-- NEW: "New Message" sheet - pick a student brand to message -->
+  <!-- "New Message" sheet: pick a student brand to message -->
   <dialog id="newMessageSheet" class="msg-sheet" aria-labelledby="newMessageTitle">
     <div class="msg-sheet-body">
       <div class="msg-sheet-header">
@@ -77,3 +94,10 @@ How it is used:
   </dialog>
 
 </main>
+
+<script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
+<script src="{{ url_for('static', filename='js/messages.js') }}"></script>
+<script src="{{ url_for('static', filename='js/new_message.js') }}"></script>
+
+</body>
+</html>

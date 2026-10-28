@@ -2,19 +2,17 @@
     messages.js
 
     Pirate Market
-    Created by Aniya Hopson- 10/27/26
-
-    Runs the Messages page: the conversation list, the chat thread, and the
-    reply box. Messages older than 60 days are hidden
+    Created by Aniya Hopson - 10/27/26
 
     Talks to the messaging API in backend/controllers/message_controller.py:
       GET  /api/messages               -> inbox (one entry per conversation)
       GET  /api/message/<other_id>     -> all messages with that user
       POST /api/messages               -> send { receiver_id, body, listing_id }
       GET  /api/messages/unread-count  -> { unread }
-    The API identifies the user from the Flask session, so no user ID is sent.
+    and the storefront API for "New Message":
+      GET  /api/storefronts            -> active student brands (owner_id = user ID)
+    The messaging API identifies the user from the Flask session.
 */
-
 (function () {
   "use strict";
 
@@ -40,12 +38,6 @@
   const sendBtn = document.getElementById("sendBtn");
   const composerError = document.getElementById("composerError");
   const charCount = document.getElementById("charCount");
-  const composeBtn = document.getElementById("composeBtn");                 // NEW
-  const newMessageSheet = document.getElementById("newMessageSheet");       // NEW
-  const newMessageCancel = document.getElementById("newMessageCancel");     // NEW
-  const recipientSearch = document.getElementById("recipientSearch");       // NEW
-  const recipientStatus = document.getElementById("recipientStatus");       // NEW
-  const recipientList = document.getElementById("recipientList");           // NEW
 
   let me = null;               // the logged-in user { id, username, role }
   let conversations = [];      // latest inbox data
@@ -53,8 +45,7 @@
   let activeName = "";
   let lastSignature = "";      // detects whether the thread actually changed
   let pendingListingId = null; // from ?listing= in the URL
-  let storefronts = null;      // student brands for "New Message" (loaded once)   // NEW
-  
+
   // ---------- Helpers ----------
 
   async function api(path, options = {}) {
@@ -114,7 +105,6 @@
     return new Date(value).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
   }
 
-  // Inbox: "3:42 PM", "Yesterday", "Monday", or "10/2/26"
   function shortTime(value) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
@@ -125,7 +115,6 @@
     return date.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "2-digit" });
   }
 
-  // Thread separators: "Today 3:42 PM", "Yesterday 9:10 AM", "Mon, Oct 26 1:05 PM"
   function dayLabel(value) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return "";
@@ -156,9 +145,9 @@
     convoList.replaceChildren();
 
     if (conversations.length === 0) {
-        inboxEmpty.textContent = "No conversations yet. Tap the pencil to message a student brand.";
-        inboxEmpty.hidden = false;
-        return;
+      inboxEmpty.textContent = "No conversations yet. Tap the pencil to message a student brand.";
+      inboxEmpty.hidden = false;
+      return;
     }
     inboxEmpty.hidden = true;
 
@@ -348,100 +337,6 @@
     }
   }
 
-    // ---------- New message ----------
-
-  // Loads the student brands once. Each storefront's owner_id is the user ID
-  // the messaging API needs as receiver_id.
-  async function loadStorefronts() {
-    if (storefronts !== null) return;
-    const data = await api("/api/storefronts");
-    storefronts = (Array.isArray(data) ? data : [])
-      .filter((s) => s.owner_id !== me.id)   // you can't message your own brand
-      .sort((a, b) => (a.brand_name || "").localeCompare(b.brand_name || ""));
-  }
-
-  function matchingStorefronts() {
-    const query = recipientSearch.value.trim().toLowerCase();
-    return (storefronts || []).filter((s) => (s.brand_name || "").toLowerCase().includes(query));
-  }
-
-  function buildAvatar(storefront) {
-    const avatar = makeEl("span", "msg-avatar");
-    avatar.setAttribute("aria-hidden", "true");
-
-    if (storefront.logo_url) {
-      const img = document.createElement("img");
-      img.src = storefront.logo_url;
-      img.alt = "";
-      // If the logo fails to load, show the brand's first letter instead
-      img.addEventListener("error", () => {
-        avatar.textContent = initial(storefront.brand_name);
-      });
-      avatar.append(img);
-    } else {
-      avatar.textContent = initial(storefront.brand_name);
-    }
-    return avatar;
-  }
-
-  function renderRecipients() {
-    if (storefronts === null) return; // still loading
-
-    recipientList.replaceChildren();
-    const matches = matchingStorefronts();
-    const query = recipientSearch.value.trim();
-
-    if (matches.length === 0) {
-      recipientStatus.textContent = query ? `No brands match "${query}".` : "No other student brands yet.";
-      recipientStatus.hidden = false;
-      return;
-    }
-    recipientStatus.hidden = true;
-
-    matches.forEach((storefront) => {
-      const count = Number(storefront.item_count) || 0;
-
-      const button = makeEl("button", "msg-recipient");
-      button.type = "button";
-
-      const text = makeEl("span");
-      text.append(
-        makeEl("span", "msg-recipient-name", storefront.brand_name),
-        makeEl("span", "msg-recipient-sub", `${count} ${count === 1 ? "item" : "items"}`)
-      );
-
-      button.append(buildAvatar(storefront), text);
-      button.addEventListener("click", () => chooseRecipient(storefront));
-
-      const item = makeEl("li");
-      item.append(button);
-      recipientList.append(item);
-    });
-  }
-
-  function chooseRecipient(storefront) {
-    newMessageSheet.close();
-    // If you've already talked to this seller, reopen that conversation
-    const existing = conversations.find((c) => c.other_user_id === storefront.owner_id);
-    openConversation(storefront.owner_id, existing ? existing.other_username : storefront.brand_name);
-  }
-
-  async function openNewMessage() {
-    recipientSearch.value = "";
-    recipientList.replaceChildren();
-    recipientStatus.textContent = "Loading brands...";
-    recipientStatus.hidden = false;
-    newMessageSheet.showModal();
-    recipientSearch.focus();
-
-    try {
-      await loadStorefronts();
-      renderRecipients();
-    } catch (error) {
-      recipientStatus.textContent = error.message;
-    }
-  }
-
   // ---------- Start up ----------
 
   async function init() {
@@ -456,20 +351,6 @@
     });
     backBtn.addEventListener("click", closeConversation);
 
-    // New message sheet                                                         // NEW
-    composeBtn.addEventListener("click", openNewMessage);                        // NEW
-    newMessageCancel.addEventListener("click", () => newMessageSheet.close());  // NEW
-    newMessageSheet.addEventListener("click", (event) => {                       // NEW
-      if (event.target === newMessageSheet) newMessageSheet.close();             // NEW
-    });                                                                          // NEW
-    recipientSearch.addEventListener("input", renderRecipients);                 // NEW
-    recipientSearch.addEventListener("keydown", (event) => {                     // NEW
-      if (event.key === "Enter") {                                               // NEW
-        event.preventDefault();                                                  // NEW
-        const first = matchingStorefronts()[0];                                  // NEW
-        if (first) chooseRecipient(first);                                       // NEW
-      }                                                                          // NEW
-    });                                                                          // NEW
     try {
       me = await api("/auth/api/auth/me");
     } catch (error) {
@@ -479,7 +360,7 @@
 
     await Promise.all([loadInbox(), loadUnread()]);
 
-    // Optional: /messages?to=<user_id>&listing=<listing_id>
+    // Opened from the pencil or a link: /messages?to=<user_id>&name=<brand>&listing=<id>
     const params = new URLSearchParams(window.location.search);
     const toId = Number.parseInt(params.get("to"), 10);
     const listingId = Number.parseInt(params.get("listing"), 10);
@@ -487,7 +368,8 @@
 
     if (Number.isInteger(toId) && toId !== me.id) {
       const existing = conversations.find((c) => c.other_user_id === toId);
-      openConversation(toId, existing ? existing.other_username : "New message");
+      const name = existing ? existing.other_username : (params.get("name") || "New message");
+      openConversation(toId, name);
     }
 
     // Check for new messages, but only while the tab is visible
