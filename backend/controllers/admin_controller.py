@@ -52,8 +52,12 @@ def require_admin():
     if "user" not in session:
         abort(401)  # Unauthorized (user not logged in)
 
-    # Check if the user has the admin role
-    if session.get("role") != "admin":
+    # Check role from top-level session or user object, case-insensitive
+    role = session.get("role")
+    if not role and isinstance(session.get("user"), dict):
+        role = session["user"].get("role")
+        
+    if not role or str(role).lower() != "admin":
         abort(403)  # Forbidden (not an admin)
 
 

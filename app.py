@@ -42,7 +42,7 @@ PRIVATE_PAGES = [
     ("/order-confirmation", "order_confirmation", "order_confirmation.html"),
     ("/my-storefront", "my_storefront", "my_storefront.html"),
     ("/messages", "messages_page", "messages.html"),  # Added by Aniya Hopson 10/27/26  
-
+    ("/wallet", "wallet", "wallet.html"),
 ]
 
 # Billy: Rewrite
