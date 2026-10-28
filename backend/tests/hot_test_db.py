@@ -1,5 +1,5 @@
 # The Vault Campus Marketplace
-# Created by James Williams - 10/26/26 - throwaway database schema for the Hot tests
+# Created by James Williams - 10/26/26 - throwaway database schema for the database tests
 #
 # This builds all the app tables inside a new, separate Postgres schema and
 # points new connections at it, so the tests never touch the real tables.
@@ -111,11 +111,3 @@ class ThrowawaySchema:
                     (LOCALTIMESTAMP - make_interval(hours => %s))::date,
                     LOCALTIMESTAMP - make_interval(hours => %s));
         """, (listing_id, user_id, kind, hours_ago, hours_ago))
-
-    def interest_rows(self, listing_id=None):
-        if listing_id is None:
-            return self.execute("SELECT listing_id, user_id, kind FROM listing_interest ORDER BY id;")
-        return self.execute(
-            "SELECT listing_id, user_id, kind FROM listing_interest WHERE listing_id = %s ORDER BY id;",
-            (listing_id,),
-        )
