@@ -101,8 +101,10 @@
             }
             status.hidden = true;
             const wishlistIds = new Set(items.map((item) => String(item.listing_id || item.id)));
+            // The listing's photo, title and price come inside item.listing
             const tiles = await Promise.all(items.map((item) => VaultListingCard.create({
                 ...item,
+                ...(item.listing || {}),
                 id: item.listing_id || item.id,
                 storefront: { brand_name: item.storefront_name || item.storefront?.brand_name || "" }
             }, { wishlistIds, currentUserId: userId })));

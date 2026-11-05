@@ -70,7 +70,8 @@ def get_wishlist_by_user_id(user_id):
                s.brand_name, s.logo_url,
                (SELECT li.image_url FROM listing_images li
                 WHERE li.listing_id = l.id AND li.is_primary = TRUE
-                LIMIT 1) AS image_url
+                LIMIT 1) AS image_url,
+               l.is_made_to_order
         FROM wishlist w
         JOIN listings l ON w.listing_id = l.id
         JOIN storefronts s ON l.storefront_id = s.id
@@ -98,6 +99,7 @@ def get_wishlist_by_user_id(user_id):
                 "fulfillment_type": row[7],
                 "status": row[8],
                 "image_url": row[11],
+                "is_made_to_order": row[12],
             },
             "storefront": {
                 "brand_name": row[9],
