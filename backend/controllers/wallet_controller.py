@@ -6,7 +6,6 @@ wallet_bp = Blueprint('wallet', __name__, url_prefix="/api")
 wallet_service = WalletService()
 
 
-# Updated by James Williams 11/5/26 - user comes from the login session, not headers
 def get_current_user():
     user_id = session.get("user_id")
     role = session.get("role", "user")

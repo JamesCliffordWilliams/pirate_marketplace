@@ -1,6 +1,5 @@
 # Pirate Market Campus Marketplace
 # Created by Aniya Hopson  - 10/25/26 - order completion and 30-day pickup window
-# Updated by James Williams - 11/5/26 - checkout pays from the demo wallet, expired pickups are refunded
 
 """
 models/order_model.py
