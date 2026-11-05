@@ -1,14 +1,15 @@
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from services.wallet_service import WalletService
 
 wallet_bp = Blueprint('wallet', __name__, url_prefix="/api")
 wallet_service = WalletService()
 
 
+# Updated by James Williams 11/5/26 - user comes from the login session, not headers
 def get_current_user():
-    user_id = request.headers.get("X-User-Id")
-    role = request.headers.get("X-User-Role", "user")
+    user_id = session.get("user_id")
+    role = session.get("role", "user")
 
     if not user_id:
         return None
@@ -25,7 +26,7 @@ def get_wallet():
     try:
         current_user = get_current_user()
         if current_user is None:
-            return jsonify({"error": "Unauthorized: missing/invalid X-User-Id"}), 401
+            return jsonify({"error": "Please log in to use your wallet."}), 401
 
         success, result = wallet_service.get_wallet(current_user['id'])
 
@@ -43,7 +44,7 @@ def add_funds():
     try:
         current_user = get_current_user()
         if current_user is None:
-            return jsonify({"error": "Unauthorized: missing/invalid X-User-Id"}), 401
+            return jsonify({"error": "Please log in to use your wallet."}), 401
 
         data = request.get_json()
         if not data or 'amount' not in data:
@@ -69,7 +70,7 @@ def remove_funds():
     try:
         current_user = get_current_user()
         if current_user is None:
-            return jsonify({"error": "Unauthorized: missing/invalid X-User-Id"}), 401
+            return jsonify({"error": "Please log in to use your wallet."}), 401
 
         data = request.get_json()
         if not data or 'amount' not in data:
@@ -95,7 +96,7 @@ def get_wallet_transactions():
     try:
         current_user = get_current_user()
         if current_user is None:
-            return jsonify({"error": "Unauthorized: missing/invalid X-User-Id"}), 401
+            return jsonify({"error": "Please log in to use your wallet."}), 401
 
         try:
             limit = int(request.args.get('limit', 50))

@@ -1,5 +1,6 @@
 # Pirate Market Campus Marketplace
 # Created by Aniya Hopson  - 10/25/26 - order completion and 30-day pickup window
+# Updated by James Williams - 11/5/26 - checkout pays from the demo wallet, expired pickups are refunded
 
 """
 models/order_model.py
@@ -14,6 +15,7 @@ How an order works:
 """
 
 from db import get_connection
+from models.wallet_model import create_wallet_transaction
 
 
 def _change_stock(cur, listing_id, size, amount):
@@ -85,14 +87,16 @@ def _change_stock(cur, listing_id, size, amount):
 
 def place_order(user_id, confirmation_number, buyer, items, total_amount):
     """
-    Takes the stock and saves the order and its items in ONE transaction:
-    if any item is short, nothing is saved. Returns the new order's id.
+    Pays from the demo wallet and saves stock, order and items in ONE transaction.
+    If stock or funds are short, everything rolls back. Returns the order's id.
     """
     conn = get_connection()
     cur = conn.cursor()
     try:
         # Lock listings in id order so two checkouts never wait on each other forever.
         for item in sorted(items, key=lambda i: i["listing_id"] or 0):
+            if item["quantity"] <= 0 or item["price"] < 0:
+                raise ValueError("Items must have a positive quantity and a non-negative price.")
             if item["listing_id"]:
                 _change_stock(cur, item["listing_id"], item["size"], -item["quantity"])
 
@@ -112,6 +116,10 @@ def place_order(user_id, confirmation_number, buyer, items, total_amount):
                 VALUES (%s, %s, %s, %s, %s, %s);
             """, (order_id, item["listing_id"], item["name"], item["quantity"],
                   item["price"], item["size"]))
+
+        if total_amount > 0:
+            create_wallet_transaction(user_id, "PURCHASE", total_amount,
+                                      f"Order {confirmation_number}", order_id=order_id, conn=conn)
 
         conn.commit()
         return order_id
@@ -148,6 +156,21 @@ def expire_old_orders():
             """, (order_ids,))
             for listing_id, size, quantity in cur.fetchall():
                 _change_stock(cur, listing_id, size, quantity)
+
+            # Refund only uncollected items on orders actually paid from the wallet.
+            # The status update above ensures each order is refunded at most once.
+            cur.execute("""
+                SELECT o.id, o.user_id, SUM(oi.price_at_purchase * oi.quantity)
+                FROM orders o JOIN order_items oi ON oi.order_id = o.id
+                WHERE o.id = ANY(%s) AND oi.completed_at IS NULL
+                  AND EXISTS (SELECT 1 FROM wallet_transactions wt
+                              WHERE wt.order_id = o.id AND wt.type = 'PURCHASE')
+                GROUP BY o.id, o.user_id ORDER BY o.user_id, o.id;
+            """, (order_ids,))
+            for order_id, user_id, amount in cur.fetchall():
+                if amount > 0:
+                    create_wallet_transaction(user_id, "DEPOSIT", amount,
+                                              "Refund for expired pickup", order_id=order_id, conn=conn)
 
         conn.commit()
         return len(order_ids)
