@@ -157,12 +157,12 @@
     <div class="wallet-header">
         <div>
             <h1>MY WALLET</h1>
-            <p>Manage your Vault funds and transaction history.</p>
+            <p>Manage your demo funds and transaction history.</p>
         </div>
 
         <a class="back-link"
-           href="{{ url_for('storefront_pages_bp.my_storefront_page') }}">
-            ← BACK TO STOREFRONT
+           href="{{ url_for('auth.view_cart') }}">
+            ← BACK TO BAG
         </a>
     </div>
 
@@ -222,19 +222,11 @@
 const API = "/api/wallet";
 
 async function walletRequest(path, options = {}) {
-    const userId =
-        localStorage.getItem("vaultUserId") ||
-        sessionStorage.getItem("vaultUserId");
-
-    if (!userId) {
-        throw new Error("Please log in before using your wallet.");
-    }
-
     const response = await fetch(`${API}${path}`, {
         ...options,
+        credentials: "same-origin",
         headers: {
             "Content-Type": "application/json",
-            "X-User-Id": userId,
             ...(options.headers || {})
         }
     });
@@ -303,7 +295,8 @@ async function loadTransactions() {
             details.append(type, date);
 
             const amount = document.createElement("strong");
-            const value = Number(transaction.amount) || 0;
+            const amountValue = Number(transaction.amount) || 0;
+            const value = transaction.type === "DEPOSIT" ? amountValue : -amountValue;
             amount.textContent = formatMoney(value);
             amount.className = value >= 0 ? "positive" : "negative";
 

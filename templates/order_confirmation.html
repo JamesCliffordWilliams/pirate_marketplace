@@ -102,7 +102,7 @@ Updated by ANiya Hopson 10/27/26 - Pirate Market name, pickup date
     actions.append(link("Keep shopping", "/storefronts", "primary"), link("View my orders", "/auth/account", "secondary"));
 
     card.replaceChildren(el("h1", null, "Order placed"), number,
-        el("p", "pm-muted", "The seller will contact you to arrange the handoff. You pay when you meet."),
+        el("p", "pm-muted", "The seller will contact you to arrange the handoff. Your order was paid from your demo wallet."),
         summary, handoff, actions);
     document.title = `Order ${order.confirmation_number} | Pirate Market`;
 })();
