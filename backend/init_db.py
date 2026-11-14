@@ -336,6 +336,20 @@ def create_messages(cur):
     cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);")
 
+# Added by James Williams 11/14/26 - one review per buyer per listing
+def create_reviews(cur):
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+            rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+            body TEXT CHECK (char_length(body) <= 2000),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT unique_user_listing_review UNIQUE (user_id, listing_id)
+        );
+    """)
+
 SCHEMA_STEPS = [
     create_users,
     create_storefronts,
@@ -354,6 +368,7 @@ SCHEMA_STEPS = [
     create_wallet_transactions,
     create_messages,
     apply_listing_interest,           # James Williams: the table that tracks shopper activity for the Hot page
+    create_reviews,                   # James Williams: product reviews
 ]
 
 # Updated by Billy Anders - split create_wallet_tables into individual functions.
