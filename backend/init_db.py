@@ -307,6 +307,17 @@ def create_wallet_transactions(cur):
     """)
     cur.execute("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS stripe_session_id TEXT UNIQUE;")
 
+# Added by Billy Anders
+def create_login_attempts(cur):
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(50) NOT NULL,
+            ip VARCHAR(45) NOT NULL,
+            attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_login_attempts_pair ON login_attempts(username, ip, attempted_at);")
 
 # Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_messages(cur):
@@ -366,6 +377,7 @@ SCHEMA_STEPS = [
     create_order_items,
     create_wallets,
     create_wallet_transactions,
+    create_login_attempts,
     create_messages,
     apply_listing_interest,           # James Williams: the table that tracks shopper activity for the Hot page
     create_reviews,                   # James Williams: product reviews
