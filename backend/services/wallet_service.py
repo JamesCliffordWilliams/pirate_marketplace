@@ -64,8 +64,8 @@ class WalletService:
                 line_items=[{
                     "price_data": {
                         "currency": "usd",
-                        "product_data": {"name": "Wallet top-up"},
-                        "unit_amount": int(amount * 100),  # cents
+                        "product_data": {"name": "Wallet"},
+                        "unit_amount": int(amount * 100),
                     },
                     "quantity": 1,
                 }],
