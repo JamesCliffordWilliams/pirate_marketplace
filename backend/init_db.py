@@ -25,7 +25,7 @@ from migrations.add_listing_create_requests import apply_listing_create_requests
 
 load_dotenv()
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def get_db_connection():
     return psycopg2.connect(
         host=os.getenv("DB_HOST"),
@@ -34,7 +34,7 @@ def get_db_connection():
         password=os.getenv("DB_PASSWORD"),
     )
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_users(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -47,7 +47,7 @@ def create_users(cur):
         );
     """)
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_storefronts(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS storefronts (
@@ -85,7 +85,7 @@ def create_storefronts(cur):
 
     cur.execute("UPDATE storefronts SET is_active = TRUE WHERE is_active IS NULL;")
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_listings(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS listings (
@@ -120,7 +120,7 @@ def create_listings(cur):
     cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS is_made_to_order BOOLEAN DEFAULT FALSE;")
     cur.execute("UPDATE listings SET is_made_to_order = FALSE WHERE is_made_to_order IS NULL;")
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_listing_images(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS listing_images (
@@ -135,7 +135,7 @@ def create_listing_images(cur):
         );
     """)
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_listing_sizes(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS listing_sizes (
@@ -151,7 +151,7 @@ def create_listing_sizes(cur):
         );
     """)
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_purchases(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS purchases (
@@ -169,7 +169,7 @@ def create_purchases(cur):
         );
     """)
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_wishlist(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS wishlist (
@@ -186,7 +186,7 @@ def create_wishlist(cur):
         );
     """)
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_returns(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS returns (
@@ -210,7 +210,7 @@ def create_returns(cur):
     cur.execute("ALTER TABLE returns ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;")
     cur.execute("ALTER TABLE returns ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;")
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_cart_items(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS cart_items (
@@ -229,7 +229,7 @@ def create_cart_items(cur):
     """)
 
 # Updated by Aniya Hopson 10/26/26
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_orders(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS orders (
@@ -252,7 +252,7 @@ def create_orders(cur):
     cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days');")
     cur.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;")
 
-# Updated by Billy Anders - Split create_wallet_tables into individual methods.
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_order_items(cur):
     cur.execute("""
         CREATE TABLE IF NOT EXISTS order_items (
@@ -308,7 +308,7 @@ def create_wallet_transactions(cur):
     cur.execute("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS stripe_session_id TEXT UNIQUE;")
 
 
-# Updated by Billy Anders
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_messages(cur):
     # Added by Miles Walker 10/25/26
     cur.execute("""
@@ -356,7 +356,7 @@ SCHEMA_STEPS = [
     apply_listing_interest,           # James Williams: the table that tracks shopper activity for the Hot page
 ]
 
-# Updated by Billy Anders
+# Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_vault_tables():
     conn = get_db_connection()
     try:
