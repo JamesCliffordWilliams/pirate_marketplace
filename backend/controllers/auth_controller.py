@@ -3,9 +3,12 @@ from flask import Blueprint, request, session, redirect, url_for, render_templat
 from services.auth_services import AuthService 
 from config.db import get_connection
 from services.interest_service import track_interest  # Added by James Williams 10/26/26
+from services.password_reset_service import PasswordResetService  # Added by Aniya Hopson 11/10/26
+from utils.email_sender import send_password_reset_email  # Added by Aniya Hopson 11/10/26
 
 auth_bp = Blueprint('auth', __name__)
 service = AuthService()
+reset_service = PasswordResetService()  # Added by Aniya Hopson 11/10/26
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -305,3 +308,76 @@ def admin_login():
         return "Invalid Admin Credentials. <a href='/auth/admin-login'>Try again</a>"
 
     return render_template('admin_login.html')
+# Forgot Password - Added by Aniya Hopson 11/14/26 
+
+# Same message whether or not the email has an account, so no one can use this page
+# to find out which emails are signed up
+RESET_SENT_MESSAGE = ("If that email belongs to a Pirate Market account, we sent a link to reset "
+                      "your password. The link expires in 30 minutes.")
+RESET_BAD_LINK_MESSAGE = "That reset link is invalid or has expired. Request a new one below."
+MIN_PASSWORD_LENGTH = 8
+
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = (request.form.get('email') or '').strip()
+        if not email:
+            return render_template('forgot_password.html', error="Enter the email you used to sign up.")
+
+        conn = get_connection()
+        if conn is None:
+            return render_template('forgot_password.html', email=email,
+                                   error="Pirate Market can't send reset emails right now. Try again in a minute.")
+
+        result = reset_service.create_reset_token(email, conn)
+        conn.close()
+
+        if result:
+            username, stored_email, raw_token = result
+            reset_link = url_for('auth.reset_password', token=raw_token, _external=True)
+            send_password_reset_email(stored_email, username, reset_link)
+
+        flash(RESET_SENT_MESSAGE)
+        return redirect(url_for('auth.login'))
+
+    return render_template('forgot_password.html')
+
+@auth_bp.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    # GET: just check the link and show the form. Opening the link does not use it up.
+    if request.method == 'GET':
+        conn = get_connection()
+        if conn is None:
+            return render_template('reset_password.html', token=token,
+                                   error="Pirate Market can't reset passwords right now. Try again in a minute.")
+        valid = reset_service.is_token_valid(token, conn)
+        conn.close()
+        if not valid:
+            flash(RESET_BAD_LINK_MESSAGE)
+            return redirect(url_for('auth.forgot_password'))
+        return render_template('reset_password.html', token=token)
+
+    # POST: check the new password, then use up the link and save it
+    new_pw = request.form.get('password') or ''
+    confirm_pw = request.form.get('confirm_password') or ''
+
+    if len(new_pw) < MIN_PASSWORD_LENGTH:
+        return render_template('reset_password.html', token=token,
+                               error=f"Your new password must be at least {MIN_PASSWORD_LENGTH} characters.")
+    if new_pw != confirm_pw:
+        return render_template('reset_password.html', token=token, error="The two passwords don't match.")
+
+    conn = get_connection()
+    if conn is None:
+        return render_template('reset_password.html', token=token,
+                               error="Pirate Market can't reset passwords right now. Try again in a minute.")
+    success = reset_service.reset_password(token, new_pw, conn)
+    conn.close()
+
+    if not success:
+        flash(RESET_BAD_LINK_MESSAGE)
+        return redirect(url_for('auth.forgot_password'))
+
+    session.clear()  # logs out any session that was open in this browser
+    flash("Your password was updated. Log in with your new password.")
+    return redirect(url_for('auth.login'))

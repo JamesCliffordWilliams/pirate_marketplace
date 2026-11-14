@@ -336,6 +336,22 @@ def create_messages(cur):
     cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);")
 
+#Updated by Aniya Hopson - Forgot Password feature 11/10/26
+def create_password_reset_tokens(cur):
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            token_hash CHAR(64) UNIQUE NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+            CONSTRAINT fk_reset_user
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_reset_user ON password_reset_tokens(user_id);")
+
 SCHEMA_STEPS = [
     create_users,
     create_storefronts,
@@ -354,6 +370,7 @@ SCHEMA_STEPS = [
     create_wallet_transactions,
     create_messages,
     apply_listing_interest,           # James Williams: the table that tracks shopper activity for the Hot page
+    create_password_reset_tokens      # Aniya Hopson : one-time link for the Forgot Password
 ]
 
 # Updated by Billy Anders - split create_wallet_tables into individual functions.
