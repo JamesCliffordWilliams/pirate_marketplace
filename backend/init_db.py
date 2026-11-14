@@ -355,6 +355,8 @@ def create_vault_tables():
         #Added by Aniya Hopson 10/26/26
         cur.execute("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP;")
 
+
+        # Billy
         create_wallets_table = """
             CREATE TABLE IF NOT EXISTS wallets  (
                 id SERIAL PRIMARY KEY,
@@ -372,6 +374,7 @@ def create_vault_tables():
 
         cur.execute(create_wallets_table)
 
+        # Billy
         create_wallet_transactions_table = """
             CREATE TABLE IF NOT EXISTS wallet_transactions  (
                 id SERIAL PRIMARY KEY,
@@ -396,10 +399,8 @@ def create_vault_tables():
                     ON DELETE SET NULL
             );
         """
-
-
-
         cur.execute(create_wallet_transactions_table)
+        cur.execute("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS stripe_session_id TEXT UNIQUE;")
         conn.commit()
 
         cur.execute("""
