@@ -126,7 +126,7 @@
         </dl>
 
         {# Added by James Williams 11/14/26 - reviews, plus the form for buyers with a completed order #}
-        <details class="pm-reviews" id="reviews">
+        <details class="pm-reviews" id="reviews" {{ 'open' if can_review and not my_review }}>
             <summary class="pm-label">Reviews ({{ reviews.count }})</summary>
             {% if can_review %}
             <form class="pm-reviews__form" id="reviewForm" novalidate>

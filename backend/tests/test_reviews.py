@@ -56,6 +56,9 @@ class TestReviews(unittest.TestCase):
         return self.db.execute("SELECT user_id, rating, body FROM reviews WHERE listing_id = %s;", (self.listing,))
 
     def test_buyer_can_post_review(self):
+        page = self.client_for(self.buyer).get(f"/listings/{self.listing}").get_data(as_text=True)
+        self.assertIn('id="reviews" open', page)  # opens on its own so buyers see the form
+
         response = self.post_review(self.buyer, 5)
         self.assertEqual(response.status_code, 201)
         self.assertEqual(self.review_rows(), [(self.buyer, 5, "Great fit")])

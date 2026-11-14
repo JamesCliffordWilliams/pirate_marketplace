@@ -80,6 +80,12 @@ Updated by ANiya Hopson 10/27/26 - Pirate Market name, pickup date
         const size = item.selected_size === "One Size" ? "One size" : (item.selected_size ? `Size ${item.selected_size}` : "");
         info.append(el("span", "pm-summary__name", item.item_name || "Item"),
             el("span", "pm-muted", [size, `Qty ${item.quantity}`].filter(Boolean).join(", ")));
+        // James Williams 11/14/26 - completed orders link each item to its review form
+        if (order.order_status === "COMPLETED" && item.listing_id) {
+            const review = el("a", null, "Leave a review");
+            review.href = `/listings/${item.listing_id}#reviews`;
+            info.appendChild(review);
+        }
         row.append(info, el("span", "pm-price", money(item.quantity * parseFloat(item.price_at_purchase))));
         list.appendChild(row);
     });
