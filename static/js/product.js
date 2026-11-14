@@ -118,6 +118,35 @@
         VaultListingCard.getWishlistIdSet(userId).then((ids) => renderSaved(ids.has(String(listingId))));
     }
 
+    // ---------- reviews (James Williams 11/14/26) ----------
+    const reviews = document.getElementById("reviews");
+    if (location.hash === "#reviews") reviews.open = true;
+    document.querySelector(".pm-rating")?.addEventListener("click", () => { reviews.open = true; });
+
+    const reviewForm = document.getElementById("reviewForm");
+    reviewForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const error = document.getElementById("reviewError");
+        const rating = Number(reviewForm.rating.value);
+        if (!rating) { error.textContent = "Choose a star rating."; return; }
+        const button = reviewForm.querySelector("button");
+        button.disabled = true;
+        try {
+            const response = await fetch(`/listings/${listingId}/reviews`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ rating, body: reviewForm.body.value })
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || "Couldn't post your review. Try again.");
+            location.hash = "reviews";
+            location.reload();
+        } catch (err) {
+            error.textContent = err.message;
+            button.disabled = false;
+        }
+    });
+
     saveButton.addEventListener("click", async () => {
         if (!userId) {
             window.location.href = "/auth/login";
