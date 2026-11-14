@@ -90,14 +90,14 @@ class ThrowawaySchema:
     def owner_of(self, storefront_id):
         return self.scalar("SELECT owner_id FROM storefronts WHERE id = %s;", (storefront_id,))
 
-    def add_listing(self, storefront_id, title="Item", status="ACTIVE", quantity=5,
+    def add_listing(self, storefront_id, title="Item", status="ACTIVE", quantity=5, price=10,
                     made_to_order=False, created_hours_ago=1):
         listing_id = self.scalar("""
             INSERT INTO listings (storefront_id, title, price, fulfillment_type, quantity_on_hand,
                                   status, is_made_to_order, created_at)
-            VALUES (%s, %s, 10, 'IN_STOCK', %s, %s, %s, LOCALTIMESTAMP - make_interval(hours => %s))
+            VALUES (%s, %s, %s, 'IN_STOCK', %s, %s, %s, LOCALTIMESTAMP - make_interval(hours => %s))
             RETURNING id;
-        """, (storefront_id, title, quantity, status, made_to_order, created_hours_ago))
+        """, (storefront_id, title, price, quantity, status, made_to_order, created_hours_ago))
         self.execute(
             "INSERT INTO listing_sizes (listing_id, size, quantity) VALUES (%s, 'M', %s);",
             (listing_id, quantity or 0),

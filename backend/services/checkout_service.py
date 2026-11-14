@@ -67,11 +67,12 @@ def complete_transaction_from_session(user_id, session_cart, buyer_details):
     except Exception as e:
         print(f"[checkout] wishlist cleanup failed: {e}")
 
+    order = get_order_by_confirmation(confirmation_number)
     return {
         "confirmation_number": confirmation_number,
-        "order": get_order_by_confirmation(confirmation_number),
+        "order": order,
         "order_items": get_order_items_by_order_id(order_id),
-        "total_amount": total_amount,
+        "total_amount": float(order["total_amount"]),  # the total saved from real listing prices
     }
 
 def get_order_summary_service(confirmation_number, user_id):

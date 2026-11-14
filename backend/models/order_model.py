@@ -94,10 +94,13 @@ def place_order(user_id, confirmation_number, buyer, items, total_amount):
     try:
         # Lock listings in id order so two checkouts never wait on each other forever.
         for item in sorted(items, key=lambda i: i["listing_id"] or 0):
-            if item["quantity"] <= 0 or item["price"] < 0:
-                raise ValueError("Items must have a positive quantity and a non-negative price.")
-            if item["listing_id"]:
-                _change_stock(cur, item["listing_id"], item["size"], -item["quantity"])
+            if item["quantity"] <= 0 or not item["listing_id"]:
+                raise ValueError("An item in your bag is no longer available.")
+            _change_stock(cur, item["listing_id"], item["size"], -item["quantity"])
+            # James Williams 11/14/26 - charge the listing's real price, not the price the browser sent
+            cur.execute("SELECT price FROM listings WHERE id = %s;", (item["listing_id"],))
+            item["price"] = float(cur.fetchone()[0])
+        total_amount = round(sum(i["price"] * i["quantity"] for i in items), 2)
 
         cur.execute("""
             INSERT INTO orders (user_id, confirmation_number, buyer_first_name, buyer_last_name,
