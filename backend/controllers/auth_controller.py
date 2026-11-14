@@ -1,65 +1,90 @@
 # By Ryan Grimes - Updated 3/19/2026
 from flask import Blueprint, request, session, redirect, url_for, render_template, flash, jsonify
-from services.auth_services import AuthService 
+from services.auth_services import AuthService
 from config.db import get_connection
 from services.interest_service import track_interest  # Added by James Williams 10/26/26
 
 auth_bp = Blueprint('auth', __name__)
 service = AuthService()
 
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_TIMEOUT = 15
+
+
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        user = request.form.get('username')
-        pw = request.form.get('password')
+    if request.method == 'GET':
+        return render_template('login.html')
 
-        conn = get_connection()
-        if conn is None:
-            return render_template('login.html', error="Pirate Market can't log you in right now. Try again in a minute.", username=user)
+    user = request.form.get('username')
+    pw = request.form.get('password')
+    ip = request.remote_addr
+
+    conn = get_connection()
+    if conn is None:
+        return render_template(
+            'login.html',
+            error="Pirate Market can't log you in right now. Try again in a minute.",
+            username=user,
+        )
+
+    try:
+        # Added by Billy Anders - Login Attempts
+        if is_timed_out(conn, user, ip):
+            return render_template(
+                'login.html',
+                error="Too many failed attempts. Try again in a few minutes.",
+                username=user,
+            ), 429
 
         success, role = service.validate_login(user, pw, conn)
-        # conn.close()
-        
-        if success:
-            session['user'] = user
-            session['role'] = role
 
-            #store user_id in sesion for storefront ownership checks - added by Day E 4/9/26
-            try:
-                cur = conn.cursor()
-                cur.execute("SELECT id FROM users WHERE username = %s", (user,))
-                row = cur.fetchone()
-                if row:
-                    session['user_id'] = row[0] # Store user_id in session
-                    session['cart'] = service.get_user_cart(conn, row[0]) # Load user's cart into session on login
-                    cur.close()
-            except Exception as e:
-                print(f"Error fetching user_id for session: {e}")
-            finally:
-                conn.close()
+        # Added by Billy Anders - Login Attempts
+        if not success:
+            add_failure(conn, user, ip)
+            return render_template(
+                'login.html',
+                error="That username and password don't match.",
+                username=user,
+            )
 
-            #return redirect(url_for('auth.listings'))
-            # Redirect based on role - added by David Jackson 3/23/2026
-            if role and role.lower() == 'admin':
-                return redirect(url_for('admin.admin_dashboard'))
-            else:
-                return redirect(url_for('auth.listings'))
-        
-        # Updated by James Williams 10/26/26 - show the form again with a message instead of a bare text page
-        return render_template('login.html', error="That username and password don't match.", username=user)
+        clear_failures(conn, user, ip)
 
-    return render_template('login.html')
+        session['user'] = user
+        session['role'] = role
+
+        # Store user_id for storefront ownership checks - added by Day E 4/9/26
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM users WHERE username = %s", (user,))
+            row = cur.fetchone()
+            cur.close()
+            if row:
+                session['user_id'] = row[0]
+                session['cart'] = service.get_user_cart(conn, row[0])  # load saved cart
+        except Exception as e:
+            print(f"Error fetching user_id for session: {e}")
+
+        # Redirect based on role - added by David Jackson 3/23/2026
+        if role and role.lower() == 'admin':
+            return redirect(url_for('admin.admin_dashboard'))
+        return redirect(url_for('auth.listings'))
+
+    finally:
+        conn.close()
+
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        user = request.form.get('username') 
+        user = request.form.get('username')
         pw = request.form.get('password')
         email = request.form.get('email')
 
         conn = get_connection()
         if conn is None:
-            return render_template('signup.html', error="Pirate Market can't create accounts right now. Try again in a minute.",
+            return render_template('signup.html',
+                                   error="Pirate Market can't create accounts right now. Try again in a minute.",
                                    username=user, email=email)
 
         success, message = service.register_user(user, pw, email, conn)
@@ -74,8 +99,9 @@ def signup():
         else:
             error = "Your account wasn't created. That username or email may already be taken."
         return render_template('signup.html', error=error, username=user, email=email)
-    
+
     return render_template('signup.html')
+
 
 @auth_bp.route('/listings')
 def listings():
@@ -83,16 +109,19 @@ def listings():
         return redirect(url_for('auth.login'))
     return render_template('homepage.html')
 
+
 @auth_bp.route('/account')
 def account():
-    if 'user' not in session: 
+    if 'user' not in session:
         return redirect(url_for('auth.login'))
     return render_template('account.html')
-    
+
+
 @auth_bp.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('auth.login'))
+
 
 @auth_bp.route('/cart')
 def view_cart():
@@ -115,6 +144,7 @@ def view_cart():
         except Exception as e:
             print(f"DB Error loading bag photos: {e}")
     return render_template('cart.html', photos=photos)
+
 
 @auth_bp.route('/add_to_cart', methods=['POST'])
 def add_to_cart():
@@ -143,7 +173,7 @@ def add_to_cart():
             return jsonify({"error": "This item is no longer available."}), 404
         listing_status, qty_on_hand, is_made_to_order = listing
         if listing_status == "SOLD_OUT" or (
-            not is_made_to_order and qty_on_hand is not None and int(qty_on_hand) <= 0
+                not is_made_to_order and qty_on_hand is not None and int(qty_on_hand) <= 0
         ):
             return jsonify({"error": f"{item_name} is sold out and cannot be added to your bag."}), 409
     except Exception as e:
@@ -155,8 +185,8 @@ def add_to_cart():
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("""
-            INSERT INTO cart_items (user_id, item_id, item_name, price, quantity, size)
-            VALUES (%s, %s, %s, %s, %s, %s)
+                    INSERT INTO cart_items (user_id, item_id, item_name, price, quantity, size)
+                    VALUES (%s, %s, %s, %s, %s, %s)
         """, (session['user_id'], item_id, item_name, price, quantity, size))
         conn.commit()
         cart_saved = True  # Added by James Williams 10/26/26
@@ -172,7 +202,7 @@ def add_to_cart():
     # Update session for immediate UI feedback
     if 'cart' not in session:
         session['cart'] = []
-    
+
     cart_item = {'id': item_id, 'name': item_name, 'price': float(price), 'quantity': int(quantity), 'size': size}
     temp_cart = session['cart']
     temp_cart.append(cart_item)
@@ -182,25 +212,29 @@ def add_to_cart():
     flash(f"Added {item_name} to your bag!", "success")
     return redirect(url_for('auth.view_cart'))
 
+
 @auth_bp.route('/remove_from_cart/<int:index>', methods=['POST'])
 def remove_from_cart(index):
     if 'cart' in session and 'user_id' in session:
         temp_cart = session['cart']
         if 0 <= index < len(temp_cart):
             removed_item = temp_cart.pop(index)
-            
+
             # REMOVE FROM DATABASE
             try:
                 conn = get_connection()
                 cur = conn.cursor()
                 # We delete one instance of this item for this user
                 cur.execute("""
-                    DELETE FROM cart_items 
-                    WHERE id = (
-                        SELECT id FROM cart_items 
-                        WHERE user_id = %s AND item_name = %s AND size = %s
-                        LIMIT 1
-                    )
+                            DELETE
+                            FROM cart_items
+                            WHERE id = (SELECT id
+                                        FROM cart_items
+                                        WHERE user_id = %s
+                                          AND item_name = %s
+                                          AND size = %s
+                                LIMIT 1
+                                )
                 """, (session['user_id'], removed_item['name'], removed_item['size']))
                 conn.commit()
                 cur.close()
@@ -212,6 +246,7 @@ def remove_from_cart(index):
             session.modified = True
             flash(f"Removed {removed_item['name']} from bag.", "info")
     return redirect(url_for('auth.view_cart'))
+
 
 # Added by James Williams 10/26/26 - changes an item's quantity in the bag, from 1 up to what's in stock
 @auth_bp.route('/update_cart/<int:index>', methods=['POST'])
@@ -237,12 +272,15 @@ def update_cart(index):
         quantity = min(quantity, 99)
         # This updates the same row that remove_from_cart would delete
         cur.execute("""
-            UPDATE cart_items SET quantity = %s
-            WHERE id = (
-                SELECT id FROM cart_items
-                WHERE user_id = %s AND item_name = %s AND size = %s
-                LIMIT 1
-            )
+                    UPDATE cart_items
+                    SET quantity = %s
+                    WHERE id = (SELECT id
+                                FROM cart_items
+                                WHERE user_id = %s
+                                  AND item_name = %s
+                                  AND size = %s
+                        LIMIT 1
+                        )
         """, (quantity, session['user_id'], item['name'], item['size']))
         conn.commit()
         cur.close()
@@ -256,12 +294,13 @@ def update_cart(index):
     session.modified = True
     return redirect(url_for('auth.view_cart'))
 
+
 # Added by Day E 4/9/26 - returns current session user info for frontend auth checks
 @auth_bp.route('/api/auth/me')
 def get_current_session_user():
     if 'user' not in session:
         return jsonify({"error": "Not logged in"}), 401
-    
+
     try:
         conn = get_connection()
         cur = conn.cursor()
@@ -280,14 +319,17 @@ def get_current_session_user():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
+
 @auth_bp.route('/cart/json')
 def get_cart_json():
     return jsonify(session.get('cart', []))
 
+
 @auth_bp.route('/debug/session')
 def debug_session():
     return jsonify(dict(session))
+
 
 # Admin login route - added by David Jackson 4/19/26
 @auth_bp.route('/admin-login', methods=['GET', 'POST'])
@@ -305,3 +347,29 @@ def admin_login():
         return "Invalid Admin Credentials. <a href='/auth/admin-login'>Try again</a>"
 
     return render_template('admin_login.html')
+
+# Added by Billy Anders - Login Limit
+def is_timed_out(conn, username, ip):
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT COUNT(*) FROM login_attempts
+        WHERE username = %s AND ip = %s
+          AND attempted_at > NOW() - (%s * INTERVAL '1 minute')
+    """, (username, ip, LOGIN_TIMEOUT))
+    count = cur.fetchone()[0]
+    cur.close()
+    return count >= LOGIN_MAX_ATTEMPTS
+
+# Added by Billy Anders - Login Limit
+def add_failure(conn, username, ip):
+    cur = conn.cursor()
+    cur.execute("INSERT INTO login_attempts (username, ip) VALUES (%s, %s)", (username, ip))
+    conn.commit()
+    cur.close()
+
+# Added by Billy Anders - Login Limit
+def clear_failures(conn, username, ip):
+    cur = conn.cursor()
+    cur.execute("DELETE FROM login_attempts WHERE username = %s AND ip = %s", (username, ip))
+    conn.commit()
+    cur.close()
