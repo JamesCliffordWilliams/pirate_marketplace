@@ -157,3 +157,31 @@
 
 .pm .order-card .action-btn:hover:not(:disabled) { border-color: var(--pm-fog); }
 .pm .order-card .action-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/*Recently Deleted section - Added by Miles Walker 11/14/26*/
+.pm .deleted-section {
+    margin-top: 48px;
+    padding: 24px;
+    background: var(--pm-hull);
+    border: 1px solid var(--pm-rigging);
+    border-radius: var(--pm-r-tile);
+}
+
+.pm .deleted-title {
+    color: var(--pm-sail);
+}
+
+.pm .deleted-note {
+    color: var(--pm-fog);
+    font-size: var(--pm-t14);
+    margin: 6px 0 16px;
+}
+
+.pm .pm-deleted-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--pm-rigging);
+}

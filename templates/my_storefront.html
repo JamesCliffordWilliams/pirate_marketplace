@@ -11,6 +11,7 @@
 
 This is the seller's dashboard. my_storefront.js fills it in from the API.
 Updated by Aniya Hopson-  added in incoming orders section
+Updated by Miles Walker Iteration 4 11/14/26 - Added HTML Frame for the Recently Deleted section
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -66,6 +67,13 @@ Updated by Aniya Hopson-  added in incoming orders section
             <div class="pm-skeleton pm-skeleton--line"></div>
             <div class="pm-skeleton pm-skeleton--line pm-skeleton--short"></div>
         </div>
+    </section>
+
+    <!-- Restore a deleted listing, or delete it permanently - Added by Miles Walker 11/14/2026 -->
+    <section class="deleted-section" id="deletedSection" hidden>
+        <h2 class="deleted-title">Recently Deleted</h2>
+        <p class="deleted-note">Restore a listing, or delete it permanently. Listings with purchase history can't be deleted forever.</p>
+        <div id="deletedGrid"></div>
     </section>
 
     <section class="pm-section pm-dashboard__danger" id="storeSettings" hidden aria-labelledby="settingsHeading">

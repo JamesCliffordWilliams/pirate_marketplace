@@ -7,6 +7,7 @@
     Implemented & Updated by Day Ekoi - Iteration 5 - 4/9/2026
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - added deactivate storefront button handler
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - guarded optional dashboard buttons after layout cleanup
+    Updated by Miles Walker - 11/14/26 - added ability to view deleted listings, to either restore or delete them permanently
     Updated by James Williams - 10/26/26 - listings show their category, plus a banner for listings in "Other"
     Updated by James Williams - 10/26/26 - redesign with a listings table and quick buttons, and small pop-up
     messages instead of alerts. The requests didn't change.
@@ -18,6 +19,8 @@ edit, hide, delete and add listings, and to edit, view or deactivate the storefr
 
 (function () {
     const listingGrid = document.getElementById("listingGrid");
+    const deletedSection = document.getElementById("deletedSection"); // Miles Walker 11/14/26
+    const deletedGrid = document.getElementById("deletedGrid");       // Miles Walker 11/14/26
     const OTHER_CATEGORY_SLUG = "other";
     const STATUS_LABELS = { ACTIVE: "Active", SOLD_OUT: "Sold out", INACTIVE: "Hidden" };
     let currentUser = null;
@@ -136,6 +139,49 @@ edit, hide, delete and add listings, and to edit, view or deactivate the storefr
         return row;
     }
 
+    // Miles Walker 11/14/26 - one row in the Recently Deleted section
+    function createDeletedRow(item) {
+        const title = item.title || "Untitled";
+        const row = el("div", "pm-deleted-row");
+
+        const info = el("div", "pm-listing-row__main");
+        info.append(
+            el("span", "pm-listing-row__title", title),
+            el("span", "pm-muted", `$${Number(item.price || 0).toFixed(2)}`)
+        );
+
+        const restore = el("button", "pm-btn pm-btn--ghost", "Restore");
+        restore.type = "button";
+        restore.setAttribute("aria-label", `Restore ${title}`);
+        restore.addEventListener("click", () => listingAction(
+            item, `/api/listings/${item.id}/restore`, "PATCH",
+            "Couldn't restore the listing.", "Listing restored"
+        ));
+
+        const forever = el("button", "pm-btn pm-btn--ghost pm-listing-row__delete", "Delete forever");
+        forever.type = "button";
+        forever.setAttribute("aria-label", `Permanently delete ${title}`);
+        forever.addEventListener("click", () => {
+            if (!window.confirm(`Permanently delete "${title}"? This action cannot be undone.`)) return;
+            listingAction(
+                item, `/api/listings/${item.id}/permanent`, "DELETE",
+                "Couldn't delete the listing.", "Listing permanently deleted"
+            );
+        });
+
+        const actions = el("div", "pm-listing-row__actions");
+        actions.append(restore, forever);
+        row.append(info, actions);
+        return row;
+    }
+
+    // Miles Walker 11/14/26 - show or hide the Recently Deleted section
+    function renderDeletedSection(deletedListings) {
+        if (!deletedSection || !deletedGrid) return;
+        deletedGrid.replaceChildren(...deletedListings.map(createDeletedRow));
+        deletedSection.hidden = deletedListings.length === 0;
+    }
+
     function fillHeader(storefront, listings) {
         const name = storefront.brand_name || "My storefront";
         document.getElementById("pageTitle").textContent = name;
@@ -202,15 +248,23 @@ edit, hide, delete and add listings, and to edit, view or deactivate the storefr
                 document.getElementById("bannerBox").hidden = true;
                 document.querySelector(".pm-store__head").hidden = true;
                 document.getElementById("listingsHeading").parentNode.hidden = true;
+                renderDeletedSection([]);
                 showMessage("You don't have a storefront yet", "Open one to start selling on campus.",
                     linkButton("Create your storefront", "/storefronts/create", "primary"));
                 return;
             }
             const storefront = await sfRes.json();
 
+            /* Added by Miles Walker 11/14/26 - Splits the list of listings into two: normal listings stay
+            in the main grid and deleted ones are added to the RecentlyDeleted section*/
             const listRes = await fetch("/api/listings/my?include_deleted=1", { headers: authHeaders() });
-            const listings = listRes.ok ? (await listRes.json()).filter((item) => item.status !== "DELETED") : [];
+            const allListings = listRes.ok ? await listRes.json() : [];
+            const everything = Array.isArray(allListings) ? allListings : [];
+            const listings = everything.filter((item) => item.status !== "DELETED");
+            const deletedListings = everything.filter((item) => item.status === "DELETED");
+
             fillHeader(storefront, listings);
+            renderDeletedSection(deletedListings);
             if (!listRes.ok) {
                 showMessage("Couldn't load your listings", "Refresh the page to try again.");
                 return;

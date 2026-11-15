@@ -119,6 +119,8 @@ def create_listings(cur):
     cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS deleted_restore_status VARCHAR(20);")
     cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS is_made_to_order BOOLEAN DEFAULT FALSE;")
     cur.execute("UPDATE listings SET is_made_to_order = FALSE WHERE is_made_to_order IS NULL;")
+    # Adds a deletion timestamp for soft deletion of listings - Miles Walker 11/11/2026
+    cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;")
 
 # Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_listing_images(cur):
