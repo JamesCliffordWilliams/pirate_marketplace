@@ -8,6 +8,7 @@
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - added deactivate storefront button handler
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - guarded optional dashboard buttons after layout cleanup
     Updated by James Williams - 10/26/26 - listing cards show their category; banner for listings in "Other"
+    Updated by Miles Walker - 11/14/26 - added ability to view deleted listings, to either restore or delete them permanently
 
 Description:
 Fetches the current user's storefront from the API and renders
@@ -25,12 +26,13 @@ const bannerFallback = document.getElementById("bannerFallback");
 const logoImg = document.getElementById("logoImg");
 const logoFallback = document.getElementById("logoFallback");
 const listingGrid = document.getElementById("listingGrid");
+const deletedSection = document.getElementById("deletedSection"); // Added by Miles Walker - 11/14/26
+const deletedGrid = document.getElementById("deletedGrid"); // Added by Miles Walker - 11/14/26
 const storefrontStatusBanner = document.getElementById("storefrontStatusBanner");
 const editStorefrontBtn = document.getElementById("editStorefrontBtn");
 const createListingBtn = document.getElementById("createListingBtn");
 const viewStorefrontBtn = document.getElementById("viewStorefrontBtn");
 const deactivateStorefrontBtn = document.getElementById("deactivateStorefrontBtn");
-
 let storefrontId = null;
 let currentUser = null;
 
@@ -46,6 +48,16 @@ function categoryLabel(item) {
     return category.parent_name ? `${category.parent_name} › ${category.name}` : category.name;
 }
 
+//Added by Miles Walker 11/14/26 - Button creation shortcut 
+function makeButton(label, className, onClick)
+{
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = className;
+    btn.textContent = label;
+    btn.addEventListener("click", onClick);
+    return btn;
+}
 
 function isInOtherCategory(item) {
     return !item.category || item.category.slug === OTHER_CATEGORY_SLUG;
@@ -217,8 +229,82 @@ function createListingCard(item) {
     }
 
     return card;
+
+    
 }
 
+// Added by Miles Walker 11/14/26 - sends listing action and returns JSON result
+async function listingRequest(path, method, fallbackMsg)
+{
+    const response = await fetch(path, 
+    {
+        method,
+        headers: 
+        {
+            "X-User-Id": currentUser?.id || "",
+            "X-User-Role": currentUser?.role || "user"
+        }
+    });
+        
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || fallbackMsg);
+    return result;
+}
+
+// Added by Miles Walker 11/14/26 - Creates a card for the Recently Deleted Section
+function createDeletedCard(item)
+{
+    const card = document.createElement("div");
+    card.className = "listing-card listing-card--deleted";
+
+    const title = document.createElement("p");
+    title.className = "listing-card-title";
+    title.textContent = item.title || "Untitled";
+    
+    const price = document.createElement("p");
+    price.className = "listing-card-price";
+    price.textContent = `$${Number(item.price || 0).toFixed(2)}`;
+
+    const actions = document.createElement("div");
+    actions.className = "deleted-actions";
+
+    actions.append
+    (
+        // Delete and Restore buttons 
+        makeButton("Restore", "action-btn", async () => 
+        {
+            try
+            {
+                await listingRequest(`/api/listings/${item.id}/restore`, "PATCH", "Failed to restore listing.");
+                await loadMyStorefront();
+            } catch (e) {alert(e.message);}
+        }),
+
+        makeButton("Delete Forever", "action-btn action-btn--danger", async () =>
+        {
+            if (!window.confirm(`Permanently delete "${item.title}"? This action cannot be undone.`)) return;
+            try 
+            {
+                await listingRequest (`/api/listings/${item.id}/permanent`, "DELETE", "Failed to delete listing.");
+                await loadMyStorefront();
+            } catch (e) {alert(e.message);}
+        }),
+    );
+
+    const body = document.createElement("div");
+    body.className = "listing-card-body";
+    body.append(title, price, actions);
+    card.appendChild(body);
+    return card;
+}
+
+// Added by Miles Walker 11/14/26 - show or hide the Recently Deleted section
+function renderDeletedSection(deletedListings)
+{
+    deletedGrid.innerHTML = "";
+    deletedSection.style.display = deletedListings.length ? "block" : "none";
+    deletedListings.forEach((item) => deletedGrid.appendChild(createDeletedCard(item)));
+}
 
 // fetches storefront and listings and renders the page
 async function loadMyStorefront() {
@@ -344,14 +430,18 @@ async function loadMyStorefront() {
             return;
         }
 
+        /* Added by Miles Walker 11/14/26 - Splits the list of listings into two: normal listings stay 
+        in the main grid and deleted ones are added to the RecentlyDeleted section*/
         const listings = await listRes.json();
-        const visibleListings = Array.isArray(listings)
-            ? listings.filter((item) => item.status !== "DELETED")
-            : [];
+        const allListings = Array.isArray(listings) ? listings : [];
+        const visibleListings = allListings.filter((item) => item.status !== "DELETED");
+        const deletedListings = allListings.filter((item) => item.status === "DELETED");
 
         listingGrid.innerHTML = "";
-        renderCategoryReminder(visibleListings); // Added by James Williams 10/26/26
-        if (!visibleListings.length) {
+        renderDeletedSection(deletedListings); 
+        renderCategoryReminder(visibleListings);
+        if (!visibleListings.length) 
+        {
             renderEmpty("No listings yet. Create your first listing!");
             return;
         }

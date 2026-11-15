@@ -327,11 +327,13 @@ def soft_delete_listing(listing_id):
     conn = get_connection()
     cur = conn.cursor()
 
+    #Added deleted_at = Current_Timestamp to track when listings are deleted - Miles Walker 11/11/26
     query = """
         UPDATE listings
         SET deleted_restore_status = COALESCE(storefront_restore_status, status),
             storefront_restore_status = NULL,
             status = 'DELETED',
+            deleted_at = CURRENT_TIMESTAMP,
             updated_at = CURRENT_TIMESTAMP
         WHERE id = %s
         RETURNING id, storefront_id, title, description, price,
@@ -363,6 +365,44 @@ def soft_delete_listing(listing_id):
         "is_made_to_order": bool(row[11]) if row[11] is not None else False,
         "category_id": row[12],
     }
+
+# Added by Miles Walker 11/11/26 - checks if a listing has any purchase history, deletion is not allowed if it does
+def listing_has_purchase_history(listing_id):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    #Selects listing_id from either purchases or order_items
+    query = """
+        SELECT EXISTS (SELECT 1 FROM purchases WHERE listing_id = %s)
+        OR EXISTS (SELECT 1 FROM order_items WHERE listing_id = %s);
+    """
+
+    cur.execute(query, (listing_id, listing_id))
+
+    has_history = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return has_history
+
+# Added by Miles Walker 11/11/26 - adds ability to permanently delete soft-deleted listings
+def hard_delete_listing(listing_id):
+    """
+    Permanently deletes a listing, but only succeeds if status = 'DELETED'
+    """
+    conn = get_connection()
+    cur = conn.cursor()
+
+    query = """
+        DELETE FROM listings
+        WHERE id = %s AND status = 'DELETED';
+    """
+    cur.execute(query, (listing_id,))
+
+    removed = cur.rowcount > 0
+    conn.commit()
+    cur.close()
+    conn.close()
+    return removed
 
 
 def deactivate_listing(listing_id):

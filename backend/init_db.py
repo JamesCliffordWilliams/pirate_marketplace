@@ -435,6 +435,9 @@ def create_vault_tables():
         cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);")
         
+        # Adds a deletion timestamp for soft deletion of listings - Miles Walker 11/11/2026
+        cur.execute("ALTER TABLE listings ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;")
+        
         print(f"DATABASE INITIALIZED: {', '.join(tables)} tables are ready.")
         # ________________________________________________________
         # LISTING INTEREST (Hot page engagement)

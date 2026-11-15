@@ -14,9 +14,9 @@ CSC 404 — Fall 26'
 
 ---
 
-## What is The Vault?
+## What is Pirate Market?
 
-The Vault is a web-based campus marketplace exclusively for Hampton University students. It allows student brand owners to create storefronts, publish clothing listings, and manage inventory, while other students can browse, wishlist, and purchase items.
+Pirate Market is a web-based campus marketplace exclusively for Hampton University students. It allows student brand owners to create storefronts, publish clothing listings, and manage inventory, while other students can browse, wishlist, and purchase items.
 
 ---
 

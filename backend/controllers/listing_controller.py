@@ -31,6 +31,7 @@ from services.listing_service import (
     deactivate_listing_service,
     reactivate_listing_service,
     restore_deleted_listing_service,
+    permanent_delete_listing_service,
     # listing images services (merged into listing_service.py)
     add_listing_image_service,
     get_listing_images_service,
@@ -354,6 +355,23 @@ def delete_listing_route(listing_id):
             return jsonify({"error": str(e)}), 404
         return jsonify({"error": str(e)}), 400
 
+@listing_bp.delete("/listings/<int:listing_id>/permanent")
+def permanent_delete_listing_route(listing_id):
+    current_user = get_current_user()
+    if current_user is None:
+        return jsonify({"error": "Unauthorized: missing/invalid X-User-Id"}), 401
+    
+    try:
+        return jsonify(permanent_delete_listing_service(current_user, listing_id)), 200
+    except Exception as e:
+        msg = str(e).lower()
+        if "unauthorized" in msg: 
+            return jsonify({"error": str(e)}), 403
+        if "not found" in msg:
+            return jsonify({"error": str(e)}), 404
+        if "order history" in msg:
+            return jsonify({"error": str(e)}), 409
+        return jsonify({"error": str(e)}), 400
 
 # Updated by Day E - April 22nd
 # PATCH /api/listings/<listing_id>/deactivate

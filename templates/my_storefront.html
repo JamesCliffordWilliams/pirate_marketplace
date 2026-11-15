@@ -1,11 +1,11 @@
 <!--
  my_storefront.html
 
-    The Vault Campus Marketplace 
+    Pirate Market Campus Marketplace 
     CSC 405 Sp 26'
     Created by Day Ekoi - Iteration 4 3/22/2026
     Implemented & Updated by Day Ekoi - Iteration 5 4/9/26
-    Updated by Day Ekoi - Iteration 5 - 4/20/26 - added deactivate storefront button
+
 
 Description of file (What it does, how it is used, etc):
 This file is the seller storefront dashboard page for users who already have a storefront.
@@ -18,7 +18,9 @@ This page also includes action buttons that let the seller:
 
 This file acts as the UI structure for the seller's personal storefront management page.
 It is different from the public storefront page because this version is meant for the storefront owner.
+
 Updated by Aniya Hopson-  added in incoming orders section
+Updated by Miles Walker Iteration 4 11/14/26 - Added
 -->
 
 <!DOCTYPE html>
@@ -99,6 +101,13 @@ Updated by Aniya Hopson-  added in incoming orders section
         <!-- Listings section -->
         <section class="listings-section">
             <div class="listing-grid" id="listingGrid"></div>
+        </section>
+        
+        <!-- Restore a deleted listing, or delete it permanently - Added by Miles Walker 11/14/2026-->>
+        <section class = "deleted-section" id = "deletedSection" style = "display:none;">
+            <h2 class = "deleted-title">Recently Deleted</h2>
+            <p class = "deleted-note">Restore a listing, or delete it permanently. Listings with purchase history can't be deleted forever.</p>
+            <div class = "listing-grid" id = "deletedGrid"></div>
         </section>
 
     </main>

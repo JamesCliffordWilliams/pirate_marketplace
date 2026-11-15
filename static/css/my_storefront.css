@@ -556,3 +556,43 @@ body {
     font-size: 0.9rem;
     margin: 0.6rem 0;
 }
+
+/*Recently Deleted section - Added by Miles Walker 11/14/26*/
+.deleted-section 
+{
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 20px;
+}
+
+.deleted-title
+{
+    color: #d4af37;
+}
+
+.deleted-note
+{
+    color: #bbb;
+    font-size: 0.9rem;
+    margin: 0.4rem 0 1rem;    
+}
+
+.listing-card--deleted
+{
+    min-height: 0;
+}
+
+.listing-card--deleted .listing-card-body
+{
+    padding: 1.2rem;
+}
+
+.delete-actions
+{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top:0.9rem;
+}

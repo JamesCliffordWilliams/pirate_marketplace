@@ -45,6 +45,8 @@ from models.listing_model import (
     restore_deleted_listing,
     deactivate_active_listings_for_storefront,
     restore_listings_after_storefront_reactivation,
+    listing_has_purchase_history,
+    hard_delete_listing,
     # images
     add_listing_image,
     get_images_for_listing,
@@ -345,6 +347,9 @@ def delete_listing_service(current_user, listing_id):
     if listing is None:
         raise Exception("Listing not found.")
 
+    if listing["status"] == "DELETED":
+        raise Exception("Listing is already deleted.")
+
     _assert_can_manage_listing(current_user, listing)
 
     return soft_delete_listing(listing_id)
@@ -432,6 +437,29 @@ def restore_deleted_listing_service(current_user, listing_id):
         storefront_restore_status=storefront_restore_status
     )
 
+# Added by Miles Walker 11/12/26
+# Permanently removes listing from database. Irreversible
+def permanent_delete_listing_service(current_user, listing_id):
+    """
+    Permanently deletes a soft-deleted listing from the database. Only works if a listing has no purchase history
+    """
+    if current_user is None:
+        raise Exception("Error! Unauthorized User.")
+
+    listing = get_listing_by_id(listing_id)
+    if listing is None:
+        raise Exception("Listing not found.")
+
+    _assert_can_manage_listing(current_user, listing)
+
+    if listing["status"] != "DELETED":
+        raise Exception("Only deleted listings can be permanently deleted.")
+    if listing_has_purchase_history(listing_id):
+        raise Exception("Only listings with no purchase history can be permanently deleted.")
+    if not hard_delete_listing(listing_id):
+        raise Exception("Listing not found")
+
+    return {"deleted": True, "listing_id": listing_id}
 
 def deactivate_storefront_listings_service(storefront_id):
     """

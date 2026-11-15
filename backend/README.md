@@ -1,7 +1,7 @@
 
-# The Vault – Backend (Flask)
+# Pirate Market – Backend (Flask)
 
-This folder contains the backend implementation for The Vault marketplace. The backend manages data storage, business rules, authentication, and API endpoints.
+This folder contains the backend implementation for the Pirate Market marketplace. The backend manages data storage, business rules, authentication, and API endpoints.
 
 ---
 
