@@ -4,18 +4,16 @@
 """
 config/product_categories.py
 
-Purpose:
-The list of product categories (12 main categories, each with subcategories).
+This is the list of product categories. There are 12 main categories and each one has subcategories.
 The migration copies this list into the product_categories table.
+These are different from the storefront style tags in storefronts.categories.
 
-Notes:
-- These are not the storefront style tags (storefronts.categories).
-- A listing always uses a subcategory, or "Other".
-- Never change a slug after release. To rename, change only the name.
-- Order here is the order shown on the site.
-- icon: picture used on the All Categories page (main categories only).
-- description: optional help text in the seller's category picker.
-- keywords: optional extra search words for the picker (e.g. "mac").
+A listing always uses a subcategory or "Other".
+Don't change a slug once it's live. To rename a category, just change the name.
+The order here is the order shown on the site.
+icon is the picture on the All Categories page, only for main categories.
+description is optional help text in the seller's category picker.
+keywords are optional extra search words for the picker, like "mac".
 """
 
 OTHER_SLUG = "other"

@@ -1,7 +1,12 @@
 # By Elali McNair 4/19/26
+#Updated by Madison Rickman 10/27/26
+
 import os
 import sys
 import unittest
+
+#Creating a secret key to bypass runtime errors
+os.environ["SECRET_KEY"] = "Super-Secret"
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -12,6 +17,9 @@ for path in (PROJECT_ROOT, BACKEND_ROOT):
 
 from app import create_app
 from backend.config.db import get_connection
+from controllers import wishlist_controller
+from services import wishlist_service
+import utils.s3
 
 
 class TestWishlistFeature(unittest.TestCase):

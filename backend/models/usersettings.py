@@ -14,7 +14,5 @@ from typing import List, Dict
 class UserSettings: # Define the blueprint for user settings
     # Define purchase_history as a list of strings, defaulting to an empty list
     purchase_history: List[str] = field(default_factory=list) 
-    # Define wishlist as a list of strings, defaulting to an empty list
-    wishlist: List[str] = field(default_factory=list) 
     # Define view_info as a dictionary,  to ensure a fresh dict for every instance
     view_info: Dict = field(default_factory=lambda: {"theme": "light", "display": "compact"})

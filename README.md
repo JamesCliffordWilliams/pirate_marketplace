@@ -1,22 +1,33 @@
-# Pirate Market — Campus Marketplace
+# Pirate Market
 
-**A cloud-based fashion marketplace for Hampton University students**
+**The campus fashion marketplace for Hampton University students**
 
 Designed & Built by Aniya Hopson, Billy Anders, Cletus Hyacinth, Elisa Earls, James Williams, Madison Rickman, Miles Walker, and Terrance Wynn
 
-CSC 404 — Fall 26'
+CSC 404, Fall 26'
 
 ---
 
-## Live Deployment
+## Live Site
 
-**http://the-vault-env.eba-a7vun5tm.us-east-2.elasticbeanstalk.com**
+**http://pirate-market-env.eba-fiec74jm.us-east-1.elasticbeanstalk.com**
 
 ---
 
 ## What is Pirate Market?
 
-Pirate Market is a web-based campus marketplace exclusively for Hampton University students. It allows student brand owners to create storefronts, publish clothing listings, and manage inventory, while other students can browse, wishlist, and purchase items.
+Pirate Market is a web marketplace just for Hampton University students. Student brands open a storefront, post listings with photos, sizes and stock, and manage everything from their dashboard. Shoppers browse storefronts, categories and the Hot page, save items, add them to their bag and check out. Buyers and sellers meet in person on campus, and students can also use the in-app wallet.
+
+### Features
+- Storefronts and listings with photos, sizes and stock
+- All Categories with subcategories, sorting and pages
+- Hot page (Hot Right Now and Rising) based on what students save, bag and buy
+- Bag, checkout, order confirmation and order status
+- Wallet with deposits, withdrawals and history
+- Messaging between students
+- Returns
+- Admin dashboard
+- Only Hampton University emails (`@hamptonu.edu` / `@my.hamptonu.edu`) can sign up
 
 ---
 
@@ -25,27 +36,29 @@ Pirate Market is a web-based campus marketplace exclusively for Hampton Universi
 | Layer | Technology |
 |---|---|
 | Backend | Python, Flask |
-| Frontend | HTML, CSS, JavaScript |
+| Frontend | HTML, CSS, JavaScript (Jinja templates) |
 | Database | PostgreSQL (AWS RDS) |
 | Image Storage | Amazon S3 |
-| Cloud Hosting | AWS Elastic Beanstalk |
+| Hosting | AWS Elastic Beanstalk (gunicorn) |
 | DB Adapter | psycopg2 |
 | Version Control | GitHub |
 
 ---
 
-## Setup & Running Locally
+## Running It Locally
 
-### Prerequisites
+### What you need
 - Python 3.12+
-- AWS RDS credentials
-- AWS credentials (for S3 access)
+- PostgreSQL, either a local install or the team database
+- The database, S3 and Stripe settings (ask the team)
 
-### Installation
+On Windows, use `python` wherever this guide says `python3`.
+
+### Install
 
 ```bash
-git clone https://github.com/DavidJ46/TheVaultProject.git
-cd TheVaultProject
+git clone https://github.com/JamesCliffordWilliams/pirate_marketplace.git
+cd pirate_marketplace
 
 python3 -m venv venv
 source venv/bin/activate        # macOS/Linux
@@ -54,43 +67,73 @@ venv\Scripts\activate           # Windows
 pip install -r requirements.txt
 ```
 
-### Environment Configuration
+### Settings
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the main folder:
 
-DB_HOST=your-aws-rds-endpoint
-DB_NAME=your-database-name
-DB_USER=your-db-username
-DB_PASSWORD=your-db-password
+```
+SECRET_KEY=any-long-random-text
+DB_HOST=your-database-host
 DB_PORT=5432
+DB_NAME=your-database-name
+DB_USER=your-database-user
+DB_PASSWORD=your-database-password
 DB_SSLMODE=require
 AWS_ACCESS_KEY_ID=your-access-key
 AWS_SECRET_ACCESS_KEY=your-secret-key
-AWS_S3_BUCKET=your-s3-bucket-name
+AWS_S3_BUCKET=your-bucket-name
 AWS_REGION=us-east-2
-SECRET_KEY=your-secret-key
+STRIPE_SECRET_KEY=your-stripe-secret-key
+STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
+```
 
-### Initialize the Database
+Never commit your `.env` file. It's in `.gitignore`.
+
+For a local database, use `DB_HOST=localhost` and `DB_SSLMODE=disable`.
+
+Wallet deposits use Stripe. To test them locally, run `stripe listen --forward-to localhost:5000/api/stripe/webhook` and use the secret it prints as `STRIPE_WEBHOOK_SECRET`.
+
+### Set up a new database
+
+Create an empty database, then build the tables:
 
 ```bash
 python3 backend/init_db.py
 ```
 
-### Run the App
+This script always connects on port 5432 and ignores `DB_PORT`, so your Postgres needs to be on the default port.
+
+To add demo storefronts and listings (optional):
+
+```bash
+psql -h localhost -U your-database-user -d your-database-name -f sample_data.sql
+```
+
+### Run the app
 
 ```bash
 python3 app.py
 ```
 
-Visit `http://127.0.0.1:5000` in your browser.
+Then open `http://127.0.0.1:5000`.
 
 ---
 
 ## Running Tests
 
 ```bash
-python3 backend/tests/test_file_name
+python3 -m unittest discover -s backend/tests -t .
 ```
+
+Tests that need a database only run when `DB_HOST` is a local database (`localhost`), so they never touch the real one. Without a local Postgres they are skipped, not failed. Each run builds its own temporary tables and removes them afterward.
+
+---
+
+## Deployment
+
+The site runs on AWS Elastic Beanstalk in `us-east-1` (environment `pirate-market-env`). It deploys automatically when `main` changes on GitHub. The `Procfile` starts the app with gunicorn.
+
+The real database, S3 and `SECRET_KEY` values are set in the Elastic Beanstalk console under Configuration, Environment properties. Don't put real values in `.ebextensions/env.config`.
 
 ---
 
@@ -98,17 +141,10 @@ python3 backend/tests/test_file_name
 
 | Name | Role |
 |---|---|
-| David Jackson | Project Manager, Admin backend & frontend |
-| Elali McNair | Co-PM, Wishlist & Purchase backend, Create Listing frontend |
-| Ryan Grimes | Systems & Security Lead, Auth backend, Login/Signup/Cart frontend |
-| Day Ekoi | Cloud Deployment Lead, Storefront & Listings backend & frontend, Returns system, AWS deployment |
-| Madison Boyd | Documentation Lead, User & Account Settings backend & frontend |
-| Kaila Roberts | Database & App Support, Checkout backend and frontend |
-
----
-
-## Notes
-
-- Restricted to Hampton University email addresses (`@hamptonu.edu` / `@my.hamptonu.edu`)
-- No payment processing — checkout uses an in-person exchange model
-- Deployed on AWS Free Tier
+| Billy Anders | Project Manager (PM) |
+| Elisa Earls | Co-Project Manager / Backend Support |
+| Miles Walker | Document Lead |
+| Aniya Hopson | Systems & Security Planning Lead |
+| Cletus Hyacinth | Cloud Deployment Lead |
+| James Williams | Cloud Deployment Lead |
+| Madison Rickman | Database & Application Support Lead |

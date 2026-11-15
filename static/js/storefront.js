@@ -1,4 +1,4 @@
-/* 
+/*
 storefront.js
 
   The Vault Campus Marketplace
@@ -7,244 +7,164 @@ storefront.js
   Date: 3/18/2026 - 3/22/2026
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - fetchStorefronts now maps preview_image_1-4 to card carousel; falls back to banner_url if no previews set
   Updated by Day Ekoi - Iteration 5 - 4/20/26 - removed add-to-cart form from storefront cards (size, qty, add to bag); kept version history via comments
-  
+  Updated by James Williams - 10/26/26 - store covers, sorting, header search and page numbers
   Updated by Cletus Hyacinth - Iteration 3 10/26/26 - added brandSearch input to filter storefronts by brand name in addition to searchInput
-  Description: This file is responsible for the behavior of the storefront homepage. As of now, it stores sample storefront data, creates storefront cards using that data, 
-inserts the cards into the storefront grid in storefront.html, and handles the image carousel functionality for each storefront cards. 
+  Updated by James Williams - 10/27/26 - renderStorefronts() and filterStorefronts() for CJ's brand search (his code is at the bottom)
 
-This file works with:
-- storefront.html
-- storefront.css
-
-This file will be updated to fetch real storefront data from the Flask API routes and display the actual storefronts created by users in the database.
-
-
-
-STOREFRONT DATA
-
-THESE ARE PLACEHOLDERS FOR NOW!!!!
-it holds temp storefront data, creation of storefront cards, inserting them into the page, and handling image functionality 
-
-Fields: 
-    id: unique identifier for the storefront
-    name: name of the storefront
-    categories: array of categories/tags associated with the storefront
-    items: number of items in the storefront
-    logo: URL for the storefront's logo image
-    images: array of URLs for the storefront's carousel images (4 images per storefront)
-
-
-What needs to be replaced later: 
-- The storefront data in the storefronts array to be fetched from the Flask API instead of being hardcoded, recieve JSON, render real storefronts
-- Functionality & routing: menu button opens navigation pane, cart button routes to cart, account button routes to profile, Enter Storefront opens that store page
-- Searching and page: search storefront name, 10 stores per page 
+Description: This is the storefront directory on homepage.html. Store names and other text
+are added as plain text, never as HTML.
 */
 
+(function () {
+  const grid = document.getElementById("storefrontGrid");
+  if (!grid) return;
 
-let storefronts = [];
+  const PER_PAGE = 24;
+  const sortSelect = document.getElementById("storefrontSort");
+  const countLabel = document.getElementById("storefrontCount");
+  const pager = document.getElementById("storefrontPager");
+  let storefronts = [];
+  let page = 1;
+  let brandQuery = "";
 
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
 
+  function initial(name) {
+    return (String(name).trim()[0] || "?").toUpperCase();
+  }
 
+  // Picks the cover photos. It tries the preview photos first, then the banner, then the store's
+  // product photos. A banner takes up the whole cover
+  function coverFor(store) {
+    const previews = [store.preview_image_1, store.preview_image_2, store.preview_image_3, store.preview_image_4].filter(Boolean);
+    if (previews.length) return { images: previews.slice(0, 3), count: String(Math.min(previews.length, 3)) };
+    if (store.banner_url) return { images: [store.banner_url], count: "banner" };
+    const products = Array.isArray(store.cover_images) ? store.cover_images.filter(Boolean) : [];
+    return { images: products.slice(0, 3), count: String(Math.min(products.length, 3)) };
+  }
 
-/* STROREFRONT CARDS 
+  function createFacade(store) {
+    const name = store.brand_name || "Unnamed storefront";
+    const facade = el("article", "pm-facade");
 
-Storefront cards/grid boxes will be generated dynamically from the storefronts array above. 
-Each storefront will have a card with its logo, name, categories, item count, and about 4 images to appease to buyers.
- There are left and right arrows to navigate through the images.
-*/
+    const cover = el("div", "pm-facade__cover");
+    const { images, count } = coverFor(store);
+    cover.dataset.count = count;
+    images.forEach((url) => {
+      const img = el("img");
+      img.src = url;
+      img.alt = "";
+      img.loading = "lazy";
+      img.addEventListener("error", () => VaultListingCard.dropCoverPhoto(img), { once: true });
+      cover.appendChild(img);
+    });
 
-// Get the storefront grid container from the HTML where the cards will be inserted
-const grid = document.getElementById("storefrontGrid");
+    const body = el("div", "pm-facade__body");
+    const medallion = el("span", "pm-medallion", store.logo_url ? undefined : initial(name));
+    if (store.logo_url) {
+      const logo = el("img");
+      logo.src = store.logo_url;
+      logo.alt = "";
+      logo.addEventListener("error", () => { medallion.textContent = initial(name); }, { once: true });
+      medallion.appendChild(logo);
+    }
+    const link = el("a", "pm-facade__link pm-facade__name", name);
+    link.href = `/storefronts/${Number(store.id)}`;
+    const items = Number(store.item_count) || 0;
+    const meta = el("span", "pm-facade__meta", items ? `${items} item${items === 1 ? "" : "s"}` : "No items yet");
+    body.append(medallion, link, meta);
 
+    facade.append(cover, body);
+    return facade;
+  }
 
-// CREATE STOREFRONT CARD
-
-/* 
-The purpose of this function is to create a storefront card element from a storefront object.
-
-Input: stores a storefront object from the storefronts array 
-Output: Returns a HTML element (card) ready to be inserted into the page
-*/
-function createCard(store) {
-  let index = 0; // keeps track of which image is currently being shown inside the card's image carousel. Starts at 0 (first image)
-
-  const card = document.createElement("div"); // Created new element in memory
-  card.className = "storefront-card"; // assigns the storefront-card class to the new element for styling purposes
-
-  const categories = Array.isArray(store.categories) ? store.categories : [];
-  const images = Array.isArray(store.images) ? store.images.filter(Boolean) : [];
-  const logo = store.logo || null;
-  const items = store.items ?? 0;
-  const itemLabel = `${items} ${items === 1 ? "Item" : "Items"}`;
-  const metaLabel = categories.length > 0
-    ? `${itemLabel} | ${categories.join(" • ")}`
-    : itemLabel;
-
-  card.innerHTML = `
-    <div class="storefront-card-body">
-      <div class="storefront-header">
-        ${logo
-          ? `<img class="storefront-logo" src="${logo}">`
-          : `<div class="storefront-logo"></div>`
-        }
-        <div>
-          <h2 class="storefront-name">${store.name}</h2>
-          <p class="storefront-meta">
-            ${metaLabel}
-          </p>
-        </div>
-      </div>
-
-      <div class="carousel-shell">
-        <button class="carousel-btn left">&#10094;</button>
-        ${images.length > 0 ? `<img class="carousel-image" src="${images[0]}">` : `<div class="carousel-image"></div>`}
-        <button class="carousel-btn right">&#10095;</button>
-      </div>
-
-      <!-- Removed by Day Ekoi - Iteration 5 - 4/20/26: add-to-cart form removed from storefront cards.
-           Cart/size/qty actions belong on the individual listing page, not the storefront browse view.
-      <form action="/auth/add_to_cart" method="POST" class="bag-form">
-        <input type="hidden" name="item_id" value="${store.id}">
-        <input type="hidden" name="item_name" value="${store.name} Official Item">
-        <input type="hidden" name="price" value="45.00">
-        <div class="selection-row">
-          <select name="size" class="vault-select">
-            <option value="S">S</option>
-            <option value="M">M</option>
-            <option value="L">L</option>
-            <option value="XL">XL</option>
-          </select>
-          <input type="number" name="quantity" value="1" min="1" class="vault-qty">
-        </div>
-        <button type="submit" class="add-bag-btn">Add to Bag</button>
-      </form>
-      -->
-    </div>
-
-    <div class="storefront-footer">
-      <button class="enter-btn">Enter Storefront</button>
-    </div>
-  `;
-
-
-// After card generation, references are grabbed to import elements inside the card
-
-  const img = card.querySelector(".carousel-image");
-  const left = card.querySelector(".left");
-  const right = card.querySelector(".right");
-  const enterBtn = card.querySelector(".enter-btn");
-
-
-// Card Arrow button functionality 
-
-// left arrow functionality: once clicked the index variable is decremented by 1 and moves one image backwards in the array
-  left.onclick = () => {
-    index = (index - 1 + images.length) % images.length;
-    img.src = images[index];
-  };
-
-// right arrow functionality: once clicked, indec is incremeted by 1 and moves one image forward in the array 
-  right.onclick = () => {
-    index = (index + 1) % images.length;
-    img.src = images[index];
-  };
-
-  // Enter storefront routing
-  enterBtn.onclick = () => {
-    window.location.href = `/storefronts/${store.id}`;
-  };
-
-  // Lightbox: click carousel image to see full preview - Added by Day Ekoi 4/20/26
-  if (img && img.tagName === "IMG") {
-    img.addEventListener("click", () => {
-      const overlay = document.getElementById("lightboxOverlay");
-      const lightboxImg = document.getElementById("lightboxImg");
-      lightboxImg.src = img.src;
-      overlay.classList.add("active");
+  function visibleStorefronts() {
+    const query = currentQuery().toLowerCase();
+    const list = storefronts.filter((store) => !query || String(store.brand_name || "").toLowerCase().includes(query));
+    const sort = sortSelect.value;
+    return list.sort((a, b) => {
+      if (sort === "name") return String(a.brand_name).localeCompare(String(b.brand_name));
+      if (sort === "newest") return String(b.created_at).localeCompare(String(a.created_at));
+      return (Number(b.item_count) || 0) - (Number(a.item_count) || 0);
     });
   }
 
-  return card; // returns the fully built card
-}
-
-
-// Close lightbox when clicking the overlay - Added by Day Ekoi 4/20/26
-document.addEventListener("DOMContentLoaded", () => {
-  const overlay = document.getElementById("lightboxOverlay");
-  if (overlay) {
-    overlay.addEventListener("click", () => {
-      overlay.classList.remove("active");
-    });
+  // This is the text from CJ's Explore Brands search
+  function currentQuery() {
+    return brandQuery;
   }
-});
 
+  function render() {
+    const list = visibleStorefronts();
+    const pages = Math.max(1, Math.ceil(list.length / PER_PAGE));
+    page = Math.min(page, pages);
+    const query = currentQuery();
 
-/*  function to render all stores
+    grid.replaceChildren();
+    grid.setAttribute("aria-busy", "false");
+    countLabel.textContent = query
+      ? `${list.length} result${list.length === 1 ? "" : "s"} for "${query}"`
+      : `${list.length} storefront${list.length === 1 ? "" : "s"}`;
 
-this function loops through all storefrotn objects in the storefronts array, creates a card for each, and then inserts the cards into the storefront grid 
-*/
-function renderStorefronts() {
-  if (!grid) return; // Updated by Day E 3/22/26
-  grid.innerHTML = ""; // this clears the gird. Useful for if there needs to be re-rendering 
-  storefronts.forEach(store => { // loops through each store object in the storefronts array
-    const card = createCard(store); //creates a card for the current store object
-    grid.appendChild(card); // inserts the created card into the storefront grid in the HTML
-  });
-}
-
-
-/* FETCH STOREFRONTS FROM FLASK API
-
-This function requests storefront data from the Flask backend.
-If the backend returns storefront data successfully, it replaces the placeholder storefronts array.
-If the backend route is not ready yet or fails, the placeholder data will still be used.
-*/
-async function fetchStorefronts() {
-  try {
-    const response = await fetch("/api/storefronts");
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+    if (!list.length) {
+      const empty = el("div", "pm-empty");
+      empty.append(
+        el("h2", null, query ? "No storefronts match" : "No storefronts yet"),
+        el("p", null, query ? "Check the spelling, or clear the search to see every store." : "Open the first one and start selling.")
+      );
+      const action = el("a", "pm-btn pm-btn--primary", query ? "Show all storefronts" : "Create a storefront");
+      action.href = query ? "/storefronts" : "/storefronts/create";
+      empty.appendChild(action);
+      grid.appendChild(empty);
+    } else {
+      list.slice((page - 1) * PER_PAGE, page * PER_PAGE).forEach((store) => grid.appendChild(createFacade(store)));
     }
 
-    const data = await response.json();
-
-    const storefrontArray = Array.isArray(data) ? data : [data]; // Updated by Day E 3/22/26
-
-    storefronts = storefrontArray.map(store => { //updated 4/20/2026
-      const previewImages = [
-        store.preview_image_1,
-        store.preview_image_2,
-        store.preview_image_3,
-        store.preview_image_4,
-      ].filter(Boolean);
-
-      return {
-        id: store.id,
-        name: store.brand_name || "Unnamed Storefront",
-        categories: Array.isArray(store.categories)
-          ? store.categories
-          : String(store.categories || "")
-              .split(",")
-              .map(category => category.trim())
-              .filter(Boolean),
-        items: store.item_count || 0,
-        logo: store.logo_url || null,
-        images: previewImages.length > 0 ? previewImages : (store.banner_url ? [store.banner_url] : [])
-      };
-    });
-
-    renderStorefronts();
-  } catch (error) {
-    console.error("Error fetching storefronts from Flask API:", error);
-    if (grid) grid.innerHTML = `<p style="color:#888; font-style:italic; text-align:center; grid-column:1/-1; padding:2rem;">Could not load storefronts. Please try again.</p>`;
+    pager.hidden = pages <= 1;
+    document.getElementById("pageIndicator").textContent = `Page ${page} of ${pages}`;
+    document.getElementById("prevPageBtn").disabled = page <= 1;
+    document.getElementById("nextPageBtn").disabled = page >= pages;
   }
-}
 
-// Navigation pane code moved to static/js/nav_pane.js - James Williams 10/26/26
+  function showLoadError() {
+    grid.setAttribute("aria-busy", "false");
+    const box = el("div", "pm-empty");
+    box.append(el("h2", null, "Couldn't load storefronts"), el("p", null, "Check your connection and try again."));
+    const retry = el("button", "pm-btn pm-btn--secondary", "Try again");
+    retry.type = "button";
+    retry.addEventListener("click", () => window.location.reload());
+    box.appendChild(retry);
+    grid.replaceChildren(box);
+  }
 
-console.log(storefronts); // logs the storefronts array to the console for debugging purposes
-console.log(grid); // logs the storefront grid element to the console for debugging purposes
+  async function loadStorefronts() {
+    try {
+      const response = await fetch("/api/storefronts");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      storefronts = Array.isArray(data) ? data : [];
+      render();
+    } catch (error) {
+      console.error("Error loading storefronts:", error);
+      showLoadError();
+    }
+  }
+
+  sortSelect.addEventListener("change", () => { page = 1; render(); });
+  document.getElementById("prevPageBtn").addEventListener("click", () => { page -= 1; render(); grid.scrollIntoView({ block: "start" }); });
+  document.getElementById("nextPageBtn").addEventListener("click", () => { page += 1; render(); grid.scrollIntoView({ block: "start" }); });
+
+  // These are the two functions CJ's brand search below calls
+  window.renderStorefronts = () => { brandQuery = ""; page = 1; render(); };
+  window.filterStorefronts = (query) => { brandQuery = query; page = 1; render(); };
+
+  loadStorefronts();
+})();
 
 // SEARCH BAR FUNCTIONALITY
 // Added by Day E 4/9/26
@@ -252,38 +172,8 @@ console.log(grid); // logs the storefront grid element to the console for debugg
 
 const searchInput = document.getElementById("searchInput");
 const brandSearch = document.getElementById("brandSearch");
-// filters storefronts by name based on search input
-function filterStorefronts(query) {
-    const filtered = storefronts.filter(store =>
-        store.name.toLowerCase().includes(query.toLowerCase())
-    );
-
-    // render filtered results
-    grid.innerHTML = "";
-
-    if (!filtered.length) {
-        grid.innerHTML = `<p style="color:#c9c9c9; font-style:italic; text-align:center; grid-column:1/-1; padding: 2rem;">No storefronts found for "${query}"</p>`;
-        return;
-    }
-
-    filtered.forEach(store => {
-        const card = createCard(store);
-        grid.appendChild(card);
-    });
-}
 
 //  input changes
-/*if (searchInput) {
-    searchInput.addEventListener("input", () => {
-        const query = searchInput.value.trim();
-        if (!query) {
-            renderStorefronts(); // show all if search is cleared
-        } else {
-            filterStorefronts(query);
-        }
-    });
-}
-*/
 if(searchInput){
     searchInput.addEventListener("input", () => {
         const query = searchInput.value.trim();
@@ -305,8 +195,3 @@ if(searchInput){
         }
     });
   }
-
-/* Initial render of the storefront cards. This will display the storefronts on the page when it is first loaded. */
-fetchStorefronts(); // Updated by Day E 4/9/26 - this will now fetch real storefront data from the Flask API and then render the storefronts. If the API route is not ready or fails, it will fallback to rendering the placeholder storefronts. */
-
-/* renderStorefronts(); // Updated by Day E 3/22/26 */

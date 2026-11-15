@@ -11,7 +11,7 @@ def get_connection(connect_timeout=None):  # Updated by James Williams 10/26/26
     Creates and returns a new PostgreSQL connection
     using environment variables.
     Supports AWS RDS SSL configuration if provided.
-    connect_timeout: optional seconds to wait (added by James Williams 10/26/26)
+    connect_timeout is how many seconds to wait before giving up, if you pass one (added by James Williams 10/26/26)
     """
 
     conn_kwargs = {

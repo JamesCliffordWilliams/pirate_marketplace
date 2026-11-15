@@ -63,7 +63,8 @@ def add_to_wishlist():
         success, result = wishlist_service.add_item_to_wishlist(current_user['id'], listing_id)
 
         if success:
-            # Added by James Williams 10/26/26 - Hot page; only when the logged-in user matches the header
+            # Added by James Williams 10/26/26 - counts this for the Hot page, but only if the logged in
+            # user is the same one in the header
             if session.get("user_id") == current_user['id']:
                 track_interest(listing_id, current_user['id'], "wishlist")
             return jsonify({"message": result}), 201

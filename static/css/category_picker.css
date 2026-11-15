@@ -6,7 +6,7 @@
     Created by James Williams - 10/26/26
 
 Description:
-Styles for the category picker on the Create and Edit Listing forms.
+This styles the category picker on the Create and Edit Listing forms.
 
 Works with:
 - category_picker.js
@@ -164,7 +164,7 @@ Works with:
     display: none;
 }
 
-/* search box inside the picker */
+/* This is the search box inside the picker */
 .cp input.cp-search {
     display: block;
     width: 100%;

@@ -3,6 +3,7 @@
 # Created by Day Ekoi - Iteration 3
 # Updated by Day Ekoi - Iteration 4 3/25/26
 # Updated by Day Ekoi - Iteration 5 - 4/20/26 - added edit storefront route, create listing route, S3 image upload endpoint, fixed session key
+# Updated by James Williams - 10/26/26 - added the product page route at /listings/<id>
 
 """
 storefront_controller.py
@@ -19,6 +20,7 @@ Functions:
 """
 
 from flask import Blueprint, request, jsonify, render_template
+from models.review_model import get_review_summary, has_completed_purchase, save_review  # James Williams 11/14/26
 
 from services.storefront_service import (
     create_storefront_service,
@@ -238,6 +240,66 @@ def edit_storefront_page(storefront_id):
     if not session.get("user"):
         return redirect(url_for("auth.login"))
     return render_template("edit_storefront.html", storefront_id=storefront_id)
+
+
+# Added by James Williams 10/26/26 - the product page. Buying happens here now instead of on the cards
+SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "One Size"]
+
+
+@storefront_pages_bp.route("/listings/<int:listing_id>")
+def product_page(listing_id):
+    from flask import session
+    from models.listing_model import get_listing_by_id, get_images_for_listing, get_sizes_for_listing
+
+    listing = get_listing_by_id(listing_id)
+    storefront = get_storefront_by_id(listing["storefront_id"]) if listing else None
+    if listing is None or storefront is None:
+        return render_template("product.html", listing=None), 404
+
+    # Shoppers see ACTIVE and SOLD_OUT listings in open stores. The owner can also preview their hidden ones
+    viewer_id = session.get("user_id")
+    is_public = listing["status"] in ("ACTIVE", "SOLD_OUT") and storefront.get("is_active") is not False
+    is_owner_preview = viewer_id == storefront["owner_id"] and listing["status"] != "DELETED"
+    if not (is_public or is_owner_preview):
+        return render_template("product.html", listing=None), 404
+
+    # Up to 4 photos. Falls back to the main photo if the images table has none
+    image_urls = [image["image_url"] for image in get_images_for_listing(listing_id)][:4]
+    if not image_urls and listing.get("image_url"):
+        image_urls = [listing["image_url"]]
+
+    # Sorts sizes from small to large, with sizes we don't know at the end
+    def size_rank(row):
+        return SIZE_ORDER.index(row["size"]) if row["size"] in SIZE_ORDER else len(SIZE_ORDER)
+    sizes = sorted(get_sizes_for_listing(listing_id), key=size_rank)
+    made_to_order = bool(listing.get("is_made_to_order"))
+    sold_out = not made_to_order and (listing["status"] == "SOLD_OUT" or listing.get("quantity_on_hand") == 0)
+    # Added by James Williams 11/14/26 - reviews, and whether this viewer bought it and can leave one
+    reviews = get_review_summary(listing_id)
+    can_review = bool(viewer_id) and has_completed_purchase(viewer_id, listing_id)
+    my_review = next((r for r in reviews["reviews"] if r["user_id"] == viewer_id), None)
+    return render_template("product.html", listing=listing, storefront=storefront, images=image_urls, sizes=sizes,
+                           made_to_order=made_to_order, sold_out=sold_out, viewer_id=viewer_id,
+                           is_owner_preview=is_owner_preview and not is_public,
+                           reviews=reviews, can_review=can_review, my_review=my_review)
+
+
+# Added by James Williams 11/14/26 - buyers post or update their review of a listing
+@storefront_pages_bp.post("/listings/<int:listing_id>/reviews")
+def post_review(listing_id):
+    from flask import session
+    user_id = session.get("user_id")
+    if not user_id or not has_completed_purchase(user_id, listing_id):
+        return jsonify({"error": "Only buyers with a completed order can review this item."}), 403
+    data = request.get_json(silent=True) or {}
+    rating = data.get("rating")
+    body = (data.get("body") or "").strip()
+    if not isinstance(rating, int) or isinstance(rating, bool) or not 1 <= rating <= 5:
+        return jsonify({"error": "Choose a rating from 1 to 5 stars."}), 400
+    if len(body) > 2000:
+        return jsonify({"error": "Reviews can be up to 2000 characters."}), 400
+    save_review(user_id, listing_id, rating, body or None)
+    return jsonify({"message": "Thanks for your review."}), 201
 
 
 @storefront_pages_bp.route("/listings/<int:listing_id>/edit")

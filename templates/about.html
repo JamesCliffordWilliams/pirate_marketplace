@@ -3,6 +3,7 @@
 
     Pirate Marketplace
     Created by Aniya Hopson - 10/20/26
+    Updated by James Williams - 10/27/26 - moved to the redesign with the shared header and footer
 
 Description:
 About page. 
@@ -10,9 +11,9 @@ About page.
 and the safety rules.
 
 How it is used:
-- Opened from "About" in the side menu (partials/site_nav.html) or hamburger menu
-- Reuses storefront.css for the background, top bar and side menu (site_nav.html),
-  and about.css for this page's own layout.
+- Opened from "About" under Help in the footer (partials/site_footer.html)
+- theme.css and nav.css supply the background, header, menu and footer,
+  and about.css styles this page's own layout.
 
 Keep this page accurate: when messaging, storefront verification/reviews and
 order time limits ship, update the "How it works" and "Trust & safety"
@@ -27,15 +28,17 @@ sections so we never describe features that don't exist yet.
   <meta name="description" content="Pirate Market is the campus fashion marketplace for Hampton University students. Shop student brands and meet in person to exchange." />
   <title>Pirate Market | About</title>
 
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
+  <link rel="preload" href="{{ url_for('static', filename='fonts/instrument-sans-var.woff2') }}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/about.css') }}" />
 </head>
 
-<body>
+<body class="pm">
 
 {% include 'partials/site_nav.html' %}
 
-<main class="about-page">
+<main class="pm-page about-page">
 
   <!-- Hero: one-sentence answer to "what is this site?" -->
   <section class="about-hero">
@@ -151,7 +154,7 @@ sections so we never describe features that don't exist yet.
       </details>
       <details>
         <summary>How do I start selling?</summary>
-        <p>Open the menu (the three lines in the top-left corner) and choose Create Storefront. Once your storefront is set up you can post your first listing.</p>
+        <p>Choose Create storefront under Selling at the bottom of any page (or in the menu on your phone). Once your storefront is set up you can post your first listing.</p>
       </details>
     </div>
   </section>
@@ -161,13 +164,14 @@ sections so we never describe features that don't exist yet.
     <h2>Ready to shop?</h2>
     <p>See what Hampton's student brands have dropped.</p>
     <div class="about-cta-buttons">
-      <a class="about-btn about-btn--primary" href="{{ url_for('storefront') }}">Browse storefronts</a>
-      <a class="about-btn" href="{{ url_for('hot_pages_bp.hot_page') }}">See what's hot</a>
+      <a class="pm-btn pm-btn--primary" href="{{ url_for('storefront_pages_bp.storefront_home_page') }}">Browse storefronts</a>
+      <a class="pm-btn pm-btn--secondary" href="{{ url_for('hot_pages_bp.hot_page') }}">See what's hot</a>
     </div>
   </section>
 
 </main>
 
+{% include 'partials/site_footer.html' %}
 <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
 </body>
 </html>

@@ -7,6 +7,8 @@
     Updated by Day Ekoi - Iteration 5 4/9/26
     Updated by Day Ekoi - Iteration 5 4/16/26 - S3 image upload integration
     Updated by Day Ekoi - Iteration 5 - 4/20/26 - drag-drop zones, image preview thumbnails, preview_image_1-4 upload support
+    Updated by James Williams - 10/26/26 - shared photo picker, one request per submit
+    Updated by James Williams - 10/26/26 - redesign with a live store cover preview and errors on the page instead of pop-ups
 */
 
 const form = document.getElementById("storefrontForm");
@@ -68,8 +70,7 @@ function setupCategoryLimitGuard() {
         });
 
         if (sfRes.ok) {
-            alert("You already have a storefront. Redirecting to your dashboard.");
-            window.location.href = "/storefronts/dashboard";
+            window.location.replace("/storefronts/dashboard"); // each seller only gets one storefront
         }
     } catch (err) {
         // silently allow page to load if check fails
@@ -77,66 +78,31 @@ function setupCategoryLimitGuard() {
 })();
 
 
-// shows thumbnail + filename in a preview container
-function showPreview(containerId, files, max = 1) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = "";
-    Array.from(files).slice(0, max).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-            const wrap = document.createElement("div");
-            wrap.className = "thumb-wrap";
+// Added by James Williams 10/26/26 - the shared photo picker and the live store cover preview
+const { showError, clearErrors, renderFacade } = window.SellerForm;
+const brandNameInput = document.getElementById("brandName");
 
-            const img = document.createElement("img");
-            img.src = e.target.result;
+function setupImagePickers() {
+    const attach = (inputId) => window.ImageUploader.attach(document.getElementById(inputId), { onChange: updateFacade });
+    return {
+        logo: attach("logoUpload"),
+        banner: attach("bannerUpload"),
+        previews: [1, 2, 3, 4].map((n) => attach(`previewImage${n}`)),
+    };
+}
 
-            const name = document.createElement("span");
-            name.className = "thumb-name";
-            name.textContent = file.name;
-
-            wrap.appendChild(img);
-            wrap.appendChild(name);
-            container.appendChild(wrap);
-        };
-        reader.readAsDataURL(file);
+function updateFacade() {
+    renderFacade({
+        name: brandNameInput.value.trim(),
+        logo: imagePickers.logo.previewUrl,
+        banner: imagePickers.banner.previewUrl,
+        images: imagePickers.previews.map((picker) => picker.previewUrl).filter(Boolean)
     });
 }
 
-
-// wires up a drop zone: click to browse, drag-and-drop to select, shows preview
-function setupDropZone(zoneId, inputId, previewId, max = 1) {
-    const zone = document.getElementById(zoneId);
-    const input = document.getElementById(inputId);
-
-    zone.addEventListener("click", () => input.click());
-
-    zone.addEventListener("dragover", e => {
-        e.preventDefault();
-        zone.classList.add("dragover");
-    });
-
-    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
-
-    zone.addEventListener("drop", e => {
-        e.preventDefault();
-        zone.classList.remove("dragover");
-        const dt = new DataTransfer();
-        Array.from(e.dataTransfer.files).slice(0, max).forEach(f => dt.items.add(f));
-        input.files = dt.files;
-        showPreview(previewId, dt.files, max);
-    });
-
-    input.addEventListener("change", () => showPreview(previewId, input.files, max));
-}
-
-
-// set up drop zones - Updated by Day Ekoi 4/20/26 - 4 individual preview slots
-setupDropZone("bannerZone", "bannerUpload", "bannerPreview", 1);
-setupDropZone("logoZone", "logoUpload", "logoPreview", 1);
-setupDropZone("previewZone1", "previewImage1", "previewPreview1", 1);
-setupDropZone("previewZone2", "previewImage2", "previewPreview2", 1);
-setupDropZone("previewZone3", "previewImage3", "previewPreview3", 1);
-setupDropZone("previewZone4", "previewImage4", "previewPreview4", 1);
+const imagePickers = setupImagePickers();
+brandNameInput.addEventListener("input", updateFacade);
+updateFacade();
 setupCategoryLimitGuard();
 
 
@@ -158,15 +124,22 @@ async function uploadImageToS3(file, folder) {
 
 
 // form submission
-form.addEventListener("submit", async (event) => {
-    event.preventDefault();
+form.addEventListener("submit", window.ImageUploader.guardSubmit(form, "Creating…", async () => {
+    clearErrors(form);
+    if (!brandNameInput.value.trim()) {
+        showError("brandError", "Enter a storefront name.");
+        brandNameInput.focus();
+        return;
+    }
+    if (!validateCategoryLimit()) {
+        return;
+    }
 
     try {
         const userRes = await fetch("/auth/api/auth/me");
         if (!userRes.ok) {
-            alert("You must be logged in to create a storefront.");
             window.location.href = "/auth/login";
-            return;
+            return true;
         }
         const user = await userRes.json();
 
@@ -174,38 +147,35 @@ form.addEventListener("submit", async (event) => {
 
         // upload logo
         let logoUrl = null;
-        const logoFile = document.getElementById("logoUpload").files[0];
+        const logoFile = imagePickers.logo.file;
         if (logoFile) {
             try { logoUrl = await uploadImageToS3(logoFile, "storefronts/logos"); }
-            catch (err) { alert("Failed to upload logo image. Please try again."); return; }
+            catch (err) { showError("formError", "The logo didn't upload. Try again."); return; }
         }
 
         // upload banner
         let bannerUrl = null;
-        const bannerFile = document.getElementById("bannerUpload").files[0];
+        const bannerFile = imagePickers.banner.file;
         if (bannerFile) {
             try { bannerUrl = await uploadImageToS3(bannerFile, "storefronts/banners"); }
-            catch (err) { alert("Failed to upload banner image. Please try again."); return; }
+            catch (err) { showError("formError", "The banner didn't upload. Try again."); return; }
         }
 
         // upload 4 individual preview images - Updated by Day Ekoi 4/20/26
         const previewUrls = [null, null, null, null];
         for (let i = 0; i < 4; i++) {
-            const file = document.getElementById(`previewImage${i + 1}`).files[0];
+            const file = imagePickers.previews[i].file;
             if (file) {
                 try {
                     previewUrls[i] = await uploadImageToS3(file, "storefronts/previews");
                 } catch (err) {
-                    alert(`Failed to upload preview image ${i + 1}. Please try again.`);
+                    showError("formError", `Preview ${i + 1} didn't upload. Try again.`);
                     return;
                 }
             }
         }
 
         const checkedCategories = Array.from(document.querySelectorAll('input[name="categories"]:checked')).map(cb => cb.value);
-        if (!validateCategoryLimit()) {
-            return;
-        }
 
         const payload = {
             brand_name: formData.get("brand_name"),
@@ -233,14 +203,16 @@ form.addEventListener("submit", async (event) => {
         const data = await res.json();
 
         if (!res.ok) {
-            alert(data.error || "Failed to create storefront.");
+            showError("formError", data.error || "The storefront wasn't created. Try again.");
             return;
         }
 
-        window.location.href = "/storefronts/dashboard";
+        VaultListingCard.showToast("Storefront created");
+        window.setTimeout(() => { window.location.href = "/storefronts/dashboard"; }, 700);
+        return true;
 
     } catch (err) {
         console.error("Error creating storefront:", err);
-        alert("Something went wrong. Please try again.");
+        showError("formError", "Couldn't reach Pirate Market. Check your connection and try again.");
     }
-});
+}));

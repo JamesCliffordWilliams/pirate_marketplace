@@ -1,210 +1,47 @@
-/* storefront_view.css
+/*
+    storefront_view.css
 
-    The Vault Campus Marketplace 
-    CSC 405 Sp 26'
-    Created by Day Ekoi - Iteration 4 - 3/22/2026
-    Updated by Day Ekoi - Iteration 5 - 4/20/26 - styling updates to storefront view page, including back button, profile info row, and listing cards
-    Updated by James Williams - 10/26/26 - listing card styles moved to listing_card.css
-
-
-Description:
-This file controls the styling and layout of the public storefront view page.
-It styles the banner, overlapping logo, back button, brand info, store description,
-and listing grid shown to regular users.
-
-Works with:
-- storefront_view.html
-- storefront_view.js
+    The Vault Campus Marketplace
+    Created by Day Ekoi - Iteration 4
+    Updated by James Williams - 10/26/26 - rewritten for the redesign. This styles the store page
+    with a wide cover photo, the round store logo and the store name.
 */
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+.pm .pm-store { padding-top: 24px; }
 
-html, body {
-    min-height: 100%;
-}
-
-body {
-    background:
-        linear-gradient(rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.58)),
-        url("/static/images/background.png") no-repeat center center fixed;
-    background-size: cover;
-    color: white;
-    font-family: Arial, Helvetica, sans-serif;
-    min-height: 100vh;
-    padding: 28px 0 40px;
-}
-
-.storefront-view-page {
-    width: min(1280px, 94%);
-    margin: 0 auto;
-    padding: 0.25rem 0 3rem;
-}
-
-/* back arrow row above banner - Updated by Day Ekoi 4/20/26 */
-.back-row {
-    margin-bottom: 0.6rem;
-}
-
-.back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(0,0,0,0.55);
-    border: 1px solid rgba(212,175,55,0.5);
-    border-radius: 999px;
-    color: #d4af37;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 6px 14px;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-}
-
-.back-btn:hover {
-    background: rgba(212,175,55,0.15);
-    color: #f0cc55;
-}
-
-.storefront-top {
-    position: relative;
-    margin-bottom: 2rem;
-}
-
-.page-title {
-    text-align: center;
-    font-size: 2.6rem;
-    font-style: italic;
-    font-weight: 800;
-    margin-bottom: 0.8rem;
-    color: white;
-}
-
-.storefront-banner {
-    width: 100%;
-    min-height: 260px;
-    background: rgba(0, 0, 0, 0.84);
-    border: 1px solid #d4af37;
-    border-radius: 8px;
-    position: relative;
-    box-shadow: 0 0 25px rgba(184, 134, 11, 0.18);
+.pm .pm-store__cover {
+    aspect-ratio: auto;
+    height: clamp(160px, 22vw, 280px);
     overflow: hidden;
-    background-size: cover;
-    background-position: center;
+    border-radius: var(--pm-r-sheet);
 }
 
-/* Profile info row - tightened by Day Ekoi 4/20/26 */
-.profile-info-row {
+.pm .pm-store__head {
     display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
-    padding-left: calc(170px + 2.5rem);
-    padding-right: 0.5rem;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 0.7rem;
+    align-items: flex-end;
+    gap: 20px;
+    padding: 0 24px;
+    margin-top: 12px;
 }
 
-.profile-left {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
+/* This moves the round logo up over the edge of the cover. The store name stays below the photo. */
+.pm .pm-store__head .pm-medallion { position: relative; margin-top: -64px; }
+.pm .pm-store__title { flex: 1; min-width: 0; padding-bottom: 4px; }
+.pm .pm-store__title h1 { font-size: var(--pm-t39); overflow-wrap: anywhere; }
 
-.contact-info {
-    font-size: 0.95rem;
-    color: #d4af37;
-    line-height: 1.3;
-    margin-top: 0.15rem;
-}
-
-.store-bio {
-    font-size: 1rem;
-    color: #c9c9c9;
-    max-width: 680px;
-    line-height: 1.4;
-    margin-bottom: 0.2rem;
-}
-
-.storefront-logo {
-    position: absolute;
-    left: 2rem;
-    bottom: -3rem;
-    width: 170px;
-    height: 170px;
-    border-radius: 50%;
-    background: #f2f2f2;
-    border: 3px solid #d4af37;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 0 20px rgba(184, 134, 11, 0.14);
-    overflow: hidden;
-}
-
-.storefront-logo p {
-    font-size: 2rem;
-    font-weight: 800;
-    color: black;
-}
-
-
-.storefront-listings-section {
-    width: min(980px, 92%);
-    margin: 0 auto;
-}
-
-.listings-heading {
-    text-align: center;
-    font-size: 2rem;
-    font-style: italic;
-    font-weight: 800;
-    margin-bottom: 2rem;
-    color: white;
-}
-
-.listing-grid {
+.pm .pm-store__about {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.55rem;
+    gap: 6px;
+    max-width: 68ch;
+    margin: 16px 24px 0;
 }
 
-/* Listing card styles moved to listing_card.css - James Williams 10/26/26 */
+.pm .pm-store__about p:empty { display: none; }
 
-.empty-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    color: #c9c9c9;
-    font-style: italic;
-}
-
-@media (max-width: 900px) {
-    .listing-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .storefront-listings-section {
-        width: min(720px, 94%);
-    }
-
-    .brand-name {
-        font-size: 2.4rem;
-    }
-
-    .storefront-logo {
-        width: 120px;
-        height: 120px;
-        bottom: -3.2rem;
-    }
-}
-
-@media (max-width: 560px) {
-    .storefront-view-page {
-        width: 95%;
-    }
+@media (max-width: 600px) {
+    .pm .pm-store__head { flex-wrap: wrap; padding: 0 8px; }
+    .pm .pm-store__head .pm-medallion--lg { width: 80px; height: 80px; margin-top: -48px; }
+    .pm .pm-store__title { flex-basis: 100%; }
+    .pm .pm-store__title h1 { font-size: var(--pm-t31); }
+    .pm .pm-store__about { margin: 12px 8px 0; }
 }

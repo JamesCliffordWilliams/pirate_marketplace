@@ -1,121 +1,83 @@
-# Billy
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 BACKEND_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-
-for path in (PROJECT_ROOT, BACKEND_ROOT):
-    if path not in sys.path:
-        sys.path.append(path)
+sys.path += [os.path.dirname(BACKEND_ROOT), BACKEND_ROOT]
 
 from app import create_app
-from backend.config.db import get_connection
+from controllers.wallet_controller import wallet_service
+from tests.db_test_guard import require_local_db
+from tests.hot_test_db import ThrowawaySchema
 
+
+class TestWalletLogin(unittest.TestCase):
+    def test_headers_cannot_replace_login(self):
+        client = create_app().test_client()
+        for path, payload in (("", None), ("/transactions", None),
+                              ("/deposit", {"amount": 5}), ("/withdraw", {"amount": 5})):
+            response = client.open("/api/wallet" + path, method="POST" if payload else "GET",
+                                   json=payload, headers={"X-User-Id": "123"})
+            self.assertEqual(response.status_code, 401)
+
+    def test_session_wins_over_another_user_header(self):
+        client = create_app().test_client()
+        with client.session_transaction() as sess:
+            sess["user_id"] = 42
+        with patch.object(wallet_service, "get_wallet", return_value=(True, {"balance": 0})) as get:
+            response = client.get("/api/wallet", headers={"X-User-Id": "99"})
+        self.assertEqual(response.status_code, 200)
+        get.assert_called_once_with(42)
+
+
+@require_local_db
 class TestWalletAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        cls.db = ThrowawaySchema(prefix="test_wallet").create()
         cls.app = create_app()
         cls.app.config["TESTING"] = True
-        cls.client = cls.app.test_client()
-        cls.user_id = cls._resolve_user_id()
 
-        if cls.user_id is None:
-            raise unittest.SkipTest("No seeded user available for wallet tests.")
-
-    @staticmethod
-    def _resolve_user_id():
-        conn = get_connection()
-        if conn is None:
-            return None
-        cur = conn.cursor()
-        try:
-            cur.execute("SELECT id FROM users ORDER BY id LIMIT 1;")
-            row = cur.fetchone()
-            return row[0] if row else None
-        finally:
-            cur.close()
-            conn.close()
+    @classmethod
+    def tearDownClass(cls):
+        cls.db.drop()
 
     def setUp(self):
-        self.start_balance, self.last_tx_id = self._snapshot()
+        self.user_id = self.db.add_user()
+        self.client = self.app.test_client()
+        with self.client.session_transaction() as sess:
+            sess["user"] = "shopper"
+            sess["user_id"] = self.user_id
 
-    def tearDown(self):
-        self._restore()
-
-    def _snapshot(self):
-        conn = get_connection()
-        cur = conn.cursor()
-        try:
-            cur.execute("SELECT balance FROM wallets WHERE user_id = %s;", (self.user_id,))
-            row = cur.fetchone()
-            cur.execute("SELECT COALESCE(MAX(id), 0) FROM wallet_transactions WHERE user_id = %s;",
-                        (self.user_id,))
-            return (row[0] if row else None), cur.fetchone()[0]
-        finally:
-            cur.close()
-            conn.close()
-
-    def _restore(self):
-        conn = get_connection()
-        cur = conn.cursor()
-        try:
-            cur.execute("DELETE FROM wallet_transactions WHERE user_id = %s AND id > %s;",
-                        (self.user_id, self.last_tx_id))
-            if self.start_balance is None:
-                cur.execute("DELETE FROM wallets WHERE user_id = %s;", (self.user_id,))
-            else:
-                cur.execute("UPDATE wallets SET balance = %s WHERE user_id = %s;",
-                            (self.start_balance, self.user_id))
-            conn.commit()
-        finally:
-            cur.close()
-            conn.close()
-
-    def _auth_headers(self):
-        return {"X-User-Id": str(self.user_id)}
-
-    def _balance(self):
-        return float(self.client.get("/api/wallet", headers=self._auth_headers()).get_json()["balance"])
-
-    def test_missing_header(self):
-        calls = [
-            self.client.get("/api/wallet"),
-            self.client.post("/api/wallet/deposit", json={"amount": 5}),
-            self.client.post("/api/wallet/withdraw", json={"amount": 5}),
-            self.client.get("/api/wallet/transactions"),
-        ]
-        self.assertEqual([r.status_code for r in calls], [401] * 4)
-
-    def test_invalid_header(self):
-        response = self.client.get("/api/wallet", headers={"X-User-Id": "a"})
-        self.assertEqual(response.status_code, 401)
-
-    def test_get_wallet(self):
-        response = self.client.get("/api/wallet", headers=self._auth_headers())
+    def balance(self):
+        response = self.client.get("/api/wallet")
         self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
+        return response.get_json()["balance"]
 
-    def test_deposit_then_withdraw(self):
-        before = self._balance()
+    def test_wallet_page_and_balance(self):
+        response = self.client.get("/wallet")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("vaultUserId", response.get_data(as_text=True))
+        self.assertEqual(self.balance(), 0)
 
-        deposit = self.client.post("/api/wallet/deposit", json={"amount": 25},
-                                   headers=self._auth_headers())
-        self.assertEqual(deposit.status_code, 201, deposit.get_data(as_text=True))
-        self.assertEqual(self._balance(), before + 25)
+    def test_deposit_withdraw_and_history(self):
+        response = self.client.post("/api/wallet/deposit", json={"amount": "25.50"})
+        self.assertEqual(response.status_code, 201, response.get_data(as_text=True))
+        self.assertEqual(self.balance(), 25.50)
+        response = self.client.post("/api/wallet/withdraw", json={"amount": "10.25"})
+        self.assertEqual(response.status_code, 201, response.get_data(as_text=True))
+        self.assertEqual(self.balance(), 15.25)
+        history = self.client.get("/api/wallet/transactions").get_json()["transactions"]
+        self.assertEqual([t["type"] for t in history], ["WITHDRAW", "DEPOSIT"])
 
-        withdraw = self.client.post("/api/wallet/withdraw", json={"amount": 10},
-                                    headers=self._auth_headers())
-        self.assertEqual(withdraw.status_code, 201, withdraw.get_data(as_text=True))
-        self.assertEqual(self._balance(), before + 15)
-
-    def test_overdraw_rejected(self):
-        before = self._balance()
-        response = self.client.post("/api/wallet/withdraw", json={"amount": before + 1000},
-                                    headers=self._auth_headers())
-        self.assertEqual(response.status_code, 400, response.get_data(as_text=True))
-        self.assertEqual(self._balance(), before)
+    def test_overdraw_and_invalid_deposits_leave_balance_unchanged(self):
+        self.client.post("/api/wallet/deposit", json={"amount": 5})
+        self.assertEqual(self.client.post("/api/wallet/withdraw", json={"amount": 6}).status_code, 400)
+        for amount in (0, -1, True, "NaN", "1.234", 10001):
+            self.assertEqual(self.client.post("/api/wallet/deposit", json={"amount": amount}).status_code, 400)
+        self.assertEqual(self.balance(), 5)
 
 
 if __name__ == "__main__":
-    unittest.main(verbosity=2)
+    unittest.main()

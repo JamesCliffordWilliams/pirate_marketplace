@@ -1,5 +1,5 @@
 # By Elali McNair 4/19/26
-# Updated by James Williams - 10/26/26 - sends a category, mocks S3, only runs on a local database
+# Updated by James Williams - 10/26/26 - sends a category, fakes S3 and only runs on a local database
 import io
 import os
 import sys

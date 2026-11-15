@@ -6,7 +6,7 @@
     Created by James Williams - 10/26/26
 
 Description:
-The page for one category or subcategory. The server builds the page layout,
+This is the page for one category or subcategory. The server builds the layout
 and category_listings.js loads the products.
 -->
 {% from "partials/category_icons.html" import category_icon %}
@@ -17,14 +17,16 @@ and category_listings.js loads the products.
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Vault | {{ current.name }}</title>
+  <title>{{ current.name }} | Pirate Market</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/listing_card.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/categories.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 
-<body>
+<body class="pm">
 
 {% include 'partials/site_nav.html' %}
 
@@ -41,10 +43,10 @@ and category_listings.js loads the products.
     data-logged-in="{{ 'true' if session.get('user') else 'false' }}"
   >
 
-    <!-- Breadcrumb: All Categories › Parent [› Sub] -->
+    <!-- This shows the path back to All Categories -->
     <nav class="cat-breadcrumb" aria-label="Breadcrumb">
       <ol>
-        <li><a href="{{ url_for('category_pages_bp.categories_page') }}">All Categories</a></li>
+        <li><a href="{{ url_for('category_pages_bp.categories_page') }}">All categories</a></li>
         {% if active_sub %}
         <li><a href="{{ parent_url }}{{ sort_qs }}">{{ parent.name }}</a></li>
         <li><span aria-current="page">{{ active_sub.name }}</span></li>
@@ -94,8 +96,8 @@ and category_listings.js loads the products.
       </label>
     </div>
 
-    <!-- Products (placeholders show while loading) -->
-    <section class="cat-listing-grid" id="categoryGrid" aria-busy="true" aria-label="{{ current.name }} products">
+    <!-- This is the product grid. Placeholders show while it loads. -->
+    <section class="cat-listing-grid pm-grid" id="categoryGrid" aria-busy="true" aria-label="{{ current.name }} products">
       {% for _ in range(8) %}
       <div class="cat-skeleton-card" aria-hidden="true">
         <div class="cat-skeleton-block cat-skeleton-block--image"></div>
@@ -121,5 +123,6 @@ and category_listings.js loads the products.
   <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
   <script src="{{ url_for('static', filename='js/listing_card.js') }}"></script>
   <script src="{{ url_for('static', filename='js/category_listings.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>

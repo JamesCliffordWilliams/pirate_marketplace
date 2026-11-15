@@ -1,9 +1,10 @@
 import os
+from dotenv import load_dotenv
 import sys
 from datetime import timedelta
 
-from flask import Flask, render_template, redirect, url_for, session
-
+from flask import Flask, render_template, redirect, request, url_for, session
+load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend"))    # ← NEW LINE 2
 
 
@@ -21,6 +22,7 @@ from controllers.purchase_controller import purchase_bp
 from controllers.return_controller import returns_bp
 from controllers.storefront_controller import storefront_bp, storefront_pages_bp
 from controllers.wallet_controller import wallet_bp # Billy
+from controllers.saved_payment_method_controller import saved_payment_method_bp
 from controllers.wishlist_controller import wishlist_bp
 
 # Billy: Session Timeout
@@ -45,6 +47,9 @@ PRIVATE_PAGES = [
     ("/wallet", "wallet", "wallet.html"),
 ]
 
+# Added by James Williams 10/27/26 - storefront, product, category and Hot pages need a login too
+LOGIN_REQUIRED_BLUEPRINTS = ("storefront_pages_bp", "category_pages_bp", "hot_pages_bp")
+
 # Billy: Rewrite
 BLUEPRINTS = [
     (auth_bp, "/auth"),
@@ -59,6 +64,7 @@ BLUEPRINTS = [
     (admin_bp, None),
     (returns_bp, None),
     (wallet_bp, None),
+    (saved_payment_method_bp, None), # Elisa
     (category_bp, None), # James
     (category_pages_bp, None), # James
     (hot_bp, None), # James
@@ -75,7 +81,7 @@ def register_pages(app):
 # Billy: Rewrite
 def create_app():
     app = Flask(__name__, template_folder='templates', static_folder='static')
-    app.secret_key = os.getenv('SECRET_KEY') # James: remove exposed secret key for security reasons. Use environment variable instead.
+    app.secret_key = os.getenv('SECRET_KEY') # James: the secret key comes from an environment variable so it isn't sitting in the code
 
     if not app.secret_key:
         raise RuntimeError("SECRET_KEY is not set.")
@@ -89,10 +95,61 @@ def create_app():
         if session.get("user"):
             session.permanent = True
 
-    register_pages(app)
+    # Added by James Williams 10/26/26 - limits upload size and shows a clear message if it's too big
+    app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
+
+    @app.errorhandler(413)
+    def upload_too_large(_error):
+        return {"error": "That upload is too large. Photos must add up to less than 32 MB."}, 413
+
+    # Added by James Williams 10/26/26 - adds the file's last saved time to static links
+    # so browsers load the new CSS and JS after a deploy
+    static_versions = {}
+
+    @app.url_defaults
+    def static_version(endpoint, values):
+        if endpoint != "static" or "filename" not in values or "v" in values:
+            return
+        filename = values["filename"]
+        if filename not in static_versions or app.debug:
+            try:
+                static_versions[filename] = int(os.path.getmtime(os.path.join(app.static_folder, filename)))
+            except OSError:
+                return
+        values["v"] = static_versions[filename]
+
+    # Added by James Williams 10/26/26 - values the shared header needs on every page
+    @app.context_processor
+    def shell_context():
+        bag_count = 0
+        for item in session.get("cart") or []:
+            try:
+                bag_count += max(int(item.get("quantity", 1)), 0)
+            except (TypeError, ValueError, AttributeError):
+                bag_count += 1
+        return {"bag_count": bag_count}
+
+    # Added by James Williams 10/26/26 - style guide page, only turned on for development
+    if app.debug or os.getenv("PM_STYLEGUIDE") == "1":
+        @app.get("/dev/styleguide")
+        def styleguide():
+            return render_template("dev/styleguide.html")
+
+    # Added by James Williams 10/27/26 - sends logged out users to login, same as PRIVATE_PAGES
+    @app.before_request
+    def require_login():
+        if request.blueprint in LOGIN_REQUIRED_BLUEPRINTS and not session.get("user"):
+            return redirect(url_for("auth.login"))
+
+        register_pages(app)
 
     for blueprint, prefix in BLUEPRINTS:
         app.register_blueprint(blueprint, url_prefix=prefix)
+
+    # CJ Hyacinth - Visual Sitemap
+    @app.get("/sitemap")
+    def sitemap_page():
+        return render_template("sitemap.html")
 
     @app.get("/health")
     def health():

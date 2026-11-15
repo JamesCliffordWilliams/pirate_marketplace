@@ -1,10 +1,9 @@
 # The Vault Campus Marketplace
-# Created by James Williams - 10/26/26 - throwaway database schema for the Hot tests
+# Created by James Williams - 10/26/26 - throwaway database schema for the database tests
 #
-# Builds the full app schema (init_db.create_vault_tables) inside a new
-# Postgres schema and points every new connection at it through PGOPTIONS,
-# so the app code runs unchanged and the real tables are never touched.
-# Only use from classes decorated with @require_local_db.
+# This builds all the app tables inside a new, separate Postgres schema and
+# points new connections at it, so the tests never touch the real tables.
+# Only use it in classes marked with @require_local_db.
 
 import contextlib
 import io
@@ -47,7 +46,7 @@ class ThrowawaySchema:
         conn = get_connection()
         conn.autocommit = True
         cur = conn.cursor()
-        # Drops only the throwaway schema this helper created
+        # This only drops the test schema we made
         cur.execute(f"DROP SCHEMA IF EXISTS {self.name} CASCADE;")
         cur.close()
         conn.close()
@@ -91,14 +90,14 @@ class ThrowawaySchema:
     def owner_of(self, storefront_id):
         return self.scalar("SELECT owner_id FROM storefronts WHERE id = %s;", (storefront_id,))
 
-    def add_listing(self, storefront_id, title="Item", status="ACTIVE", quantity=5,
+    def add_listing(self, storefront_id, title="Item", status="ACTIVE", quantity=5, price=10,
                     made_to_order=False, created_hours_ago=1):
         listing_id = self.scalar("""
             INSERT INTO listings (storefront_id, title, price, fulfillment_type, quantity_on_hand,
                                   status, is_made_to_order, created_at)
-            VALUES (%s, %s, 10, 'IN_STOCK', %s, %s, %s, LOCALTIMESTAMP - make_interval(hours => %s))
+            VALUES (%s, %s, %s, 'IN_STOCK', %s, %s, %s, LOCALTIMESTAMP - make_interval(hours => %s))
             RETURNING id;
-        """, (storefront_id, title, quantity, status, made_to_order, created_hours_ago))
+        """, (storefront_id, title, price, quantity, status, made_to_order, created_hours_ago))
         self.execute(
             "INSERT INTO listing_sizes (listing_id, size, quantity) VALUES (%s, 'M', %s);",
             (listing_id, quantity or 0),
@@ -112,11 +111,3 @@ class ThrowawaySchema:
                     (LOCALTIMESTAMP - make_interval(hours => %s))::date,
                     LOCALTIMESTAMP - make_interval(hours => %s));
         """, (listing_id, user_id, kind, hours_ago, hours_ago))
-
-    def interest_rows(self, listing_id=None):
-        if listing_id is None:
-            return self.execute("SELECT listing_id, user_id, kind FROM listing_interest ORDER BY id;")
-        return self.execute(
-            "SELECT listing_id, user_id, kind FROM listing_interest WHERE listing_id = %s ORDER BY id;",
-            (listing_id,),
-        )

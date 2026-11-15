@@ -4,27 +4,14 @@
     The Vault Campus Marketplace
     CSC 405 Sp 26'
     Created by James Williams - 10/26/26
+    Updated by James Williams - 10/26/26 - redesign with product tiles in the shared grid
 
 Description:
-The Hot page: Hot Right Now, Rising, and Just Listed (only when the first two are nearly empty).
-The server builds the page layout, and hot.js loads the products.
+This is the Hot page with Hot Right Now and Rising.
+The server builds the layout and hot.js loads the products.
 -->
 {% macro section_header(key, title, description, icon) -%}
 <header class="hot-section-header">
-  <span class="hot-section-icon" aria-hidden="true">
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-    {%- if icon == "flame" %}
-      <path d="M12 21c-3.9 0-7-2.8-7-6.6 0-2.6 1.4-4.6 3-6.2.3 1.7 1.2 2.9 2.4 3.4C10 8 11.4 5 14 3c.2 2.6 1.4 4.3 2.8 5.8 1.4 1.5 2.2 3.3 2.2 5.6 0 3.8-3.1 6.6-7 6.6Z"/>
-      <path d="M12 21c-1.7 0-3-1.3-3-3 0-1.6 1.1-2.6 2-3.4.2 1 .8 1.6 1.5 1.8.1-1.3.6-2.4 1.5-3.2.3 1.2 1 2 1.5 2.8.3.5.5 1.1.5 1.9 0 1.8-1.4 3.1-4 3.1Z"/>
-    {%- elif icon == "trending-up" %}
-      <path d="M3 17 9.5 10.5l4 4L21 7"/>
-      <path d="M15 7h6v6"/>
-    {%- else %}
-      <circle cx="12" cy="12" r="9"/>
-      <path d="M12 7v5l3 2"/>
-    {%- endif %}
-    </svg>
-  </span>
   <div class="hot-section-copy">
     <h2 class="hot-section-title" id="{{ key }}Heading">{{ title }}</h2>
     <p class="hot-section-desc">{{ description }}</p>
@@ -46,19 +33,21 @@ The server builds the page layout, and hot.js loads the products.
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Vault | Hot</title>
+  <title>Hot | Pirate Market</title>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/storefront.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/listing_card.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/categories.css') }}" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/hot.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}"> <!-- Added by James Williams 10/26/26 - shared header -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/nav.css') }}">
 </head>
 
-<body>
+<body class="pm">
 
 {% include 'partials/site_nav.html' %}
 
-  <!-- Page header, in the All Categories style -->
+  <!-- This is the page title, styled like All Categories -->
   <section class="cat-hero hot-hero">
     <h1 class="cat-title">Hot</h1>
     <p class="cat-subtitle">What shoppers across campus are into right now.</p>
@@ -79,13 +68,13 @@ The server builds the page layout, and hot.js loads the products.
     data-logged-in="{{ 'true' if session.get('user') else 'false' }}"
   >
 
-    <!-- Page-level message: everything empty, or couldn't load -->
+    <!-- This message shows when there is nothing to show or the page couldn't load -->
     <div class="hot-page-state" id="hotPageState" hidden></div>
 
     <section class="hot-section" id="hotSection" data-section="hot" aria-labelledby="hotHeading">
       {{ section_header("hot", "Hot Right Now", "What shoppers are saving, carting, and buying over the last two weeks.", "flame") }}
       <p class="hot-section-quiet" hidden><strong>Hot Right Now</strong> · Nothing yet. Check back soon.</p>
-      <div class="hot-rail" id="hotGrid" role="region" tabindex="0" aria-label="Hot Right Now products" aria-busy="true">
+      <div class="hot-rail pm-grid" id="hotGrid" role="region" tabindex="0" aria-label="Hot Right Now products" aria-busy="true">
         {{ skeletons() }}
       </div>
     </section>
@@ -93,14 +82,9 @@ The server builds the page layout, and hot.js loads the products.
     <section class="hot-section hot-section--rising" id="risingSection" data-section="rising" aria-labelledby="risingHeading">
       {{ section_header("rising", "Rising", "Picking up momentum, with a boost for smaller storefronts.", "trending-up") }}
       <p class="hot-section-quiet" hidden><strong>Rising</strong> · Nothing yet. Check back soon.</p>
-      <div class="hot-rail" id="risingGrid" role="region" tabindex="0" aria-label="Rising products" aria-busy="true">
+      <div class="hot-rail pm-grid" id="risingGrid" role="region" tabindex="0" aria-label="Rising products" aria-busy="true">
         {{ skeletons() }}
       </div>
-    </section>
-
-    <section class="hot-section hot-section--just-listed" id="justListedSection" data-section="just_listed" aria-labelledby="just_listedHeading" hidden>
-      {{ section_header("just_listed", "Just Listed", "The newest products from storefronts across Pirate Marketplace.", "clock") }}
-      <div class="hot-rail" id="justListedGrid" role="region" tabindex="0" aria-label="Just Listed products"></div>
     </section>
 
     <noscript>
@@ -112,5 +96,6 @@ The server builds the page layout, and hot.js loads the products.
   <script src="{{ url_for('static', filename='js/nav_pane.js') }}"></script>
   <script src="{{ url_for('static', filename='js/listing_card.js') }}"></script>
   <script src="{{ url_for('static', filename='js/hot.js') }}"></script>
+{% include 'partials/site_footer.html' %}
 </body>
 </html>

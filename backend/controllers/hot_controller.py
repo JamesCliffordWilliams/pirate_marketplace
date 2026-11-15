@@ -4,20 +4,18 @@
 """
 controllers/hot_controller.py
 
-Purpose:
-Routes for the Hot page.
+This file has the routes for the Hot page.
 
 API:
-- GET  /api/hot                    -> Hot, Rising and Just Listed cards
-- POST /api/listings/<id>/interest -> records a detail_view (logged-in shoppers only)
+- GET /api/hot gives the Hot and Rising cards
+- POST /api/listings/<id>/interest saves a detail_view for a logged in shopper
 
 Pages:
-- GET /hot                         -> Hot page
+- GET /hot is the Hot page
 """
 
 from flask import Blueprint, request, jsonify, session, render_template, current_app
 
-from config.hot_ranking import API_MAX_AGE_SECONDS
 from models.interest_model import is_listing_public
 from services.interest_service import track_interest
 from services.hot_service import get_hot_page_data
@@ -28,13 +26,12 @@ hot_bp = Blueprint("hot_bp", __name__, url_prefix="/api")
 # Page blueprint
 hot_pages_bp = Blueprint("hot_pages_bp", __name__)
 
+API_MAX_AGE_SECONDS = 60     # how long browsers can cache GET /api/hot
+
 
 #_________________________________________________________
 # API Routes
 #_________________________________________________________
-
-MSG_HOT_UNAVAILABLE = "Couldn't load the Hot page. Please try again."
-
 
 # GET /api/hot
 @hot_bp.get("/hot")
@@ -44,9 +41,9 @@ def get_hot_route():
         response.headers["Cache-Control"] = f"public, max-age={API_MAX_AGE_SECONDS}"
         return response, 200
     except Exception:
-        # full error stays in the server log; shoppers get a plain message
+        # This logs the full error for us and gives shoppers a simple message
         current_app.logger.exception("GET /api/hot failed")
-        return jsonify({"error": MSG_HOT_UNAVAILABLE}), 500
+        return jsonify({"error": "Couldn't load the Hot page. Please try again."}), 500
 
 
 # POST /api/listings/<id>/interest  {"kind": "detail_view"}
