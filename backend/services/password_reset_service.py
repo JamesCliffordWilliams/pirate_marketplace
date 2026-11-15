@@ -7,7 +7,7 @@ import secrets
 from utils.auth_utils import hash_password
 
 TOKEN_LIFETIME_MINUTES = 30
-
+RESEND_WAIT_MINUTES = 2
 
 class PasswordResetService:
 
@@ -26,6 +26,19 @@ class PasswordResetService:
                 return None
 
             user_id, username, stored_email = user
+            
+            # Limit: if this user already got a link in the last 2 minutes, don't send another.
+            # Stops someone from flooding a student's inbox or using up our SES quota.
+            cur.execute("""
+                SELECT 1 FROM password_reset_tokens
+                WHERE user_id = %s AND created_at > NOW() - make_interval(mins => %s)
+            """, (user_id, RESEND_WAIT_MINUTES))
+            if cur.fetchone():
+                cur.close()
+                return None
+
+            # Clean up expired links from all users so the table doesn't collect old rows
+            cur.execute("DELETE FROM password_reset_tokens WHERE expires_at < NOW()")
 
             # Only the newest link should work, so remove any older ones for this user
             cur.execute("DELETE FROM password_reset_tokens WHERE user_id = %s", (user_id,))

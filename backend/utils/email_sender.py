@@ -5,7 +5,7 @@
 import os
 import html
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -61,5 +61,10 @@ def send_password_reset_email(to_email, username, reset_link):
         )
         return True
     except ClientError as e:
+        # SES answered but refused (not verified, no permission, etc.)
         print(f"SES send error: {e.response['Error']['Message']}")
+        return False
+    except BotoCoreError as e:
+        # Couldn't reach SES at all (missing keys, no internet, wrong region name)
+        print(f"SES connection error: {e}")
         return False
