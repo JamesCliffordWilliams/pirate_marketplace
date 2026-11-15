@@ -34,7 +34,14 @@
 
         <nav class="pm-header__actions" aria-label="Your account">
             <a class="pm-header__link pm-header__sell" href="{{ url_for('my_storefront') }}">Sell</a>
-            {% if signed_in %}<a class="pm-header__link pm-header__messages" href="{{ url_for('messages_page') }}">Messages</a>{% endif %}
+            {% if signed_in %}
+<!-- CJ Hyacinth: Unread message notification indicator -->
+<a class="pm-header__link pm-header__messages"
+   href="{{ url_for('messages_page') }}">
+    Messages
+    <span class="pm-message-count" data-message-count hidden></span>
+</a>
+{% endif %}
             {% if signed_in %}<a class="pm-header__link pm-header__wallet" href="{{ url_for('wallet') }}">Wallet</a>{% endif %}
             <a class="pm-icon-btn pm-header__bag" href="{{ url_for('auth.view_cart') }}"
                aria-label="Bag{% if bag_count %}, {{ bag_count }} item{{ 's' if bag_count != 1 }}{% endif %}">
@@ -75,7 +82,10 @@
         <p class="pm-drawer__heading">Account</p>
         {% if signed_in %}
         <a href="{{ url_for('auth.account') }}">Account</a>
-        <a href="{{ url_for('messages_page') }}">Messages</a> <!-- Added by Aniya Hopson 10/27/26 -->
+        <a href="{{ url_for('messages_page') }}">
+    Messages
+    <span class="pm-message-count" data-message-count hidden></span>
+</a> <!-- Added by Aniya Hopson 10/27/26 -->
         <a href="{{ url_for('wallet') }}">Wallet</a>
         <a href="{{ url_for('auth.logout') }}">Log out</a>
         {% else %}
@@ -84,3 +94,5 @@
     </nav>
 </aside>
 <span id="main" tabindex="-1"></span>
+
+<script defer src="{{ url_for('static', filename='js/message_notifications.js') }}"></script>

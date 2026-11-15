@@ -264,3 +264,24 @@ body.pm > .pm-footer { margin-top: auto; }
     .pm-overlay,
     .pm-burger span { transition: none; }
 }
+/* CJ Hyacinth - Message Notification Badge */
+.pm-message-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    margin-left: 5px;
+    border-radius: 12px;
+    background-color: #dc2626;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+}
+
+/* Hide the badge when there are no unread messages */
+.pm-message-count[hidden] {
+    display: none;
+}
