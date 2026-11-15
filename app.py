@@ -1,9 +1,10 @@
 import os
+from dotenv import load_dotenv
 import sys
 from datetime import timedelta
 
 from flask import Flask, render_template, redirect, request, url_for, session
-
+load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend"))    # ← NEW LINE 2
 
 
@@ -21,6 +22,7 @@ from controllers.purchase_controller import purchase_bp
 from controllers.return_controller import returns_bp
 from controllers.storefront_controller import storefront_bp, storefront_pages_bp
 from controllers.wallet_controller import wallet_bp # Billy
+from controllers.saved_payment_method_controller import saved_payment_method_bp
 from controllers.wishlist_controller import wishlist_bp
 
 # Billy: Session Timeout
@@ -62,6 +64,7 @@ BLUEPRINTS = [
     (admin_bp, None),
     (returns_bp, None),
     (wallet_bp, None),
+    (saved_payment_method_bp, None), # Elisa
     (category_bp, None), # James
     (category_pages_bp, None), # James
     (hot_bp, None), # James

@@ -147,6 +147,44 @@
         .pm .negative {
             color: var(--pm-signal-text);
         }
+
+/* Saved Payment Methods - Elisa Earls */
+
+.pm .saved-cards-section {
+    margin: 32px 0;
+    padding: 24px;
+    background: var(--pm-harbor);
+    border: 1px solid var(--pm-rigging);
+    border-radius: var(--pm-r-tile);
+}
+
+.pm .saved-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--pm-rigging);
+}
+
+.pm .saved-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pm .saved-card-details {
+    color: var(--pm-fog);
+    font-size: var(--pm-t14);
+}
+
+.pm .remove-card-button {
+    background: transparent !important;
+    color: var(--pm-signal-text) !important;
+    border: 1px solid var(--pm-signal-text) !important;
+}
+
     </style>
 </head>
 
@@ -190,6 +228,18 @@
         </div>
     </section>
 
+        <!-- Saved Payment Methods - Elisa Earls -->
+    <section class="saved-cards-section">
+        <h2>Saved Payment Methods</h2>
+        <p>Manage the payment methods you've chosen to save.</p>
+
+        <div id="savedCards" aria-live="polite">
+            Loading saved cards...
+        </div>
+
+        <p id="savedCardsStatus" class="status-message"
+           role="status" aria-live="polite"></p>
+    </section>
     <section class="transaction-list">
         <h2>Transaction History</h2>
         <div id="transactions">
@@ -356,8 +406,98 @@ async function currentBalance() {
     return Number(data.balance) || 0;
 }
 
-handleStripeReturn();
+document.getElementById("withdrawForm").addEventListener("submit", event => {
+    submitWalletAction(event, "withdraw");
+});
+// Saved Payment Methods - Elisa Earls
 
+async function loadSavedCards() {
+    const container = document.getElementById("savedCards");
+    const status = document.getElementById("savedCardsStatus");
+
+    try {
+        const response = await fetch("/api/saved-cards", {
+            credentials: "same-origin"
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Unable to load saved cards.");
+        }
+
+        container.replaceChildren();
+
+        const cards = data.saved_cards || [];
+
+        if (cards.length === 0) {
+            container.textContent = "You don't have any saved cards yet.";
+            return;
+        }
+
+        cards.forEach(card => {
+            const row = document.createElement("div");
+            row.className = "saved-card-row";
+
+            const info = document.createElement("div");
+            info.className = "saved-card-info";
+
+            const brand = document.createElement("strong");
+            brand.textContent = card.card_brand.toUpperCase();
+
+            const details = document.createElement("span");
+            details.className = "saved-card-details";
+            details.textContent =
+                `Ending in ${card.last_four} • Expires ${card.expiration_month}/${card.expiration_year}`;
+
+            info.append(brand, details);
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.className = "remove-card-button";
+            removeButton.textContent = "Remove";
+
+            removeButton.addEventListener("click", async () => {
+                if (!confirm("Are you sure you want to remove this card?")) {
+                    return;
+                }
+
+                removeButton.disabled = true;
+
+                try {
+                    const deleteResponse = await fetch(
+                        `/api/saved-cards/${card.id}`,
+                        {
+                            method: "DELETE",
+                            credentials: "same-origin"
+                        }
+                    );
+
+                    const deleteData = await deleteResponse.json();
+
+                    if (!deleteResponse.ok) {
+                        throw new Error(deleteData.error || "Unable to remove card.");
+                    }
+
+                    status.textContent = "Saved card removed successfully.";
+                    await loadSavedCards();
+
+                } catch (error) {
+                    status.textContent = error.message;
+                    removeButton.disabled = false;
+                }
+            });
+
+            row.append(info, removeButton);
+            container.appendChild(row);
+        });
+
+    } catch (error) {
+        container.textContent = error.message;
+    }
+}
+
+loadSavedCards();
 loadWallet();
 </script>
 </body>
