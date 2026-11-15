@@ -22,7 +22,7 @@ def get_wallet_balance(user_id):
     return float(row[0])
 
 
-def create_wallet_transaction(user_id, transaction_type, amount, description=None, order_id=None, conn=None):
+def create_wallet_transaction(user_id, transaction_type, amount, description=None, order_id=None, conn=None, stripe_session_id=None):
     amount = Decimal(str(amount))
 
     owns_conn = conn is None
@@ -42,7 +42,7 @@ def create_wallet_transaction(user_id, transaction_type, amount, description=Non
 
         if transaction_type in ("DEPOSIT"):
             new_balance = balance + amount
-        elif transaction_type in ("WITHDRAW", "PURCHASE"):
+        elif transaction_type in ("PURCHASE"):
             new_balance = balance - amount
             if new_balance < 0:
                 raise ValueError("Insufficient wallet funds")
@@ -56,12 +56,12 @@ def create_wallet_transaction(user_id, transaction_type, amount, description=Non
         """, (new_balance, user_id))
 
         query = """
-            INSERT INTO wallet_transactions (user_id, type, amount, balance_after, description, order_id)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO wallet_transactions (user_id, type, amount, balance_after, description, order_id, stripe_session_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id, user_id, type, amount, balance_after, description, order_id, created_at;
         """
 
-        cur.execute(query, (user_id, transaction_type, amount, new_balance, description, order_id))
+        cur.execute(query, (user_id, transaction_type, amount, new_balance, description, order_id, stripe_session_id))
         row = cur.fetchone()
 
         if owns_conn:

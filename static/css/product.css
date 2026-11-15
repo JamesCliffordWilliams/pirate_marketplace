@@ -96,6 +96,48 @@
 .pm .pm-product__details dd { margin: 0 0 12px; max-width: 60ch; }
 .pm .pm-product__description { white-space: pre-line; }
 
+/* ---------- reviews (James Williams 11/14/26) ---------- */
+
+.pm .pm-stars {
+    background: linear-gradient(90deg, var(--pm-brass) calc(var(--rating) * 20%), var(--pm-rigging) 0);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.pm .pm-rating { position: relative; display: inline-flex; gap: 8px; align-items: center; margin-top: -12px; color: var(--pm-fog); text-decoration: none; }
+.pm .pm-rating__breakdown {
+    position: absolute; top: calc(100% + 8px); left: 0; z-index: 10;
+    display: grid; gap: 6px; width: 220px; padding: 12px;
+    border: 1px solid var(--pm-rigging); border-radius: var(--pm-r-tile); background: var(--pm-hull-raised);
+    font-size: var(--pm-t13); color: var(--pm-sail);
+    opacity: 0; visibility: hidden; transform: translateY(-4px);
+    transition: opacity 150ms var(--pm-ease), transform 150ms var(--pm-ease), visibility 150ms;
+}
+.pm .pm-rating:hover .pm-rating__breakdown,
+.pm .pm-rating:focus-visible .pm-rating__breakdown { opacity: 1; visibility: visible; transform: none; }
+.pm .pm-rating__row { display: grid; grid-template-columns: 2.5em 1fr 2em; gap: 8px; align-items: center; text-align: right; }
+.pm .pm-rating__bar { height: 6px; border-radius: 3px; background: var(--pm-rigging); overflow: hidden; }
+.pm .pm-rating__bar span { display: block; height: 100%; background: var(--pm-brass); }
+
+.pm .pm-reviews { border-top: 1px solid var(--pm-rigging); padding-top: 16px; }
+.pm .pm-reviews summary { cursor: pointer; }
+.pm .pm-reviews[open] summary { margin-bottom: 16px; }
+.pm .pm-reviews__form { display: grid; gap: 12px; margin-bottom: 24px; }
+.pm .pm-reviews__form button { justify-self: start; }
+.pm .pm-review { padding: 12px 0; border-bottom: 1px solid var(--pm-rigging); }
+.pm .pm-review__body { margin-top: 6px; white-space: pre-line; }
+
+/* Stars are in 5 to 1 order, reversed on screen, so hovering one lights it and the ones before it */
+.pm .pm-star-input { display: flex; flex-direction: row-reverse; flex-wrap: wrap; justify-content: flex-end; margin: 0; padding: 0; border: 0; }
+.pm .pm-star-input legend { width: 100%; margin-bottom: 4px; }
+.pm .pm-star-input input { position: absolute; opacity: 0; pointer-events: none; }
+.pm .pm-star-input label { font-size: var(--pm-t25); color: var(--pm-rigging); cursor: pointer; transition: color 100ms; }
+.pm .pm-star-input input:checked ~ label,
+.pm .pm-star-input label:hover,
+.pm .pm-star-input label:hover ~ label { color: var(--pm-brass); }
+.pm .pm-star-input input:focus-visible + label { outline: 2px solid var(--pm-brass); outline-offset: 2px; }
+
 @media (max-width: 899px) {
     .pm .pm-product { grid-template-columns: 1fr; gap: 24px; }
     .pm .pm-product__info { position: static; }

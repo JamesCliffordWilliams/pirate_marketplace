@@ -214,7 +214,7 @@
     <section class="wallet-actions">
         <div class="action-card">
             <h2>Add Funds</h2>
-            <p>Add demo funds to your wallet.</p>
+            <p>Credits can only be spent on Pirate Market purchases. They can't be withdrawn.</p>
 
             <form id="depositForm">
                 <label for="depositAmount">Amount ($)</label>
@@ -222,25 +222,8 @@
                        min="0.01" max="10000" step="0.01"
                        placeholder="25.00" required>
 
-                <button id="depositButton" type="submit">
-                    Add Funds
-                </button>
-            </form>
-        </div>
-
-        <div class="action-card">
-            <h2>Withdraw Funds</h2>
-            <p>Remove funds from your wallet.</p>
-
-            <form id="withdrawForm">
-                <label for="withdrawAmount">Amount ($)</label>
-                <input id="withdrawAmount" type="number"
-                       min="0.01" max="10000" step="0.01"
-                       placeholder="10.00" required>
-
-                <button id="withdrawButton" type="submit">
-                    Withdraw
-                </button>
+                <button id="stripeButton" type="button">Pay with card (Stripe)</button>
+                <button id="demoButton" type="button">Add demo funds</button>
             </form>
         </div>
     </section>
@@ -358,12 +341,9 @@ async function loadTransactions() {
     }
 }
 
-async function submitWalletAction(event, action) {
-    event.preventDefault();
-
-    const form = event.currentTarget;
-    const input = form.querySelector('input[type="number"]');
-    const button = form.querySelector("button");
+// Billy
+async function addFunds(method) {
+    const input = document.getElementById("depositAmount");
     const amount = Number(input.value);
 
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -371,27 +351,60 @@ async function submitWalletAction(event, action) {
         return;
     }
 
-    button.disabled = true;
+    const buttons = document.querySelectorAll("#depositForm button");
+    buttons.forEach(b => b.disabled = true);
 
     try {
-        const result = await walletRequest("/" + action, {
+        const result = await walletRequest("/deposit", {
             method: "POST",
-            body: JSON.stringify({ amount })
+            body: JSON.stringify({ amount, method })
         });
 
-        showStatus(result.message || "Wallet updated successfully.");
+        if (method === "stripe") {
+            window.location.href = result.checkout_url;
+            return;
+        }
+
+        showStatus(result.message || "Demo funds added.");
         input.value = "";
         await loadWallet();
     } catch (error) {
         showStatus(error.message);
-    } finally {
-        button.disabled = false;
     }
+
+    buttons.forEach(b => b.disabled = false);
 }
 
-document.getElementById("depositForm").addEventListener("submit", event => {
-    submitWalletAction(event, "deposit");
-});
+document.getElementById("stripeButton").addEventListener("click", () => addFunds("stripe"));
+document.getElementById("demoButton").addEventListener("click", () => addFunds("demo"));
+
+async function handleStripeReturn() {
+    const status = new URLSearchParams(window.location.search).get("status");
+
+    if (status === "cancelled") {
+        showStatus("Payment cancelled. You weren't charged.");
+        return;
+    }
+    if (status !== "success") return;
+
+    showStatus("Confirming your payment...");
+    const startBalance = await currentBalance();
+
+    for (let i = 0; i < 10; i++) {
+        await new Promise(r => setTimeout(r, 1000));
+        if ((await currentBalance()) > startBalance) {
+            showStatus("Payment received. Your balance has been updated.");
+            await loadWallet();
+            return;
+        }
+    }
+    showStatus("Your payment is processing. Your balance will update shortly.");
+}
+
+async function currentBalance() {
+    const data = await walletRequest("");
+    return Number(data.balance) || 0;
+}
 
 document.getElementById("withdrawForm").addEventListener("submit", event => {
     submitWalletAction(event, "withdraw");

@@ -26,6 +26,7 @@
             <label class="pm-label" for="password">Password</label>
             <input class="pm-input" id="password" type="password" name="password" autocomplete="current-password" required>
         </div>
+                <p class="pm-hint"><a href="{{ url_for('auth.forgot_password') }}">Forgot password?</a></p>
         <button type="submit" class="pm-btn pm-btn--primary">Log in</button>
     </form>
     <p class="pm-entry__links">New here? <a href="{{ url_for('auth.signup') }}">Create account</a></p>
