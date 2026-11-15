@@ -141,10 +141,15 @@ def create_app():
         if request.blueprint in LOGIN_REQUIRED_BLUEPRINTS and not session.get("user"):
             return redirect(url_for("auth.login"))
 
-    register_pages(app)
+        register_pages(app)
 
     for blueprint, prefix in BLUEPRINTS:
         app.register_blueprint(blueprint, url_prefix=prefix)
+
+    # CJ Hyacinth - Visual Sitemap
+    @app.get("/sitemap")
+    def sitemap_page():
+        return render_template("sitemap.html")
 
     @app.get("/health")
     def health():
