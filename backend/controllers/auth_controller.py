@@ -382,7 +382,7 @@ def clear_failures(conn, username, ip):
 # Same message whether or not the email has an account, so no one can use this page
 # to find out which emails are signed up
 RESET_SENT_MESSAGE = ("If that email belongs to a Pirate Market account, we sent a link to reset "
-                      "your password. The link expires in 30 minutes.")
+                      "your password. The link expires in 15 minutes.")
 RESET_BAD_LINK_MESSAGE = "That reset link is invalid or has expired. Request a new one below."
 MIN_PASSWORD_LENGTH = 8
 

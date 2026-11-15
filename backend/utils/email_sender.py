@@ -32,7 +32,7 @@ def send_password_reset_email(to_email, username, reset_link):
     text_body = (
         f"Hi {username},\n\n"
         "We got a request to reset your Pirate Market password.\n"
-        f"Open this link to choose a new one (it expires in 30 minutes):\n\n{reset_link}\n\n"
+        f"Open this link to choose a new one (it expires in 10 minutes):\n\n{reset_link}\n\n"
         "If you didn't ask for this, you can ignore this email. Your password won't change.\n\n"
         "- The Pirate Market Team"
     )
@@ -42,7 +42,7 @@ def send_password_reset_email(to_email, username, reset_link):
     <p>Hi {safe_name},</p>
     <p>We got a request to reset your Pirate Market password.</p>
     <p><a href="{reset_link}">Choose a new password</a></p>
-    <p>This link expires in 30 minutes. If you didn't ask for this, you can ignore this email.
+    <p>This link expires in 10 minutes. If you didn't ask for this, you can ignore this email.
        Your password won't change.</p>
     <p>- The Pirate Market Team</p>
     """

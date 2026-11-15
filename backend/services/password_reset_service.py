@@ -6,7 +6,7 @@ import hashlib
 import secrets
 from utils.auth_utils import hash_password
 
-TOKEN_LIFETIME_MINUTES = 30
+TOKEN_LIFETIME_MINUTES = 15
 RESEND_WAIT_MINUTES = 2
 
 class PasswordResetService:
