@@ -20,6 +20,7 @@ Functions:
 """
 
 from flask import Blueprint, request, jsonify, render_template
+from models.review_model import get_review_summary, has_completed_purchase, save_review  # James Williams 11/14/26
 
 from services.storefront_service import (
     create_storefront_service,
@@ -273,9 +274,32 @@ def product_page(listing_id):
     sizes = sorted(get_sizes_for_listing(listing_id), key=size_rank)
     made_to_order = bool(listing.get("is_made_to_order"))
     sold_out = not made_to_order and (listing["status"] == "SOLD_OUT" or listing.get("quantity_on_hand") == 0)
+    # Added by James Williams 11/14/26 - reviews, and whether this viewer bought it and can leave one
+    reviews = get_review_summary(listing_id)
+    can_review = bool(viewer_id) and has_completed_purchase(viewer_id, listing_id)
+    my_review = next((r for r in reviews["reviews"] if r["user_id"] == viewer_id), None)
     return render_template("product.html", listing=listing, storefront=storefront, images=image_urls, sizes=sizes,
                            made_to_order=made_to_order, sold_out=sold_out, viewer_id=viewer_id,
-                           is_owner_preview=is_owner_preview and not is_public)
+                           is_owner_preview=is_owner_preview and not is_public,
+                           reviews=reviews, can_review=can_review, my_review=my_review)
+
+
+# Added by James Williams 11/14/26 - buyers post or update their review of a listing
+@storefront_pages_bp.post("/listings/<int:listing_id>/reviews")
+def post_review(listing_id):
+    from flask import session
+    user_id = session.get("user_id")
+    if not user_id or not has_completed_purchase(user_id, listing_id):
+        return jsonify({"error": "Only buyers with a completed order can review this item."}), 403
+    data = request.get_json(silent=True) or {}
+    rating = data.get("rating")
+    body = (data.get("body") or "").strip()
+    if not isinstance(rating, int) or isinstance(rating, bool) or not 1 <= rating <= 5:
+        return jsonify({"error": "Choose a rating from 1 to 5 stars."}), 400
+    if len(body) > 2000:
+        return jsonify({"error": "Reviews can be up to 2000 characters."}), 400
+    save_review(user_id, listing_id, rating, body or None)
+    return jsonify({"message": "Thanks for your review."}), 201
 
 
 @storefront_pages_bp.route("/listings/<int:listing_id>/edit")

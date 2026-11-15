@@ -307,6 +307,17 @@ def create_wallet_transactions(cur):
     """)
     cur.execute("ALTER TABLE wallet_transactions ADD COLUMN IF NOT EXISTS stripe_session_id TEXT UNIQUE;")
 
+# Added by Billy Anders
+def create_login_attempts(cur):
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(50) NOT NULL,
+            ip VARCHAR(45) NOT NULL,
+            attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+    """)
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_login_attempts_pair ON login_attempts(username, ip, attempted_at);")
 
 # Updated by Billy Anders - split create_wallet_tables into individual functions.
 def create_messages(cur):
@@ -335,6 +346,20 @@ def create_messages(cur):
     cur.execute("ALTER TABLE messages DROP COLUMN IF EXISTS content;")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, is_read);")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_messages_pair ON messages(sender_id, receiver_id, created_at);")
+
+# Added by James Williams 11/14/26 - one review per buyer per listing
+def create_reviews(cur):
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+            rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+            body TEXT CHECK (char_length(body) <= 2000),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT unique_user_listing_review UNIQUE (user_id, listing_id)
+        );
+    """)
 
 #Updated by Aniya Hopson - Forgot Password feature 11/10/26
 def create_password_reset_tokens(cur):
@@ -368,8 +393,10 @@ SCHEMA_STEPS = [
     create_order_items,
     create_wallets,
     create_wallet_transactions,
+    create_login_attempts,
     create_messages,
     apply_listing_interest,           # James Williams: the table that tracks shopper activity for the Hot page
+    create_reviews,                   # James Williams: product reviews
     create_password_reset_tokens      # Aniya Hopson : one-time link for the Forgot Password
 ]
 
