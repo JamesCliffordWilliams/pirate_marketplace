@@ -49,7 +49,10 @@ Pirate Market is a web marketplace just for Hampton University students. Student
 
 ### What you need
 - Python 3.12+
-- The database and S3 settings (ask the team)
+- PostgreSQL, either a local install or the team database
+- The database, S3 and Stripe settings (ask the team)
+
+On Windows, use `python` wherever this guide says `python3`.
 
 ### Install
 
@@ -80,14 +83,30 @@ AWS_ACCESS_KEY_ID=your-access-key
 AWS_SECRET_ACCESS_KEY=your-secret-key
 AWS_S3_BUCKET=your-bucket-name
 AWS_REGION=us-east-2
+STRIPE_SECRET_KEY=your-stripe-secret-key
+STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
 ```
 
 Never commit your `.env` file. It's in `.gitignore`.
 
+For a local database, use `DB_HOST=localhost` and `DB_SSLMODE=disable`.
+
+Wallet deposits use Stripe. To test them locally, run `stripe listen --forward-to localhost:5000/api/stripe/webhook` and use the secret it prints as `STRIPE_WEBHOOK_SECRET`.
+
 ### Set up a new database
+
+Create an empty database, then build the tables:
 
 ```bash
 python3 backend/init_db.py
+```
+
+This script always connects on port 5432 and ignores `DB_PORT`, so your Postgres needs to be on the default port.
+
+To add demo storefronts and listings (optional):
+
+```bash
+psql -h localhost -U your-database-user -d your-database-name -f sample_data.sql
 ```
 
 ### Run the app
@@ -106,7 +125,7 @@ Then open `http://127.0.0.1:5000`.
 python3 -m unittest discover -s backend/tests -t .
 ```
 
-Tests that need a database only run against a local one.
+Tests that need a database only run when `DB_HOST` is a local database (`localhost`), so they never touch the real one. Without a local Postgres they are skipped, not failed. Each run builds its own temporary tables and removes them afterward.
 
 ---
 
